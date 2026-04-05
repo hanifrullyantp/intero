@@ -1,0 +1,21 @@
+# Deploy lokal / VPS: `docker compose up -d --build`
+# Buat file .env di host (lihat .env.example). Jangan commit .env.
+
+services:
+  web:
+    build: .
+    ports:
+      - "${PORT:-8787}:8787"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    volumes:
+      - intero-sqlite:/app/server/data
+      - intero-uploads:/app/server/uploads
+    restart: unless-stopped
+
+volumes:
+  intero-sqlite:
+  intero-uploads:

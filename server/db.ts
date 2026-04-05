@@ -1,0 +1,62 @@
+import Database from "better-sqlite3";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+import type { SiteSettings } from "../src/types/site-settings.ts";
+import { getDefaultSiteSettings } from "../src/types/site-settings.ts";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dataDir = path.join(__dirname, "data");
+const dbPath = path.join(dataDir, "intero.sqlite");
+
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+export const db = new Database(dbPath);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    whatsapp TEXT NOT NULL,
+    city TEXT NOT NULL,
+    need_type TEXT NOT NULL,
+    size_estimate TEXT,
+    budget_range TEXT,
+    notes TEXT,
+    reference_path TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    user_agent TEXT
+  );
+`);
+
+const SETTINGS_KEY = "site";
+
+export function getSettings(): SiteSettings {
+  const row = db
+    .prepare("SELECT value FROM settings WHERE key = ?")
+    .get(SETTINGS_KEY) as { value: string } | undefined;
+  if (!row) {
+    const defaults = getDefaultSiteSettings();
+    saveSettings(defaults);
+    return defaults;
+  }
+  try {
+    return JSON.parse(row.value) as SiteSettings;
+  } catch {
+    const defaults = getDefaultSiteSettings();
+    saveSettings(defaults);
+    return defaults;
+  }
+}
+
+export function saveSettings(s: SiteSettings): void {
+  db.prepare(
+    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+  ).run(SETTINGS_KEY, JSON.stringify(s));
+}

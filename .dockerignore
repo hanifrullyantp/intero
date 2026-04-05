@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.github
+.cursor
+server/data
+server/uploads
+.env
+.env.*
+!.env.example
+*.md
+!README.md
+npm-debug.log*
