@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { LandingSections } from "@/types/site-settings";
 import { useAdmin } from "@/admin/adminContext";
 import { SaveBar } from "@/admin/SaveBar";
@@ -30,8 +31,13 @@ export default function SectionsJsonPage() {
     <div className="max-w-4xl">
       <h1 className="text-2xl font-black mb-2">Konten landing (semua section)</h1>
       <p className="text-sm text-gray-600 mb-4">
-        Edit JSON di bawah lalu klik &quot;Terapkan ke draft&quot;. Setelah itu gunakan &quot;Simpan
-        perubahan&quot; seperti biasa. Salin cadangan sebelum mengubah banyak hal.
+        Mode lanjutan untuk struktur kompleks (tabel perbandingan, urgency HTML, dll.). Untuk hero,
+        galeri, dan media sehari-hari lebih mudah lewat{" "}
+        <Link to="/admin/sections" className="text-blue-700 font-medium hover:underline">
+          konten visual
+        </Link>
+        . Edit JSON di bawah lalu klik &quot;Terapkan ke draft&quot;; setelah itu &quot;Simpan
+        perubahan&quot;. Salin cadangan sebelum mengubah banyak hal.
       </p>
       <SaveBar />
       {parseError && <p className="text-sm text-red-600 mb-2">{parseError}</p>}

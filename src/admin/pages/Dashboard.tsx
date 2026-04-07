@@ -7,7 +7,8 @@ const links = [
   { to: "/admin/toast", label: "Toast notifikasi kanan bawah" },
   { to: "/admin/faq", label: "FAQ accordion" },
   { to: "/admin/footer", label: "Footer & halaman privasi" },
-  { to: "/admin/sections", label: "Teks & gambar semua section landing" },
+  { to: "/admin/sections", label: "Konten landing — form & unggah (WordPress-style)" },
+  { to: "/admin/sections-json", label: "Konten landing — JSON lanjutan" },
   { to: "/admin/leads", label: "Data form leads" },
 ];
 

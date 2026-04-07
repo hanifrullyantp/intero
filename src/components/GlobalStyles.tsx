@@ -9,9 +9,10 @@ export function GlobalStyles({ settings }: { settings: SiteSettings }) {
         --navy-950: ${navyDeep};
         --gold-500: ${gold};
         --brand-primary: ${primary};
-        --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
       }
-      html { font-family: var(--font-sans); }
+      html {
+        font-family: var(--font-sans, "Montserrat", ui-sans-serif, system-ui, sans-serif);
+      }
       .bg-navy-900 { background-color: ${navy}; }
       .bg-navy-950 { background-color: ${navyDeep}; }
       .text-navy-900 { color: ${navy}; }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Check,
   MessageCircle,
@@ -20,6 +20,7 @@ import { whatsappUrl } from "@/lib/waMessage";
 import { Link } from "react-router-dom";
 import { BonusIcon, CmpIcon, HeroIcon, StepIcon } from "@/landing/iconMap";
 import { Countdown } from "@/landing/Countdown";
+import { getYoutubeEmbedSrc } from "@/lib/youtube";
 
 type CTA = { onLead: () => void; settings: SiteSettings };
 
@@ -88,6 +89,7 @@ export function LandingNavbar({ onLead, settings }: CTA) {
 
 export function LandingHero({ onLead, settings }: CTA) {
   const h = settings.sections.hero;
+  const yt = getYoutubeEmbedSrc(h.youtubeUrl);
   return (
     <section className="relative min-h-[100vh] flex items-center pt-24 pb-12 px-6 bg-navy-900 text-white overflow-hidden">
       <div className="absolute inset-0 opacity-20">
@@ -132,8 +134,19 @@ export function LandingHero({ onLead, settings }: CTA) {
             </div>
           </FadeUp>
         </div>
-        <div className="relative">
+        <div className="relative space-y-5">
           <FadeUp delay={0.2}>
+            {yt && (
+              <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl aspect-video bg-black">
+                <iframe
+                  title="Video hero"
+                  src={`${yt}?rel=0`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            )}
             <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl">
               <img src={h.imageUrl} alt={h.imageAlt} className="w-full aspect-[4/5] object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-900/60 to-transparent" />

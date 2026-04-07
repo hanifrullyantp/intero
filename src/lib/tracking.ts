@@ -54,22 +54,24 @@ export function injectMetaAndLinks(s: SiteSettings) {
     }
     link.setAttribute("href", fav);
   }
-  if (s.fontFamily) {
-    const fontName = s.fontFamily.replace(/ /g, "+");
-    const id = `gf-${fontName}`;
-    if (!document.getElementById(id)) {
-      const pre = document.createElement("link");
-      pre.rel = "preconnect";
-      pre.href = "https://fonts.googleapis.com";
-      document.head.appendChild(pre);
-      const link = document.createElement("link");
-      link.id = id;
-      link.rel = "stylesheet";
-      link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700;800;900&display=swap`;
-      document.head.appendChild(link);
-    }
-    document.documentElement.style.setProperty("--font-sans", `"${s.fontFamily}", system-ui, sans-serif`);
+  const fontFamily = (s.fontFamily && s.fontFamily.trim()) || "Montserrat";
+  const fontName = fontFamily.replace(/ /g, "+");
+  const id = `gf-${fontName}`;
+  if (!document.getElementById(id)) {
+    const pre = document.createElement("link");
+    pre.rel = "preconnect";
+    pre.href = "https://fonts.googleapis.com";
+    document.head.appendChild(pre);
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${fontName}:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap`;
+    document.head.appendChild(link);
   }
+  document.documentElement.style.setProperty(
+    "--font-sans",
+    `"${fontFamily}", ui-sans-serif, system-ui, sans-serif`,
+  );
 }
 
 export function injectFacebookPixel(

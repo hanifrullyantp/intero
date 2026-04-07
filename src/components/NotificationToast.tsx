@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Bell } from "lucide-react";
 import { usePublicSettings } from "@/context/PublicSettingsContext";
 import type { SiteSettings } from "@/types/site-settings";
 import { playTingFromUrl, playSyntheticTing } from "@/lib/playTing";
@@ -173,29 +173,37 @@ export function NotificationToast() {
   if (!t.enabled) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[90] flex flex-col items-end gap-2 pointer-events-none">
+    <div className="fixed bottom-5 right-0 z-[90] flex flex-col items-end gap-2 pointer-events-none pl-4 pr-0 max-w-[min(100vw-1rem,22rem)] w-full sm:max-w-[20rem] sm:pr-4">
       <AnimatePresence>
         {visible && (
           <motion.div
-            initial={{ x: 120, opacity: 0 }}
+            initial={{ x: "110%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 120, opacity: 0 }}
-            transition={{ type: "spring", damping: 22 }}
-            className="pointer-events-auto max-w-sm rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-4 text-sm"
+            exit={{ x: "110%", opacity: 0 }}
+            transition={{ type: "spring", damping: 26, stiffness: 320 }}
+            className="pointer-events-auto w-full rounded-l-2xl sm:rounded-2xl border border-amber-300/90 bg-gradient-to-br from-amber-50 via-amber-100/95 to-amber-200/80 text-amber-950 shadow-[0_12px_40px_-8px_rgba(180,83,9,0.45)] backdrop-blur-sm pl-4 pr-3 py-3.5 sm:pl-5 sm:pr-4 sm:py-4"
           >
-            <div className="flex justify-between items-start gap-2">
-              <div>
-                <p className="font-semibold text-navy-900 leading-snug">{message}</p>
-                <p className="text-xs text-gray-500 mt-2">{timeLabel}</p>
+            <div className="flex gap-3 items-start">
+              <span
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/90 text-amber-950 shadow-sm ring-1 ring-amber-500/30"
+                aria-hidden
+              >
+                <Bell className="h-4 w-4 opacity-90" strokeWidth={2.25} />
+              </span>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-[13px] sm:text-sm font-semibold text-amber-950 leading-snug tracking-tight">
+                  {message}
+                </p>
+                <p className="text-[11px] sm:text-xs font-medium text-amber-800/75 mt-2">{timeLabel}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMuted((m) => !m)}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 shrink-0"
+                className="shrink-0 rounded-xl p-2 text-amber-900/70 hover:bg-amber-300/40 hover:text-amber-950 transition-colors"
                 title={muted ? "Nyalakan suara" : "Bisukan"}
                 aria-label={muted ? "Unmute" : "Mute"}
               >
-                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                {muted ? <VolumeX size={18} strokeWidth={2.25} /> : <Volume2 size={18} strokeWidth={2.25} />}
               </button>
             </div>
           </motion.div>

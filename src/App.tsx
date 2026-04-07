@@ -13,6 +13,7 @@ import ToastPage from "@/admin/pages/ToastPage";
 import FaqPage from "@/admin/pages/FaqPage";
 import FooterPage from "@/admin/pages/FooterPage";
 import SectionsJsonPage from "@/admin/pages/SectionsJsonPage";
+import SectionsVisualPage from "@/admin/pages/SectionsVisualPage";
 import LeadsPage from "@/admin/pages/LeadsPage";
 
 function PublicShell() {
@@ -43,7 +44,8 @@ export default function App() {
           <Route path="toast" element={<ToastPage />} />
           <Route path="faq" element={<FaqPage />} />
           <Route path="footer" element={<FooterPage />} />
-          <Route path="sections" element={<SectionsJsonPage />} />
+          <Route path="sections" element={<SectionsVisualPage />} />
+          <Route path="sections-json" element={<SectionsJsonPage />} />
           <Route path="leads" element={<LeadsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

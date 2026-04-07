@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { fetchAdminMe, fetchAdminSettings, logoutAdmin } from "@/lib/api";
 import { AdminProvider } from "@/admin/adminContext";
@@ -74,7 +74,10 @@ export default function AdminLayout() {
               Footer & privasi
             </NavLink>
             <NavLink to="/admin/sections" className={navCls}>
-              Konten landing
+              Konten landing (visual)
+            </NavLink>
+            <NavLink to="/admin/sections-json" className={navCls}>
+              Konten landing (JSON)
             </NavLink>
             <NavLink to="/admin/leads" className={navCls}>
               Leads

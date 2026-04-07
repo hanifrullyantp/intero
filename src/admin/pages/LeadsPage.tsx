@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { deleteLead, fetchLeads, type LeadRow } from "@/lib/api";
 
 export default function LeadsPage() {

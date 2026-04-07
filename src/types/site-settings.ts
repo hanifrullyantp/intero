@@ -93,6 +93,8 @@ export interface LandingSections {
     primaryCta: string;
     secondaryCta: string;
     secondaryCtaHref: string;
+    /** Tempel URL YouTube (watch / youtu.be / shorts). Kosongkan jika hanya gambar. */
+    youtubeUrl: string | null;
     imageUrl: string;
     imageAlt: string;
     floatingBadgeTitle: string;
@@ -203,7 +205,18 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
     typeof s.sections === "object" &&
     s.sections.hero
   ) {
-    return s as SiteSettings;
+    const base = s as SiteSettings;
+    const hero = base.sections.hero;
+    if (hero.youtubeUrl === undefined) {
+      return {
+        ...base,
+        sections: {
+          ...base.sections,
+          hero: { ...hero, youtubeUrl: null },
+        },
+      };
+    }
+    return base;
   }
   return getDefaultSiteSettings();
 }
@@ -222,7 +235,7 @@ export function getDefaultSiteSettings(): SiteSettings {
     },
     logoUrl: null,
     faviconUrl: null,
-    fontFamily: null,
+    fontFamily: "Montserrat",
     contact: {
       whatsapp: "6281234567890",
       email: "hello@intero.id",
@@ -340,6 +353,7 @@ export function getDefaultSiteSettings(): SiteSettings {
         primaryCta: "KONSULTASI WA",
         secondaryCta: "LIHAT KEUNGGULAN",
         secondaryCtaHref: "#solusi",
+        youtubeUrl: null,
         imageUrl:
           "https://images.unsplash.com/photo-1556912177-c54030639a6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
         imageAlt: "Premium Kitchen Set",
