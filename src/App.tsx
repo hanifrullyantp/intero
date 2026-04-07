@@ -3,6 +3,7 @@ import { PublicSettingsProvider } from "@/context/PublicSettingsContext";
 import { LeadModalProvider } from "@/context/LeadModalContext";
 import LandingPage from "@/pages/LandingPage";
 import PrivacyPage from "@/pages/PrivacyPage";
+import PricelistPage from "@/pages/PricelistPage";
 import AdminLogin from "@/admin/AdminLogin";
 import AdminLayout from "@/admin/AdminLayout";
 import Dashboard from "@/admin/pages/Dashboard";
@@ -33,6 +34,7 @@ export default function App() {
         <Route element={<PublicShell />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/pricelist" element={<PricelistPage />} />
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminLayout />}>

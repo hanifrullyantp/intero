@@ -232,6 +232,21 @@ export default function SectionsVisualPage() {
                 />
               </Field>
             </div>
+            <Field
+              label="Link tombol utama (href)"
+              hint="Contoh: /pricelist untuk halaman pricelist, atau https://..."
+            >
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm font-mono text-xs"
+                value={sec.hero.primaryCtaHref ?? "/pricelist"}
+                onChange={(e) =>
+                  patchSections((p) => ({
+                    ...p,
+                    hero: { ...p.hero, primaryCtaHref: e.target.value },
+                  }))
+                }
+              />
+            </Field>
             <Field label="Link tombol sekunder (href)">
               <input
                 className="w-full rounded-lg border px-3 py-2 text-sm"

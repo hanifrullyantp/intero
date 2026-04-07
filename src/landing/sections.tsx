@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import {
   Check,
   MessageCircle,
@@ -23,6 +23,34 @@ import { Countdown } from "@/landing/Countdown";
 import { getYoutubeEmbedSrc } from "@/lib/youtube";
 
 type CTA = { onLead: () => void; settings: SiteSettings };
+
+function HeroPrimaryCtaLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  const external = /^https?:\/\//i.test(href) || href.startsWith("//");
+  const hashOnly = href.startsWith("#");
+  const cls = cn(
+    "group inline-flex items-center justify-center gap-2 rounded-full transition-all duration-300 active:scale-95",
+    "bg-gold-500 text-navy-900 hover:bg-gold-400 shadow-lg",
+    "px-7 py-3 sm:px-8 sm:py-3.5 text-sm sm:text-base font-bold uppercase tracking-wide",
+  );
+  if (external || hashOnly) {
+    return (
+      <a href={href} className={cls}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={cls}>
+      {children}
+    </Link>
+  );
+}
 
 export function LandingNavbar({ onLead, settings }: CTA) {
   const [scrolled, setScrolled] = useState(false);
@@ -87,7 +115,7 @@ export function LandingNavbar({ onLead, settings }: CTA) {
   );
 }
 
-export function LandingHero({ onLead, settings }: CTA) {
+export function LandingHero({ settings }: CTA) {
   const h = settings.sections.hero;
   const yt = getYoutubeEmbedSrc(h.youtubeUrl);
   return (
@@ -109,15 +137,18 @@ export function LandingHero({ onLead, settings }: CTA) {
             </h1>
             <p className="text-2xl md:text-3xl font-bold text-blue-100 mb-6 italic">{h.subtitle}</p>
             <p className="text-lg md:text-xl text-blue-50/80 mb-10 leading-relaxed max-w-lg">{h.description}</p>
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Button variant="secondary" size="xl" className="group" type="button" onClick={onLead}>
-                <MessageCircle className="mr-2 h-6 w-6" />
+            <div className="flex flex-col sm:flex-row gap-4 mb-12 items-stretch sm:items-center">
+              <HeroPrimaryCtaLink href={h.primaryCtaHref}>
+                <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
                 {h.primaryCta}
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+                <ArrowRight
+                  className="h-4 w-4 shrink-0 group-hover:translate-x-1 transition-transform"
+                  aria-hidden
+                />
+              </HeroPrimaryCtaLink>
               <a
                 href={h.secondaryCtaHref}
-                className="inline-flex items-center justify-center rounded-full transition-all duration-300 border-2 border-white/30 text-white hover:bg-white/10 px-10 py-5 text-xl font-black uppercase tracking-wider"
+                className="inline-flex items-center justify-center rounded-full transition-all duration-300 border-2 border-white/30 text-white hover:bg-white/10 px-8 py-3.5 text-sm sm:text-base font-bold uppercase tracking-wide"
               >
                 {h.secondaryCta}
               </a>

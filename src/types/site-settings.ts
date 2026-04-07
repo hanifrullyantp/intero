@@ -91,6 +91,8 @@ export interface LandingSections {
     subtitle: string;
     description: string;
     primaryCta: string;
+    /** Tujuan tombol utama hero (internal `/...` atau URL absolut). */
+    primaryCtaHref: string;
     secondaryCta: string;
     secondaryCtaHref: string;
     /** Tempel URL YouTube (watch / youtu.be / shorts). Kosongkan jika hanya gambar. */
@@ -207,12 +209,15 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
   ) {
     const base = s as SiteSettings;
     const hero = base.sections.hero;
-    if (hero.youtubeUrl === undefined) {
+    const heroPatch: Partial<typeof hero> = {};
+    if (hero.youtubeUrl === undefined) heroPatch.youtubeUrl = null;
+    if (hero.primaryCtaHref === undefined) heroPatch.primaryCtaHref = "/pricelist";
+    if (Object.keys(heroPatch).length > 0) {
       return {
         ...base,
         sections: {
           ...base.sections,
-          hero: { ...hero, youtubeUrl: null },
+          hero: { ...hero, ...heroPatch },
         },
       };
     }
@@ -350,7 +355,8 @@ export function getDefaultSiteSettings(): SiteSettings {
         subtitle: "1x buat, pakai selamanya",
         description:
           "Kitchen set tahan air = dapur bunda bebas rayap, warna awet, dan gak ribet bersihin.",
-        primaryCta: "KONSULTASI WA",
+        primaryCta: "Lihat pricelist",
+        primaryCtaHref: "/pricelist",
         secondaryCta: "LIHAT KEUNGGULAN",
         secondaryCtaHref: "#solusi",
         youtubeUrl: null,
