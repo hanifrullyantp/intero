@@ -79,6 +79,18 @@ export interface SiteSettings {
     /** Pesan prateks WA saat pengguna menutup form tanpa mengirim. */
     dismissRedirectMessage: string;
   };
+  /** Pengaturan CRM (kategori, pipeline, template WA follow-up). */
+  crm: {
+    categories: string[];
+    pipelineStages: { key: string; label: string; color: string }[];
+    followUpSlots: {
+      key: string;
+      label: string;
+      /** Teks di tombol bulat (mis. W, 1, 2). */
+      shortLabel: string;
+      messageTemplate: string;
+    }[];
+  };
   sections: LandingSections;
 }
 
@@ -258,9 +270,22 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
         base.leadForm?.dismissRedirectMessage?.trim() ||
         def.leadForm.dismissRedirectMessage,
     };
+    const crm = {
+      ...def.crm,
+      ...(base.crm ?? {}),
+      categories:
+        base.crm?.categories?.length ? base.crm.categories : def.crm.categories,
+      pipelineStages:
+        base.crm?.pipelineStages?.length ? base.crm.pipelineStages : def.crm.pipelineStages,
+      followUpSlots:
+        Array.isArray(base.crm?.followUpSlots) && base.crm.followUpSlots.length === 6
+          ? base.crm.followUpSlots
+          : def.crm.followUpSlots,
+    };
     return {
       ...base,
       leadForm,
+      crm,
       tracking: {
         ...def.tracking,
         ...(base.tracking ?? {}),
@@ -398,6 +423,68 @@ export function getDefaultSiteSettings(): SiteSettings {
       ],
       dismissRedirectMessage:
         "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.",
+    },
+    crm: {
+      categories: [
+        "Hot lead",
+        "Kitchen set baru",
+        "Renovasi / upgrade",
+        "Konsultasi dulu",
+        "Budget terbatas",
+        "Cold / belum respons",
+      ],
+      pipelineStages: [
+        { key: "baru", label: "Lead baru", color: "slate" },
+        { key: "dihubungi", label: "Dihubungi", color: "blue" },
+        { key: "proposal", label: "Proposal / survei", color: "amber" },
+        { key: "menunggu", label: "Menunggu keputusan", color: "purple" },
+        { key: "deal", label: "Deal / SPK", color: "green" },
+        { key: "tidak_lanjut", label: "Tidak lanjut", color: "red" },
+      ],
+      followUpSlots: [
+        {
+          key: "W",
+          label: "Sapaan pertama WA",
+          shortLabel: "W",
+          messageTemplate:
+            "Halo {{name}}, terima kasih sudah mengisi form di website Intero. Saya dari tim konsultasi kitchen set WOCENSA — boleh saya bantu jadwalkan diskusi singkat?",
+        },
+        {
+          key: "1",
+          label: "Follow-up hari ke-1",
+          shortLabel: "1",
+          messageTemplate:
+            "Halo {{name}}, kemarin kami sudah sampaikan info awal. Ada yang ingin ditanyakan soal kitchen set waterproof & anti rayap?",
+        },
+        {
+          key: "2",
+          label: "Follow-up materi / promo",
+          shortLabel: "2",
+          messageTemplate:
+            "Halo {{name}}, kami bisa bantu estimasi kasar berdasarkan kebutuhan: {{need_type}}. Mau kami kirim referensi proyek serupa?",
+        },
+        {
+          key: "3",
+          label: "Ajakan survei / meeting",
+          shortLabel: "3",
+          messageTemplate:
+            "Halo {{name}}, untuk {{city}} kami bisa atur survei atau video call singkat tanpa komitmen dulu. Hari apa yang nyaman?",
+        },
+        {
+          key: "4",
+          label: "Penawaran / slot terbatas",
+          shortLabel: "4",
+          messageTemplate:
+            "Halo {{name}}, slot promo & bonus bulan ini terbatas. Bila masih tertarik, kami bantu amankan prioritas desain 3D gratis.",
+        },
+        {
+          key: "5",
+          label: "Closing lembut",
+          shortLabel: "5",
+          messageTemplate:
+            "Halo {{name}}, kami tetap siap bantu kapan pun Anda butuh info kitchen set Intero. Balas WA ini saja ya.",
+        },
+      ],
     },
     sections: {
       hero: {

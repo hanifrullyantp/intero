@@ -120,6 +120,43 @@ app.get("/api/admin/leads", requireAuth, (_req, res) => {
   res.json(rows);
 });
 
+app.patch("/api/admin/leads/:id", requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const body = req.body as Record<string, unknown>;
+  const allowed = [
+    "crm_status",
+    "crm_category",
+    "admin_notes",
+    "last_follow_up_key",
+    "follow_up_count",
+  ] as const;
+  const updates: string[] = [];
+  const vals: unknown[] = [];
+  for (const k of allowed) {
+    if (body[k] !== undefined) {
+      updates.push(`${k} = ?`);
+      vals.push(body[k]);
+    }
+  }
+  if (updates.length === 0) {
+    res.status(400).json({ error: "Tidak ada field yang diizinkan untuk diubah" });
+    return;
+  }
+  updates.push("updated_at = datetime('now')");
+  vals.push(id);
+  const sql = `UPDATE leads SET ${updates.join(", ")} WHERE id = ?`;
+  const r = db.prepare(sql).run(...vals);
+  if (r.changes === 0) {
+    res.status(404).json({ error: "Lead tidak ditemukan" });
+    return;
+  }
+  res.json({ ok: true });
+});
+
 app.delete("/api/admin/leads/:id", requireAuth, (req, res) => {
   const id = Number(req.params.id);
   db.prepare("DELETE FROM leads WHERE id = ?").run(id);
@@ -143,8 +180,8 @@ app.post("/api/leads", upload.single("reference"), (req, res) => {
   const ua = req.get("user-agent") || null;
 
   db.prepare(
-    `INSERT INTO leads (name, whatsapp, city, need_type, size_estimate, budget_range, notes, reference_path, user_agent)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO leads (name, whatsapp, city, need_type, size_estimate, budget_range, notes, reference_path, user_agent, crm_status, crm_category, admin_notes, follow_up_count, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'baru', '', '', 0, datetime('now'))`,
   ).run(
     name,
     whatsapp,

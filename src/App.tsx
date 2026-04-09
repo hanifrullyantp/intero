@@ -16,6 +16,7 @@ import FooterPage from "@/admin/pages/FooterPage";
 import SectionsJsonPage from "@/admin/pages/SectionsJsonPage";
 import SectionsVisualPage from "@/admin/pages/SectionsVisualPage";
 import LeadsPage from "@/admin/pages/LeadsPage";
+import CrmSettingsPage from "@/admin/pages/CrmSettingsPage";
 
 function PublicShell() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="sections" element={<SectionsVisualPage />} />
           <Route path="sections-json" element={<SectionsJsonPage />} />
           <Route path="leads" element={<LeadsPage />} />
+          <Route path="crm-settings" element={<CrmSettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

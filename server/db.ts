@@ -38,6 +38,19 @@ db.exec(`
   );
 `);
 
+function ensureLeadColumn(name: string, sql: string) {
+  const cols = db.prepare("PRAGMA table_info(leads)").all() as { name: string }[];
+  if (cols.some((c) => c.name === name)) return;
+  db.exec(sql);
+}
+
+ensureLeadColumn("crm_status", "ALTER TABLE leads ADD COLUMN crm_status TEXT DEFAULT 'baru'");
+ensureLeadColumn("crm_category", "ALTER TABLE leads ADD COLUMN crm_category TEXT DEFAULT ''");
+ensureLeadColumn("admin_notes", "ALTER TABLE leads ADD COLUMN admin_notes TEXT DEFAULT ''");
+ensureLeadColumn("last_follow_up_key", "ALTER TABLE leads ADD COLUMN last_follow_up_key TEXT");
+ensureLeadColumn("follow_up_count", "ALTER TABLE leads ADD COLUMN follow_up_count INTEGER DEFAULT 0");
+ensureLeadColumn("updated_at", "ALTER TABLE leads ADD COLUMN updated_at TEXT");
+
 const SETTINGS_KEY = "site";
 
 export function getSettings(): SiteSettings {

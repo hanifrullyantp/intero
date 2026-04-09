@@ -9,7 +9,8 @@ const links = [
   { to: "/admin/footer", label: "Footer & halaman privasi" },
   { to: "/admin/sections", label: "Konten landing — form & unggah (WordPress-style)" },
   { to: "/admin/sections-json", label: "Konten landing — JSON lanjutan" },
-  { to: "/admin/leads", label: "Data form leads" },
+  { to: "/admin/leads", label: "CRM & leads (pipeline)" },
+  { to: "/admin/crm-settings", label: "CRM — template WA & kategori" },
 ];
 
 export default function Dashboard() {

@@ -81,6 +81,10 @@ async function submitLeadSupabase(fd: FormData): Promise<void> {
     notes,
     reference_path: referencePath,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    crm_status: "baru",
+    crm_category: "",
+    admin_notes: "",
+    follow_up_count: 0,
   });
   if (error) throw new Error(error.message);
 }
@@ -187,7 +191,21 @@ export type LeadRow = {
   notes: string | null;
   reference_path: string | null;
   created_at: string;
+  crm_status?: string | null;
+  crm_category?: string | null;
+  admin_notes?: string | null;
+  last_follow_up_key?: string | null;
+  follow_up_count?: number | null;
+  updated_at?: string | null;
 };
+
+export type LeadUpdatePayload = Partial<{
+  crm_status: string;
+  crm_category: string;
+  admin_notes: string;
+  last_follow_up_key: string;
+  follow_up_count: number;
+}>;
 
 async function fetchLeadsSupabase(): Promise<LeadRow[]> {
   const sb = getSupabaseBrowser();
@@ -207,6 +225,28 @@ export async function fetchLeads(): Promise<LeadRow[]> {
   const r = await fetch("/api/admin/leads", { credentials: "include" });
   if (!r.ok) throw new Error("Gagal memuat leads");
   return r.json() as Promise<LeadRow[]>;
+}
+
+export async function updateLead(id: string | number, patch: LeadUpdatePayload): Promise<void> {
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseBrowser();
+    const { error } = await sb
+      .from("leads")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+  const r = await fetch(`/api/admin/leads/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) {
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(j.error || "Gagal memperbarui lead");
+  }
 }
 
 export async function deleteLead(id: string | number): Promise<void> {

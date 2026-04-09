@@ -80,7 +80,10 @@ export default function AdminLayout() {
               Konten landing (JSON)
             </NavLink>
             <NavLink to="/admin/leads" className={navCls}>
-              Leads
+              CRM &amp; leads
+            </NavLink>
+            <NavLink to="/admin/crm-settings" className={navCls}>
+              CRM — template &amp; kategori
             </NavLink>
           </nav>
           <div className="p-3 border-t border-white/10">
