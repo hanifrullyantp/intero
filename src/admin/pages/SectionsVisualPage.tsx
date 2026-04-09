@@ -17,7 +17,39 @@ type TabId =
   | "product"
   | "steps"
   | "bonus"
+  | "pricing"
   | "cta";
+
+function wocensaColumnKey(sec: LandingSections): string | null {
+  const col =
+    sec.comparison.columns.find((c) => c.highlight) ??
+    sec.comparison.columns.find((c) => c.key === "wocensa");
+  return col?.key ?? null;
+}
+
+/** Sinkronkan harga promo kartu urgency dengan baris "Harga / m²" kolom WOCENSA di tabel perbandingan. */
+function patchUrgencyWithComparisonSync(
+  sec: LandingSections,
+  updates: Partial<
+    Pick<LandingSections["urgency"], "oldPrice" | "promoPrice" | "promoBadgeLabel" | "ctaLabel">
+  >,
+): LandingSections {
+  const urgency = { ...sec.urgency, ...updates };
+  let comparison = sec.comparison;
+  if (updates.promoPrice !== undefined) {
+    const key = wocensaColumnKey(sec);
+    if (key) {
+      const rows = sec.comparison.rows.map((r) => {
+        if (r.name.trim() === "Harga / m²") {
+          return { ...r, values: { ...r.values, [key]: updates.promoPrice! } };
+        }
+        return r;
+      });
+      comparison = { ...sec.comparison, rows };
+    }
+  }
+  return { ...sec, urgency, comparison };
+}
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "hero", label: "Hero & video" },
@@ -27,6 +59,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "product", label: "Detail produk" },
   { id: "steps", label: "Proses (5 step)" },
   { id: "bonus", label: "Bonus" },
+  { id: "pricing", label: "Harga & promo" },
   { id: "cta", label: "CTA & sticky" },
 ];
 
@@ -234,11 +267,11 @@ export default function SectionsVisualPage() {
             </div>
             <Field
               label="Link tombol utama (href)"
-              hint="Contoh: /pricelist untuk halaman pricelist, atau https://..."
+              hint="Untuk scroll ke blok harga di landing: #harga. Contoh lain: /pricelist, https://..."
             >
               <input
                 className="w-full rounded-lg border px-3 py-2 text-sm font-mono text-xs"
-                value={sec.hero.primaryCtaHref ?? "/pricelist"}
+                value={sec.hero.primaryCtaHref ?? "#harga"}
                 onChange={(e) =>
                   patchSections((p) => ({
                     ...p,
@@ -274,6 +307,21 @@ export default function SectionsVisualPage() {
                       ...p.hero,
                       youtubeUrl: e.target.value.trim() || null,
                     },
+                  }))
+                }
+              />
+            </Field>
+            <Field
+              label="Teks kecil di bawah video / thumbnail"
+              hint="Muncul di halaman sebagai keterangan (mis. sumber testimoni)."
+            >
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+                value={sec.hero.videoDisclaimer ?? ""}
+                onChange={(e) =>
+                  patchSections((p) => ({
+                    ...p,
+                    hero: { ...p.hero, videoDisclaimer: e.target.value },
                   }))
                 }
               />
@@ -620,7 +668,13 @@ export default function SectionsVisualPage() {
                       ...p.gallery,
                       projects: [
                         ...p.gallery.projects,
-                        { title: "Proyek baru", area: "Kota", img: "", videoUrl: null },
+                        {
+                          title: "Proyek baru",
+                          area: "Kota",
+                          img: "",
+                          videoUrl: null,
+                          visible: true,
+                        },
                       ],
                     },
                   }))
@@ -704,9 +758,75 @@ export default function SectionsVisualPage() {
                       }
                     />
                   </Field>
+                  <label className="flex items-center gap-2 text-sm font-medium text-navy-900 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300"
+                      checked={proj.visible !== false}
+                      onChange={(e) =>
+                        patchSections((p) => {
+                          const projects = [...p.gallery.projects];
+                          projects[i] = { ...projects[i]!, visible: e.target.checked };
+                          return { ...p, gallery: { ...p.gallery, projects } };
+                        })
+                      }
+                    />
+                    Tampilkan di halaman utama
+                  </label>
                 </div>
               ))}
             </div>
+          </>
+        )}
+
+        {tab === "pricing" && (
+          <>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              <strong>Harga promo (utama)</strong> otomatis menyamakan teks pada kolom produk unggulan
+              (WOCENSA / highlight) di baris <strong>Harga / m²</strong> pada section perbandingan.
+            </p>
+            <Field label="Label pill di kartu harga (satu baris)">
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+                value={sec.urgency.promoBadgeLabel ?? "Harga promo khusus"}
+                onChange={(e) =>
+                  patchSections((p) =>
+                    patchUrgencyWithComparisonSync(p, { promoBadgeLabel: e.target.value }),
+                  )
+                }
+              />
+            </Field>
+            <Field label="Harga dicoret">
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+                placeholder="Rp. 3.500.000"
+                value={sec.urgency.oldPrice}
+                onChange={(e) =>
+                  patchSections((p) => patchUrgencyWithComparisonSync(p, { oldPrice: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label="Harga promo (angka utama)">
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+                placeholder="Rp. 2.900.000"
+                value={sec.urgency.promoPrice}
+                onChange={(e) =>
+                  patchSections((p) =>
+                    patchUrgencyWithComparisonSync(p, { promoPrice: e.target.value }),
+                  )
+                }
+              />
+            </Field>
+            <Field label="Label tombol di kartu harga (buka form)">
+              <input
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+                value={sec.urgency.ctaLabel}
+                onChange={(e) =>
+                  patchSections((p) => patchUrgencyWithComparisonSync(p, { ctaLabel: e.target.value }))
+                }
+              />
+            </Field>
           </>
         )}
 

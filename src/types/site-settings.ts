@@ -101,6 +101,8 @@ export interface LandingSections {
     imageAlt: string;
     floatingBadgeTitle: string;
     floatingBadgeSubtitle: string;
+    /** Teks kecil di bawah video hero (mis. disclaimer testimoni). */
+    videoDisclaimer: string;
     features: HeroFeature[];
   };
   problem: {
@@ -152,6 +154,8 @@ export interface LandingSections {
     slotsNumber: string;
     oldPrice: string;
     promoPrice: string;
+    /** Label pill di kartu harga (satu baris). */
+    promoBadgeLabel: string;
     warnings: string[];
     ctaLabel: string;
   };
@@ -178,7 +182,13 @@ export interface LandingSections {
     id: string;
     eyebrow: string;
     title: string;
-    projects: { title: string; area: string; img: string; videoUrl: string | null }[];
+    projects: {
+      title: string;
+      area: string;
+      img: string;
+      videoUrl: string | null;
+      visible: boolean;
+    }[];
   };
   whyNow: {
     titleHtml: string;
@@ -197,6 +207,33 @@ export interface LandingSections {
   };
 }
 
+function patchLegacyLandingData(sec: LandingSections): LandingSections {
+  const hero = { ...sec.hero };
+  if (hero.youtubeUrl === undefined) hero.youtubeUrl = null;
+  if (hero.primaryCtaHref === undefined) hero.primaryCtaHref = "#harga";
+  if (hero.videoDisclaimer === undefined) {
+    hero.videoDisclaimer = "*testimoni asli pelanggan intero";
+  }
+
+  const urgency = { ...sec.urgency };
+  if (urgency.promoBadgeLabel === undefined) {
+    urgency.promoBadgeLabel = "Harga promo khusus";
+  }
+
+  const galleryProjects = (sec.gallery?.projects ?? []).map((p) => ({
+    ...p,
+    videoUrl: p.videoUrl ?? null,
+    visible: p.visible ?? true,
+  }));
+
+  return {
+    ...sec,
+    hero,
+    urgency,
+    gallery: { ...sec.gallery, projects: galleryProjects },
+  };
+}
+
 /** Validasi JSON dari DB Supabase / API */
 export function normalizeSiteSettings(raw: unknown): SiteSettings {
   const s = raw as Partial<SiteSettings> | null;
@@ -208,46 +245,10 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
     s.sections.hero
   ) {
     const base = s as SiteSettings;
-    const hero = base.sections.hero;
-    const heroPatch: Partial<typeof hero> = {};
-    if (hero.youtubeUrl === undefined) heroPatch.youtubeUrl = null;
-    if (hero.primaryCtaHref === undefined) heroPatch.primaryCtaHref = "/pricelist";
-    const galleryProjects = base.sections.gallery?.projects ?? [];
-    const galleryNeedsPatch = galleryProjects.some((p) => p.videoUrl === undefined);
-    if (Object.keys(heroPatch).length > 0) {
-      return {
-        ...base,
-        sections: {
-          ...base.sections,
-          hero: { ...hero, ...heroPatch },
-          gallery: galleryNeedsPatch
-            ? {
-                ...base.sections.gallery,
-                projects: galleryProjects.map((p) => ({
-                  ...p,
-                  videoUrl: p.videoUrl ?? null,
-                })),
-              }
-            : base.sections.gallery,
-        },
-      };
-    }
-    if (galleryNeedsPatch) {
-      return {
-        ...base,
-        sections: {
-          ...base.sections,
-          gallery: {
-            ...base.sections.gallery,
-            projects: galleryProjects.map((p) => ({
-              ...p,
-              videoUrl: p.videoUrl ?? null,
-            })),
-          },
-        },
-      };
-    }
-    return base;
+    return {
+      ...base,
+      sections: patchLegacyLandingData(base.sections),
+    };
   }
   return getDefaultSiteSettings();
 }
@@ -381,8 +382,8 @@ export function getDefaultSiteSettings(): SiteSettings {
         subtitle: "1x buat, pakai selamanya",
         description:
           "Kitchen set tahan air = dapur bunda bebas rayap, warna awet, dan gak ribet bersihin.",
-        primaryCta: "Lihat pricelist",
-        primaryCtaHref: "/pricelist",
+        primaryCta: "KONSULTASI WA",
+        primaryCtaHref: "#harga",
         secondaryCta: "LIHAT KEUNGGULAN",
         secondaryCtaHref: "#solusi",
         youtubeUrl: null,
@@ -391,6 +392,7 @@ export function getDefaultSiteSettings(): SiteSettings {
         imageAlt: "Premium Kitchen Set",
         floatingBadgeTitle: "100% WATERPROOF",
         floatingBadgeSubtitle: "ANTI LAPUK & RAYAP",
+        videoDisclaimer: "*testimoni asli pelanggan intero",
         features: [
           { icon: "Droplets", text: "Anti Air 100%" },
           { icon: "BugOff", text: "Anti Rayap" },
@@ -514,14 +516,15 @@ export function getDefaultSiteSettings(): SiteSettings {
         redBanner: "Hanya Untuk 10 Orang Tercepat Saja",
         slotsLine: "Tersisa",
         slotsNumber: "3",
-        oldPrice: "Rp 3.800.000/m",
-        promoPrice: "3,5 jt/m",
+        oldPrice: "Rp. 3.500.000",
+        promoPrice: "Rp. 2.900.000",
+        promoBadgeLabel: "Harga promo khusus",
         warnings: [
           "⚠️ Pendaftaran ini terbatas HANYA UNTUK 10 ORANG SETIAP BULAN!",
           "⚠️ Kami tidak menjamin harga tidak semakin naik karena harga bahan baku.",
           "⚠️ Kami tidak menjamin bonus tetap ada di bulan depan.",
         ],
-        ctaLabel: "KLAIM PROMO SEKARANG",
+        ctaLabel: "Ya, Saya Mau",
       },
       guarantee: {
         title: "JAMINAN HARGA TERMURAH",
@@ -540,7 +543,7 @@ export function getDefaultSiteSettings(): SiteSettings {
         rows: [
           {
             name: "Harga / m²",
-            values: { kayu: "± 2,7 jt", wocensa: "± 3,5 jt", alum: "± 3,5 jt" },
+            values: { kayu: "± 2,7 jt", wocensa: "Rp. 2.900.000", alum: "± 3,5 jt" },
           },
           {
             name: "Ketahanan Air",
@@ -629,36 +632,42 @@ export function getDefaultSiteSettings(): SiteSettings {
             area: "Jakarta Selatan",
             img: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
           {
             title: "Elegant Grey",
             area: "Tangerang",
             img: "https://images.unsplash.com/photo-1556912177-c54030639a6d?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
           {
             title: "Luxury White",
             area: "Bekasi",
             img: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
           {
             title: "Industrial Gold",
             area: "Depok",
             img: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
           {
             title: "Classic Wood Look",
             area: "Jakarta Pusat",
             img: "https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
           {
             title: "Compact Suite",
             area: "Bogor",
             img: "https://images.unsplash.com/photo-1556909190-7336338e55e5?auto=format&fit=crop&w=800&q=80",
             videoUrl: null,
+            visible: true,
           },
         ],
       },

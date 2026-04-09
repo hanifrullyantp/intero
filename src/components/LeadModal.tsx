@@ -63,14 +63,16 @@ export function LeadModal() {
             exit={{ opacity: 0 }}
             onClick={() => !busy && close()}
           />
-          <motion.div
-            role="dialog"
-            aria-modal
-            className="fixed left-1/2 top-1/2 z-[101] w-[calc(100%-1.5rem)] max-w-lg max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl"
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 20 }}
-          >
+          {/* Flex centering only — avoid CSS transform on this subtree so native <select> menus size/position correctly */}
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-3 pointer-events-none">
+            <motion.div
+              role="dialog"
+              aria-modal
+              className="pointer-events-auto w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+            >
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-xl font-black text-navy-900">Konsultasi gratis</h2>
@@ -93,7 +95,7 @@ export function LeadModal() {
                 <select
                   name="need_type"
                   required
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="w-full min-h-[48px] rounded-xl border border-gray-200 px-3 py-3 text-base md:text-sm"
                 >
                   <option value="">Pilih</option>
                   {settings.leadForm.needTypes.map((n) => (
@@ -108,7 +110,10 @@ export function LeadModal() {
                 <label className="block text-xs font-bold text-gray-600 mb-1">
                   Budget range (opsional)
                 </label>
-                <select name="budget_range" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                <select
+                  name="budget_range"
+                  className="w-full min-h-[48px] rounded-xl border border-gray-200 px-3 py-3 text-base md:text-sm"
+                >
                   <option value="">—</option>
                   {settings.leadForm.budgetRanges.map((n) => (
                     <option key={n} value={n}>
@@ -144,7 +149,8 @@ export function LeadModal() {
             <p className="text-xs text-center text-gray-400 mt-4">
               Dengan mengirim, Anda menyetujui pemrosesan data sesuai kebijakan privasi kami.
             </p>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
@@ -170,7 +176,7 @@ function Field({
         required={required}
         placeholder={placeholder}
         className={cn(
-          "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm",
+          "w-full min-h-[44px] rounded-xl border border-gray-200 px-3 py-2.5 text-base md:text-sm",
         )}
       />
     </div>

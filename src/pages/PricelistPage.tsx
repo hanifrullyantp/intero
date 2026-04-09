@@ -1,13 +1,10 @@
 import { Link } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { usePublicSettings } from "@/context/PublicSettingsContext";
-import { useLeadModal } from "@/context/LeadModalContext";
 import { GlobalStyles } from "@/components/GlobalStyles";
-import { LeadModal } from "@/components/LeadModal";
 
 export default function PricelistPage() {
   const { settings, loading } = usePublicSettings();
-  const { open } = useLeadModal();
 
   if (loading) {
     return (
@@ -67,17 +64,15 @@ export default function PricelistPage() {
           minggu depan.
         </p>
 
-        <button
-          type="button"
-          onClick={open}
+        <Link
+          to="/#harga"
           className="inline-flex items-center justify-center gap-2 rounded-full bg-gold-500 text-navy-900 hover:bg-gold-400 shadow-lg px-8 py-3.5 text-sm sm:text-base font-bold uppercase tracking-wide transition-all active:scale-95"
         >
           <MessageCircle className="h-5 w-5 shrink-0" />
           Konsultasi &amp; estimasi WA
-        </button>
+        </Link>
       </main>
 
-      <LeadModal />
     </div>
   );
 }

@@ -1,4 +1,6 @@
+import { useCallback } from "react";
 import { useLeadModal } from "@/context/LeadModalContext";
+import { scrollToPriceSection } from "@/lib/scrollToPrice";
 import { usePublicSettings } from "@/context/PublicSettingsContext";
 import { GlobalStyles } from "@/components/GlobalStyles";
 import { LeadModal } from "@/components/LeadModal";
@@ -26,6 +28,7 @@ import {
 export default function LandingPage() {
   const { settings, loading } = usePublicSettings();
   const { open } = useLeadModal();
+  const onScrollToPrice = useCallback(() => scrollToPriceSection(), []);
 
   if (loading) {
     return (
@@ -38,25 +41,25 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans text-navy-900 selection:bg-gold-500 selection:text-navy-900">
       <GlobalStyles settings={settings} />
-      <LandingNavbar settings={settings} onLead={open} />
+      <LandingNavbar settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
       <main>
-        <LandingHero settings={settings} onLead={open} />
+        <LandingHero settings={settings} />
         <LandingProblem settings={settings} />
         <LandingSolution settings={settings} />
-        <LandingTaglineBig settings={settings} onLead={open} />
-        <LandingSteps settings={settings} onLead={open} />
+        <LandingTaglineBig settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
+        <LandingSteps settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
         <LandingBonus settings={settings} />
-        <LandingUrgency settings={settings} onLead={open} />
+        <LandingUrgency settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
         <LandingGuarantee settings={settings} />
         <LandingComparison settings={settings} />
         <LandingProductDetails settings={settings} />
         <LandingGallery settings={settings} />
         <LandingFaq settings={settings} />
         <LandingWhyNow settings={settings} />
-        <LandingFinalCta settings={settings} onLead={open} />
+        <LandingFinalCta settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
       </main>
-      <LandingFooter settings={settings} />
-      <LandingStickyCta settings={settings} onLead={open} />
+      <LandingFooter settings={settings} onScrollToPrice={onScrollToPrice} />
+      <LandingStickyCta settings={settings} onLead={open} onScrollToPrice={onScrollToPrice} />
       <LeadModal />
       <NotificationToast />
     </div>

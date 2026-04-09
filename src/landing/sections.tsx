@@ -17,13 +17,12 @@ import type { SiteSettings } from "@/types/site-settings";
 import { Button, Section, FadeUp } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import { trackContactClick } from "@/lib/tracking";
-import { whatsappUrl } from "@/lib/waMessage";
 import { Link } from "react-router-dom";
 import { BonusIcon, CmpIcon, HeroIcon, StepIcon } from "@/landing/iconMap";
 import { Countdown } from "@/landing/Countdown";
 import { getYoutubeEmbedSrc } from "@/lib/youtube";
 
-type CTA = { onLead: () => void; settings: SiteSettings };
+type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSettings };
 
 function HeroPrimaryCtaLink({
   href,
@@ -53,13 +52,22 @@ function HeroPrimaryCtaLink({
   );
 }
 
-export function LandingNavbar({ onLead, settings }: CTA) {
+export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
   return (
     <nav
       className={cn(
@@ -105,18 +113,81 @@ export function LandingNavbar({ onLead, settings }: CTA) {
         variant={scrolled ? "primary" : "secondary"}
         size="sm"
         className="hidden md:flex"
-        onClick={onLead}
+        onClick={onScrollToPrice}
       >
         {settings.navbar.ctaLabel}
       </Button>
-      <button type="button" className="md:hidden" aria-label="Menu">
+      <button
+        type="button"
+        className="md:hidden p-2 -mr-2 rounded-lg hover:bg-white/10"
+        aria-label="Menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen(true)}
+      >
         <Menu className={scrolled ? "text-navy-900" : "text-white"} />
       </button>
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup menu"
+              className="fixed inset-0 z-[70] bg-black/50 md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMenuOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal
+              className="fixed top-0 right-0 z-[71] h-full w-[min(88vw,300px)] bg-navy-900 text-white shadow-2xl md:hidden flex flex-col"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            >
+              <div className="p-5 border-b border-white/10 flex justify-between items-center">
+                <span className="font-black text-lg">Menu</span>
+                <button
+                  type="button"
+                  className="p-2 rounded-lg hover:bg-white/10 text-sm font-bold"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Tutup
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
+                {settings.navbar.links.map((l) => (
+                  <a
+                    key={l.href + l.label}
+                    href={l.href}
+                    className="px-4 py-3 rounded-xl font-medium hover:bg-white/10"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {l.label}
+                  </a>
+                ))}
+                <button
+                  type="button"
+                  className="mt-4 mx-4 py-3 rounded-xl bg-gold-500 text-navy-900 font-black text-sm"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onScrollToPrice();
+                  }}
+                >
+                  {settings.navbar.ctaLabel}
+                </button>
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
 
-export function LandingHero({ settings }: CTA) {
+export function LandingHero({ settings }: Pick<CTA, "settings">) {
   const h = settings.sections.hero;
   const yt = getYoutubeEmbedSrc(h.youtubeUrl);
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
@@ -155,13 +226,16 @@ export function LandingHero({ settings }: CTA) {
                 {h.secondaryCta}
               </a>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {h.features.map((item, i) => (
-                <div key={i} className="flex flex-col gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                <div
+                  key={i}
+                  className="flex flex-row sm:flex-col items-center sm:items-start gap-3 sm:gap-2 text-left"
+                >
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-white/10 flex items-center justify-center">
                     <HeroIcon name={item.icon} className="text-gold-400 w-5 h-5" />
                   </div>
-                  <span className="text-xs font-bold text-white/70">{item.text}</span>
+                  <span className="text-xs font-bold text-white/70 leading-snug">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -206,6 +280,11 @@ export function LandingHero({ settings }: CTA) {
                 <div className="text-xs font-bold">{h.floatingBadgeSubtitle}</div>
               </motion.div>
             </div>
+            {h.videoDisclaimer?.trim() && (
+              <p className="text-center md:text-left text-[11px] sm:text-xs text-white/50 mt-3 px-1">
+                {h.videoDisclaimer}
+              </p>
+            )}
           </FadeUp>
         </div>
       </div>
@@ -234,8 +313,8 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
         </FadeUp>
       </div>
       <div className="relative z-10 bg-white p-5 sm:p-8 md:p-12 rounded-[32px] shadow-2xl border border-gray-100 max-w-5xl mx-auto overflow-hidden">
-        <div className="grid grid-cols-2 gap-4 sm:gap-8 items-center">
-          <div>
+        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
+          <div className="order-1 md:order-none w-full">
             <FadeUp>
               <h3
                 className="text-3xl md:text-4xl font-black text-navy-900 leading-tight mb-6"
@@ -245,19 +324,23 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
               <p className="text-lg text-gray-600 leading-relaxed mb-6">{p.body}</p>
             </FadeUp>
           </div>
-          <FadeUp delay={0.1}>
-            <div className="rounded-2xl overflow-hidden aspect-[4/6] sm:aspect-[4/7] md:aspect-[4/8] border-4 border-gray-50 shadow-inner group ml-auto w-full max-w-[260px]">
-              {heroProblemImg ? (
-                <img
-                  src={heroProblemImg}
-                  alt=""
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-100" />
-              )}
-            </div>
-          </FadeUp>
+          <div className="order-2 md:order-none w-full">
+            <FadeUp delay={0.1}>
+              <div className="flex justify-center md:justify-end">
+                <div className="rounded-2xl overflow-hidden aspect-square border-4 border-gray-50 shadow-inner group w-full max-w-[280px] md:max-w-[260px] md:ml-auto">
+                {heroProblemImg ? (
+                  <img
+                    src={heroProblemImg}
+                    alt=""
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-100" />
+                )}
+                </div>
+              </div>
+            </FadeUp>
+          </div>
         </div>
       </div>
     </Section>
@@ -319,7 +402,7 @@ export function LandingSolution({ settings }: { settings: SiteSettings }) {
   );
 }
 
-export function LandingTaglineBig({ onLead, settings }: CTA) {
+export function LandingTaglineBig({ onScrollToPrice, settings }: CTA) {
   const t = settings.sections.taglineBig;
   return (
     <section className="bg-navy-950 py-32 px-6 text-center overflow-hidden">
@@ -334,7 +417,7 @@ export function LandingTaglineBig({ onLead, settings }: CTA) {
           </motion.h2>
         </div>
         <div className="mt-12">
-          <Button variant="secondary" size="lg" type="button" onClick={onLead}>
+          <Button variant="secondary" size="lg" type="button" onClick={onScrollToPrice}>
             {t.ctaLabel}
           </Button>
         </div>
@@ -343,7 +426,7 @@ export function LandingTaglineBig({ onLead, settings }: CTA) {
   );
 }
 
-export function LandingSteps({ onLead, settings }: CTA) {
+export function LandingSteps({ onScrollToPrice, settings }: CTA) {
   const st = settings.sections.steps;
   return (
     <Section id={st.id} bg="gray">
@@ -376,7 +459,7 @@ export function LandingSteps({ onLead, settings }: CTA) {
         <FadeUp>
           <h3 className="text-2xl md:text-3xl font-black text-navy-900 mb-4">{st.bottomTitle}</h3>
           <p className="text-gray-600 mb-8">{st.bottomSubtitle}</p>
-          <Button variant="primary" size="lg" className="px-12" type="button" onClick={onLead}>
+          <Button variant="primary" size="lg" className="px-12" type="button" onClick={onScrollToPrice}>
             {st.bottomCta}
           </Button>
         </FadeUp>
@@ -424,7 +507,7 @@ export function LandingBonus({ settings }: { settings: SiteSettings }) {
 export function LandingUrgency({ onLead, settings }: CTA) {
   const u = settings.sections.urgency;
   return (
-    <Section bg="gold" className="relative overflow-hidden">
+    <Section id="harga" bg="gold" className="relative overflow-hidden scroll-mt-24">
       <div className="absolute inset-0 bg-gold-500 opacity-[0.05] pointer-events-none" />
       <div className="text-center mb-12">
         <FadeUp>
@@ -447,13 +530,15 @@ export function LandingUrgency({ onLead, settings }: CTA) {
           <Countdown />
         </div>
       </FadeUp>
-      <div className="max-w-2xl mx-auto bg-white p-10 md:p-16 rounded-[50px] shadow-2xl border-4 border-navy-900/5 text-center relative">
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy-900 text-white px-8 py-2 rounded-full font-black text-sm uppercase tracking-widest">
-          HARGA PROMO KHUSUS
+      <div className="max-w-2xl mx-auto bg-white px-6 pt-12 pb-10 sm:px-10 sm:pt-14 sm:pb-12 md:px-16 md:pb-16 rounded-[50px] shadow-2xl border-4 border-navy-900/5 text-center relative">
+        <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-navy-900 text-white px-4 py-2 sm:px-6 rounded-full font-black text-[11px] sm:text-sm uppercase tracking-wide shadow-lg">
+          {u.promoBadgeLabel}
         </div>
-        <div className="mb-8">
-          <div className="text-gray-400 text-2xl font-bold line-through mb-2">{u.oldPrice}</div>
-          <div className="text-navy-900 text-6xl md:text-7xl font-black leading-none">
+        <div className="mb-8 mt-1 space-y-2">
+          <div className="text-lg sm:text-2xl font-bold text-red-500/55 line-through decoration-red-400/50 decoration-2">
+            {u.oldPrice}
+          </div>
+          <div className="text-navy-900 text-5xl sm:text-6xl md:text-7xl font-black leading-tight">
             {u.promoPrice}
           </div>
         </div>
@@ -462,9 +547,9 @@ export function LandingUrgency({ onLead, settings }: CTA) {
             <p key={i}>{w}</p>
           ))}
         </div>
-        <Button variant="whatsapp" size="xl" className="w-full" type="button" onClick={onLead}>
-          <MessageCircle className="mr-3 h-8 w-8" />
-          {u.ctaLabel}
+        <Button variant="whatsapp" size="xl" className="w-full gap-3 justify-center" type="button" onClick={onLead}>
+          <MessageCircle className="h-8 w-8 shrink-0" />
+          <span className="font-black tracking-wide">{u.ctaLabel}</span>
         </Button>
       </div>
     </Section>
@@ -618,7 +703,16 @@ export function LandingProductDetails({ settings }: { settings: SiteSettings }) 
 
 export function LandingGallery({ settings }: { settings: SiteSettings }) {
   const g = settings.sections.gallery;
+  const visibleProjects = g.projects.filter((p) => p.visible !== false);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const n = visibleProjects.length;
+  const gridClass = cn(
+    "gap-6",
+    n === 0 && "hidden",
+    n === 1 && "grid grid-cols-1 max-w-md mx-auto",
+    n === 2 && "grid grid-cols-1 md:grid-cols-2 md:max-w-4xl md:mx-auto",
+    n >= 3 && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+  );
   return (
     <Section id={g.id}>
       <div className="text-center mb-16">
@@ -629,11 +723,11 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
           <h2 className="text-4xl md:text-5xl font-black text-navy-900">{g.title}</h2>
         </FadeUp>
       </div>
-      <div className="grid md:grid-cols-3 gap-6">
-        {g.projects.map((item, i) => (
-          <FadeUp key={i} delay={i * 0.05}>
+      <div className={gridClass}>
+        {visibleProjects.map((item, i) => (
+          <FadeUp key={`${item.title}-${item.area}-${i}`} delay={i * 0.05}>
             <div className="group relative rounded-[30px] overflow-hidden shadow-lg aspect-[4/5]">
-              {item.videoUrl && activeVideo === item.title + i ? (
+              {item.videoUrl && activeVideo === `${item.title}-${item.area}-${i}` ? (
                 <iframe
                   title={item.title}
                   src={`${getYoutubeEmbedSrc(item.videoUrl) ?? ""}?autoplay=1&rel=0`}
@@ -647,7 +741,7 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                   className="w-full h-full text-left"
                   onClick={() => {
                     if (item.videoUrl && getYoutubeEmbedSrc(item.videoUrl)) {
-                      setActiveVideo(item.title + i);
+                      setActiveVideo(`${item.title}-${item.area}-${i}`);
                     }
                   }}
                 >
@@ -706,7 +800,7 @@ export function LandingWhyNow({ settings }: { settings: SiteSettings }) {
   );
 }
 
-export function LandingFinalCta({ onLead, settings }: CTA) {
+export function LandingFinalCta({ onScrollToPrice, settings }: CTA) {
   const f = settings.sections.finalCta;
   return (
     <Section bg="navy" className="text-center relative">
@@ -717,8 +811,14 @@ export function LandingFinalCta({ onLead, settings }: CTA) {
         <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight">{f.title}</h2>
         <p className="text-xl text-blue-100/70 mb-12 max-w-2xl mx-auto">{f.subtitle}</p>
         <div className="flex flex-col items-center gap-6">
-          <Button variant="whatsapp" size="xl" className="px-12 py-6 text-2xl" type="button" onClick={onLead}>
-            <MessageCircle className="mr-4 h-10 w-10" />
+          <Button
+            variant="whatsapp"
+            size="xl"
+            className="px-12 py-6 text-2xl gap-3"
+            type="button"
+            onClick={onScrollToPrice}
+          >
+            <MessageCircle className="h-10 w-10 shrink-0" />
             {f.ctaLabel}
           </Button>
           <p className="flex items-center gap-2 text-gold-400 font-bold">
@@ -731,39 +831,55 @@ export function LandingFinalCta({ onLead, settings }: CTA) {
   );
 }
 
-export function LandingStickyCta({ onLead, settings }: CTA) {
+/** Mobile: banner bawah + tombol WA bulat mengarah ke blok harga (#harga). */
+export function LandingStickyCta({ onScrollToPrice, settings }: CTA) {
   const sticky = settings.sections.stickyCta;
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const handleScroll = () => setVisible(window.scrollY > 500);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const tick = () => setVisible(window.scrollY > 420 && window.innerWidth < 768);
+    tick();
+    window.addEventListener("scroll", tick);
+    window.addEventListener("resize", tick);
+    return () => {
+      window.removeEventListener("scroll", tick);
+      window.removeEventListener("resize", tick);
+    };
   }, []);
   return (
     <AnimatePresence>
       {visible && (
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 z-[60] p-4 md:hidden"
-        >
-          <Button
-            variant="whatsapp"
-            size="lg"
-            className="w-full h-16 rounded-2xl shadow-2xl flex justify-between px-6"
-            type="button"
-            onClick={onLead}
+        <>
+          <motion.div
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ type: "spring", damping: 24 }}
+            className="fixed bottom-3 left-3 right-[4.5rem] z-[60] md:hidden pointer-events-none"
           >
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] opacity-80 uppercase tracking-widest font-black">
-                {sticky.topLine}
-              </span>
-              <span className="text-lg">{sticky.mainLine}</span>
+            <div className="pointer-events-auto rounded-xl border border-amber-300/90 bg-gradient-to-r from-amber-50 via-amber-100/95 to-amber-200/85 px-3 py-2.5 shadow-[0_8px_28px_-6px_rgba(180,83,9,0.35)] text-[12px] sm:text-sm text-amber-950 leading-snug">
+              <span className="font-semibold">{sticky.topLine}</span>
+              <button
+                type="button"
+                className="ml-1 font-black underline decoration-amber-800/40 underline-offset-2"
+                onClick={onScrollToPrice}
+              >
+                {sticky.mainLine}
+              </button>
             </div>
-            <MessageCircle size={28} />
-          </Button>
-        </motion.div>
+          </motion.div>
+          <motion.button
+            type="button"
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.85, opacity: 0 }}
+            transition={{ type: "spring", damping: 22 }}
+            aria-label="Lihat paket harga"
+            className="fixed bottom-4 right-4 z-[61] md:hidden h-14 w-14 rounded-full bg-[#25D366] text-white shadow-2xl flex items-center justify-center border-[3px] border-white ring-2 ring-black/5"
+            onClick={onScrollToPrice}
+          >
+            <MessageCircle className="h-7 w-7" strokeWidth={2.4} />
+          </motion.button>
+        </>
       )}
     </AnimatePresence>
   );
@@ -812,14 +928,22 @@ export function LandingFaq({ settings }: { settings: SiteSettings }) {
   );
 }
 
-export function LandingFooter({ settings }: { settings: SiteSettings }) {
+export function LandingFooter({
+  settings,
+  onScrollToPrice,
+}: {
+  settings: SiteSettings;
+  onScrollToPrice: () => void;
+}) {
   const f = settings.footer;
-  const onWaClick = () => {
+  const onPhoneClick = () => {
     trackContactClick(settings);
-    window.open(
-      whatsappUrl(settings.contact.whatsapp, `Halo ${settings.siteName}`),
-      "_blank",
-    );
+    const d = settings.contact.whatsapp.replace(/\D/g, "");
+    if (d) window.location.href = `tel:+${d}`;
+  };
+  const onWaToPrice = () => {
+    trackContactClick(settings);
+    onScrollToPrice();
   };
   const onMailClick = () => {
     trackContactClick(settings);
@@ -867,7 +991,7 @@ export function LandingFooter({ settings }: { settings: SiteSettings }) {
             <li>
               <button
                 type="button"
-                onClick={onWaClick}
+                onClick={onPhoneClick}
                 className="flex items-center gap-3 hover:text-gold-400 transition text-left w-full"
               >
                 <Phone size={18} className="text-gold-500 shrink-0" /> {settings.contact.phoneDisplay}
@@ -876,7 +1000,7 @@ export function LandingFooter({ settings }: { settings: SiteSettings }) {
             <li>
               <button
                 type="button"
-                onClick={onWaClick}
+                onClick={onWaToPrice}
                 className="flex items-center gap-3 hover:text-gold-400 transition text-left w-full"
               >
                 <MessageCircle size={18} className="text-gold-500 shrink-0" /> WhatsApp
