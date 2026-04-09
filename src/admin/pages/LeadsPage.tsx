@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  createLeadManual,
   deleteLead,
   fetchLeads,
   updateLead,
@@ -19,6 +20,10 @@ import {
   Settings2,
   Bell,
   Filter,
+  UserPlus,
+  ChevronDown,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 
 const STAGE_BADGE: Record<string, string> = {
@@ -48,9 +53,22 @@ function inDateRange(createdAt: string, range: string): boolean {
   return Date.now() - parseLeadDate(createdAt) <= ms;
 }
 
+const emptyManual = () => ({
+  name: "",
+  whatsapp: "",
+  city: "",
+  need_type: "",
+  size_estimate: "",
+  budget_range: "",
+  notes: "",
+  crm_status: "baru",
+  crm_category: "",
+});
+
 export default function LeadsPage() {
   const { settings } = useAdmin();
   const crm = settings.crm;
+  const lf = settings.leadForm;
   const [rows, setRows] = useState<LeadRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +79,11 @@ export default function LeadsPage() {
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [dragId, setDragId] = useState<string | number | null>(null);
   const [notesDraft, setNotesDraft] = useState<{ id: string | number; text: string } | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manual, setManual] = useState(emptyManual);
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualErr, setManualErr] = useState<string | null>(null);
+  const [waInfoOpen, setWaInfoOpen] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -189,6 +212,39 @@ export default function LeadsPage() {
     void load();
   }
 
+  async function submitManual() {
+    setManualErr(null);
+    const name = manual.name.trim();
+    const whatsapp = manual.whatsapp.trim();
+    const city = manual.city.trim();
+    const need_type = manual.need_type.trim();
+    if (!name || !whatsapp || !city || !need_type) {
+      setManualErr("Isi nama, WhatsApp, kota, dan jenis kebutuhan.");
+      return;
+    }
+    setManualBusy(true);
+    try {
+      await createLeadManual({
+        name,
+        whatsapp,
+        city,
+        need_type,
+        size_estimate: manual.size_estimate.trim() || null,
+        budget_range: manual.budget_range.trim() || null,
+        notes: manual.notes.trim() || null,
+        crm_status: manual.crm_status.trim() || "baru",
+        crm_category: manual.crm_category.trim(),
+      });
+      setManualOpen(false);
+      setManual(emptyManual());
+      void load();
+    } catch (e) {
+      setManualErr(e instanceof Error ? e.message : "Gagal menyimpan");
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
   const idStr = (id: string | number) => String(id);
 
   return (
@@ -202,6 +258,18 @@ export default function LeadsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setManual(emptyManual());
+              setManualErr(null);
+              setManualOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-colors"
+          >
+            <UserPlus className="h-4 w-4" />
+            Tambah lead manual
+          </button>
           <Link
             to="/admin/crm-settings"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-sm transition-colors"
@@ -214,6 +282,38 @@ export default function LeadsPage() {
           </span>
         </div>
       </header>
+
+      <button
+        type="button"
+        onClick={() => setWaInfoOpen((o) => !o)}
+        className="w-full flex items-center gap-2 text-left px-4 py-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-950 text-sm mb-6 hover:bg-amber-100/80 transition-colors"
+      >
+        <Info className="h-5 w-5 shrink-0 text-amber-700" />
+        <span className="font-bold flex-1">Tentang otomatisasi data dari WhatsApp</span>
+        {waInfoOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      {waInfoOpen && (
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700 leading-relaxed space-y-3 shadow-sm">
+          <p>
+            <strong>Mengapa tidak ada &quot;scraping&quot; chat WA di aplikasi ini?</strong> WhatsApp tidak
+            menyediakan API resmi untuk membaca riwayat obrolan pribadi/bisnis seperti data web biasa.
+            Mengotomasi WhatsApp Web atau aplikasi klien melanggar ketentuan Meta, rawan diblokir, dan
+            sangat tidak stabil untuk CRM produksi.
+          </p>
+          <p>
+            <strong>Yang memungkinkan secara resmi:</strong>{" "}
+            <em>WhatsApp Business Platform (Cloud API)</em> — pesan masuk bisa diteruskan ke server Anda
+            lewat webhook, lalu disimpan ke CRM <strong>mulai dari saat integrasi diaktifkan</strong> (bukan
+            impor massal chat lama). Itu proyek terpisah: verifikasi bisnis Meta, nomor WA Business, dan
+            pengembangan webhook.
+          </p>
+          <p>
+            <strong>Praktis hari ini:</strong> input manual di halaman ini, form website, atau arahkan tim
+            untuk menempel ringkasan dari chat ke kolom catatan. Ekspor chat (.txt) dari ponsel bisa
+            dipakai sebagai referensi di luar aplikasi.
+          </p>
+        </div>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -552,6 +652,162 @@ export default function LeadsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {manualOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 my-8">
+            <h3 className="font-black text-lg mb-1">Tambah lead manual</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Data masuk ke tabel CRM yang sama dengan form website.
+            </p>
+            <div className="space-y-3 text-sm">
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Nama *</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  value={manual.name}
+                  onChange={(e) => setManual({ ...manual, name: e.target.value })}
+                  autoComplete="name"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">WhatsApp *</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  placeholder="08…"
+                  value={manual.whatsapp}
+                  onChange={(e) => setManual({ ...manual, whatsapp: e.target.value })}
+                  inputMode="tel"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Kota *</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  value={manual.city}
+                  onChange={(e) => setManual({ ...manual, city: e.target.value })}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Jenis kebutuhan *</span>
+                {lf.needTypes.length > 0 ? (
+                  <select
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                    value={manual.need_type}
+                    onChange={(e) => setManual({ ...manual, need_type: e.target.value })}
+                  >
+                    <option value="">— pilih —</option>
+                    {lf.needTypes.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                    value={manual.need_type}
+                    onChange={(e) => setManual({ ...manual, need_type: e.target.value })}
+                    placeholder="Contoh: kitchen set baru"
+                  />
+                )}
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Perkiraan ukuran</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  value={manual.size_estimate}
+                  onChange={(e) => setManual({ ...manual, size_estimate: e.target.value })}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Rentang budget</span>
+                {lf.budgetRanges.length > 0 ? (
+                  <select
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                    value={manual.budget_range}
+                    onChange={(e) => setManual({ ...manual, budget_range: e.target.value })}
+                  >
+                    <option value="">—</option>
+                    {lf.budgetRanges.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                    value={manual.budget_range}
+                    onChange={(e) => setManual({ ...manual, budget_range: e.target.value })}
+                  />
+                )}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-bold text-gray-600">Status pipeline</span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 bg-white text-sm"
+                    value={manual.crm_status}
+                    onChange={(e) => setManual({ ...manual, crm_status: e.target.value })}
+                  >
+                    {crm.pipelineStages.map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-xs font-bold text-gray-600">Kategori</span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 bg-white text-sm"
+                    value={manual.crm_category}
+                    onChange={(e) => setManual({ ...manual, crm_category: e.target.value })}
+                  >
+                    <option value="">—</option>
+                    {crm.categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-xs font-bold text-gray-600">Catatan</span>
+                <textarea
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[80px]"
+                  value={manual.notes}
+                  onChange={(e) => setManual({ ...manual, notes: e.target.value })}
+                />
+              </label>
+            </div>
+            {manualErr && <p className="text-red-600 text-sm mt-3">{manualErr}</p>}
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg border text-sm font-semibold"
+                disabled={manualBusy}
+                onClick={() => {
+                  setManualOpen(false);
+                  setManualErr(null);
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold disabled:opacity-60"
+                disabled={manualBusy}
+                onClick={() => void submitManual()}
+              >
+                {manualBusy ? "Menyimpan…" : "Simpan lead"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

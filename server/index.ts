@@ -163,6 +163,54 @@ app.delete("/api/admin/leads/:id", requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+/** Input lead manual dari panel admin (JSON). */
+app.post("/api/admin/leads", requireAuth, (req, res) => {
+  const b = req.body as Record<string, unknown>;
+  const name = String(b.name || "").trim();
+  const whatsapp = String(b.whatsapp || "").trim();
+  const city = String(b.city || "").trim();
+  const needType = String(b.need_type || b.needType || "").trim();
+  if (!name || !whatsapp || !city || !needType) {
+    res.status(400).json({ error: "Nama, WhatsApp, kota, dan jenis kebutuhan wajib diisi." });
+    return;
+  }
+  const sizeEstimate = String(b.size_estimate || b.sizeEstimate || "").trim() || null;
+  const budgetRange = String(b.budget_range || b.budgetRange || "").trim() || null;
+  const notes = String(b.notes || "").trim() || null;
+  const crmStatus = String(b.crm_status || "baru").trim() || "baru";
+  const crmCategory = String(b.crm_category || "").trim();
+
+  const info = db
+    .prepare(
+      `INSERT INTO leads (name, whatsapp, city, need_type, size_estimate, budget_range, notes, reference_path, user_agent, crm_status, crm_category, admin_notes, follow_up_count, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, '', 0, datetime('now'))`,
+    )
+    .run(
+      name,
+      whatsapp,
+      city,
+      needType,
+      sizeEstimate,
+      budgetRange,
+      notes,
+      "admin-manual",
+      crmStatus,
+      crmCategory,
+    );
+
+  void notifyLeadCreated({
+    name,
+    whatsapp,
+    city,
+    needType,
+    sizeEstimate: sizeEstimate || undefined,
+    budgetRange: budgetRange || undefined,
+    notes: notes || undefined,
+  });
+
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+
 app.post("/api/leads", upload.single("reference"), (req, res) => {
   const body = req.body as Record<string, string>;
   const name = String(body.name || "").trim();

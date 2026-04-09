@@ -249,6 +249,56 @@ export async function updateLead(id: string | number, patch: LeadUpdatePayload):
   }
 }
 
+export type CreateManualLeadPayload = {
+  name: string;
+  whatsapp: string;
+  city: string;
+  need_type: string;
+  size_estimate?: string | null;
+  budget_range?: string | null;
+  notes?: string | null;
+  crm_status?: string;
+  crm_category?: string;
+};
+
+/** Lead baru dari admin (tanpa upload file). */
+export async function createLeadManual(p: CreateManualLeadPayload): Promise<{ id?: string | number }> {
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseBrowser();
+    const { data, error } = await sb
+      .from("leads")
+      .insert({
+        name: p.name.trim(),
+        whatsapp: p.whatsapp.trim(),
+        city: p.city.trim(),
+        need_type: p.need_type.trim(),
+        size_estimate: p.size_estimate?.trim() || null,
+        budget_range: p.budget_range?.trim() || null,
+        notes: p.notes?.trim() || null,
+        user_agent: "admin-manual",
+        crm_status: (p.crm_status || "baru").trim() || "baru",
+        crm_category: (p.crm_category || "").trim(),
+        follow_up_count: 0,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: data?.id };
+  }
+  const r = await fetch("/api/admin/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(p),
+  });
+  if (!r.ok) {
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(j.error || "Gagal menyimpan lead");
+  }
+  const j = (await r.json()) as { id?: number };
+  return { id: j.id };
+}
+
 export async function deleteLead(id: string | number): Promise<void> {
   if (isSupabaseConfigured()) {
     const sb = getSupabaseBrowser();
