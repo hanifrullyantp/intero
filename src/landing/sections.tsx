@@ -12,7 +12,6 @@ import {
   Menu,
   Play,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import type { SiteSettings } from "@/types/site-settings";
 import { Button, Section, FadeUp } from "@/components/ui";
 import { cn } from "@/utils/cn";
@@ -126,63 +125,54 @@ export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
       >
         <Menu className={scrolled ? "text-navy-900" : "text-white"} />
       </button>
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Tutup menu"
-              className="fixed inset-0 z-[70] bg-black/50 md:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMenuOpen(false)}
-            />
-            <motion.div
-              role="dialog"
-              aria-modal
-              className="fixed top-0 right-0 z-[71] h-full w-[min(88vw,300px)] bg-navy-900 text-white shadow-2xl md:hidden flex flex-col"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            >
-              <div className="p-5 border-b border-white/10 flex justify-between items-center">
-                <span className="font-black text-lg">Menu</span>
-                <button
-                  type="button"
-                  className="p-2 rounded-lg hover:bg-white/10 text-sm font-bold"
+      {menuOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Tutup menu"
+            className="fixed inset-0 z-[70] bg-black/50 md:hidden landing-backdrop-in"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal
+            className="fixed top-0 right-0 z-[71] h-full w-[min(88vw,300px)] bg-navy-900 text-white shadow-2xl md:hidden flex flex-col landing-drawer-in will-change-transform"
+          >
+            <div className="p-5 border-b border-white/10 flex justify-between items-center">
+              <span className="font-black text-lg">Menu</span>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-white/10 text-sm font-bold"
+                onClick={() => setMenuOpen(false)}
+              >
+                Tutup
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
+              {settings.navbar.links.map((l) => (
+                <a
+                  key={l.href + l.label}
+                  href={l.href}
+                  className="px-4 py-3 rounded-xl font-medium hover:bg-white/10"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Tutup
-                </button>
-              </div>
-              <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
-                {settings.navbar.links.map((l) => (
-                  <a
-                    key={l.href + l.label}
-                    href={l.href}
-                    className="px-4 py-3 rounded-xl font-medium hover:bg-white/10"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {l.label}
-                  </a>
-                ))}
-                <button
-                  type="button"
-                  className="mt-4 mx-4 py-3 rounded-xl bg-gold-500 text-navy-900 font-black text-sm"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onScrollToPrice();
-                  }}
-                >
-                  {settings.navbar.ctaLabel}
-                </button>
-              </nav>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  {l.label}
+                </a>
+              ))}
+              <button
+                type="button"
+                className="mt-4 mx-4 py-3 rounded-xl bg-gold-500 text-navy-900 font-black text-sm"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onScrollToPrice();
+                }}
+              >
+                {settings.navbar.ctaLabel}
+              </button>
+            </nav>
+          </div>
+        </>
+      )}
     </nav>
   );
 }
@@ -199,7 +189,7 @@ export function LandingHero({ settings }: Pick<CTA, "settings">) {
       </div>
       <div className="max-w-6xl mx-auto w-full relative z-10 grid md:grid-cols-2 gap-12 items-center">
         <div>
-          <FadeUp>
+          <FadeUp eager>
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20 mb-6">
               <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
               <span className="text-xs font-bold tracking-widest uppercase text-gold-400">{h.badge}</span>
@@ -242,7 +232,7 @@ export function LandingHero({ settings }: Pick<CTA, "settings">) {
           </FadeUp>
         </div>
         <div className="relative space-y-5">
-          <FadeUp delay={0.2}>
+          <FadeUp eager delay={0.05}>
             <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl bg-black aspect-[4/5]">
               {yt && playHeroVideo ? (
                 <iframe
@@ -260,7 +250,16 @@ export function LandingHero({ settings }: Pick<CTA, "settings">) {
                     if (yt) setPlayHeroVideo(true);
                   }}
                 >
-                  <img src={h.imageUrl} alt={h.imageAlt} className="w-full h-full object-cover" />
+                  <img
+                    src={h.imageUrl}
+                    alt={h.imageAlt}
+                    className="w-full h-full object-cover"
+                    width={960}
+                    height={1200}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    decoding="async"
+                    fetchPriority="high"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy-900/70 to-transparent" />
                   {yt && (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -271,14 +270,10 @@ export function LandingHero({ settings }: Pick<CTA, "settings">) {
                   )}
                 </button>
               )}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-8 right-[-20px] bg-gold-500 text-navy-900 p-4 rounded-xl shadow-xl transform -rotate-12 z-20"
-              >
+              <div className="absolute top-8 right-[-20px] bg-gold-500 text-navy-900 p-4 rounded-xl shadow-xl z-20 landing-hero-badge-float will-change-transform">
                 <div className="font-black text-2xl tracking-tighter">{h.floatingBadgeTitle}</div>
                 <div className="text-xs font-bold">{h.floatingBadgeSubtitle}</div>
-              </motion.div>
+              </div>
             </div>
             {h.videoDisclaimer?.trim() && (
               <p className="text-center md:text-left text-[11px] sm:text-xs text-white/50 mt-3 px-1">
@@ -313,8 +308,8 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
         </FadeUp>
       </div>
       <div className="relative z-10 bg-white p-5 sm:p-8 md:p-12 rounded-[32px] shadow-2xl border border-gray-100 max-w-5xl mx-auto overflow-hidden">
-        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
-          <div className="order-1 md:order-none w-full">
+        <div className="flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.28fr)] md:items-stretch gap-8 md:gap-10 lg:gap-12">
+          <div className="order-1 md:order-none w-full min-w-0">
             <FadeUp>
               <h3
                 className="text-3xl md:text-4xl font-black text-navy-900 leading-tight mb-6"
@@ -324,15 +319,20 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
               <p className="text-lg text-gray-600 leading-relaxed mb-6">{p.body}</p>
             </FadeUp>
           </div>
-          <div className="order-2 md:order-none w-full">
+          <div className="order-2 md:order-none w-full min-w-0 flex md:items-center md:justify-end">
             <FadeUp delay={0.1}>
-              <div className="flex justify-center md:justify-end">
-                <div className="rounded-2xl overflow-hidden aspect-square border-4 border-gray-50 shadow-inner group w-full max-w-[280px] md:max-w-[260px] md:ml-auto">
+              <div className="w-full max-w-sm mx-auto md:max-w-none md:mx-0 md:w-full">
+                <div className="rounded-2xl overflow-hidden aspect-square border-4 border-gray-50 shadow-inner group w-full max-w-[320px] mx-auto md:max-w-[min(100%,480px)] md:ml-auto md:mr-0">
                 {heroProblemImg ? (
                   <img
                     src={heroProblemImg}
                     alt=""
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                    width={800}
+                    height={800}
+                    sizes="(max-width: 768px) 100vw, 42vw"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-100" />
@@ -355,7 +355,16 @@ export function LandingSolution({ settings }: { settings: SiteSettings }) {
         <div className="order-2 md:order-1">
           <FadeUp>
             <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-              <img src={sol.imageUrl} alt="" className="w-full h-[600px] object-cover" />
+              <img
+                src={sol.imageUrl}
+                alt=""
+                className="w-full h-[min(600px,70vh)] md:h-[600px] object-cover"
+                width={1200}
+                height={800}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                loading="lazy"
+                decoding="async"
+              />
               <div className="absolute top-6 left-6 bg-white/90 backdrop-blur px-6 py-3 rounded-full shadow-lg">
                 <span className="text-navy-900 font-black flex items-center gap-2">
                   <ShieldCheck className="text-green-600" /> {sol.badgeText}
@@ -406,15 +415,11 @@ export function LandingTaglineBig({ onScrollToPrice, settings }: CTA) {
   const t = settings.sections.taglineBig;
   return (
     <section className="bg-navy-950 py-32 px-6 text-center overflow-hidden">
-      <FadeUp>
+        <FadeUp>
         <div className="relative inline-block">
-          <motion.h2
-            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-            className="text-5xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-white to-gold-300 bg-[length:200%_auto] leading-tight"
-          >
+          <h2 className="landing-tagline-shimmer text-5xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-white to-gold-300 leading-tight will-change-[background-position]">
             {t.line1} <br /> {t.line2}
-          </motion.h2>
+          </h2>
         </div>
         <div className="mt-12">
           <Button variant="secondary" size="lg" type="button" onClick={onScrollToPrice}>
@@ -691,6 +696,11 @@ export function LandingProductDetails({ settings }: { settings: SiteSettings }) 
                   src={img}
                   alt=""
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  width={800}
+                  height={800}
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </FadeUp>
@@ -749,6 +759,11 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                     src={item.img}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    width={800}
+                    height={1000}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    loading="lazy"
+                    decoding="async"
                   />
                   {item.videoUrl && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -845,43 +860,30 @@ export function LandingStickyCta({ onScrollToPrice, settings }: CTA) {
       window.removeEventListener("resize", tick);
     };
   }, []);
+  if (!visible) return null;
   return (
-    <AnimatePresence>
-      {visible && (
-        <>
-          <motion.div
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
-            transition={{ type: "spring", damping: 24 }}
-            className="fixed bottom-3 left-3 right-[4.5rem] z-[60] md:hidden pointer-events-none"
-          >
-            <div className="pointer-events-auto rounded-xl border border-amber-300/90 bg-gradient-to-r from-amber-50 via-amber-100/95 to-amber-200/85 px-3 py-2.5 shadow-[0_8px_28px_-6px_rgba(180,83,9,0.35)] text-[12px] sm:text-sm text-amber-950 leading-snug">
-              <span className="font-semibold">{sticky.topLine}</span>
-              <button
-                type="button"
-                className="ml-1 font-black underline decoration-amber-800/40 underline-offset-2"
-                onClick={onScrollToPrice}
-              >
-                {sticky.mainLine}
-              </button>
-            </div>
-          </motion.div>
-          <motion.button
+    <>
+      <div className="fixed bottom-3 left-3 right-[4.5rem] z-[60] md:hidden pointer-events-none landing-sticky-in will-change-transform">
+        <div className="pointer-events-auto rounded-xl border border-amber-300/90 bg-gradient-to-r from-amber-50 via-amber-100/95 to-amber-200/85 px-3 py-2.5 shadow-[0_8px_28px_-6px_rgba(180,83,9,0.35)] text-[12px] sm:text-sm text-amber-950 leading-snug">
+          <span className="font-semibold">{sticky.topLine}</span>
+          <button
             type="button"
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ type: "spring", damping: 22 }}
-            aria-label="Lihat paket harga"
-            className="fixed bottom-4 right-4 z-[61] md:hidden h-14 w-14 rounded-full bg-[#25D366] text-white shadow-2xl flex items-center justify-center border-[3px] border-white ring-2 ring-black/5"
+            className="ml-1 font-black underline decoration-amber-800/40 underline-offset-2"
             onClick={onScrollToPrice}
           >
-            <MessageCircle className="h-7 w-7" strokeWidth={2.4} />
-          </motion.button>
-        </>
-      )}
-    </AnimatePresence>
+            {sticky.mainLine}
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        aria-label="Lihat paket harga"
+        className="fixed bottom-4 right-4 z-[61] md:hidden h-14 w-14 rounded-full bg-[#25D366] text-white shadow-2xl flex items-center justify-center border-[3px] border-white ring-2 ring-black/5 landing-sticky-in will-change-transform"
+        onClick={onScrollToPrice}
+      >
+        <MessageCircle className="h-7 w-7" strokeWidth={2.4} />
+      </button>
+    </>
   );
 }
 
@@ -908,18 +910,16 @@ export function LandingFaq({ settings }: { settings: SiteSettings }) {
                 {item.question}
                 <span className="text-gold-500 text-xl">{isOpen ? "−" : "+"}</span>
               </button>
-              <AnimatePresence initial={false}>
-                {isOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="px-6 pb-4 text-gray-600 leading-relaxed">{item.answer}</p>
-                  </motion.div>
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-out",
+                  isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                 )}
-              </AnimatePresence>
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <p className="px-6 pb-4 text-gray-600 leading-relaxed">{item.answer}</p>
+                </div>
+              </div>
             </div>
           );
         })}

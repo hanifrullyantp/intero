@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useLeadModal } from "@/context/LeadModalContext";
 import { scrollToPriceSection } from "@/lib/scrollToPrice";
 import { usePublicSettings } from "@/context/PublicSettingsContext";
@@ -29,6 +29,24 @@ export default function LandingPage() {
   const { settings, loading } = usePublicSettings();
   const { open } = useLeadModal();
   const onScrollToPrice = useCallback(() => scrollToPriceSection(), []);
+
+  useEffect(() => {
+    if (loading) return;
+    const href = settings.sections.hero.imageUrl?.trim();
+    if (!href) return;
+    const id = "preload-lcp-hero-img";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "preload";
+    link.as = "image";
+    link.href = href;
+    link.setAttribute("fetchpriority", "high");
+    document.head.appendChild(link);
+    return () => {
+      link.remove();
+    };
+  }, [loading, settings.sections.hero.imageUrl]);
 
   if (loading) {
     return (

@@ -8,3 +8,114 @@
   --color-gold-500: #f59e0b;
   --color-gold-600: #d97706;
 }
+
+/* Performa: animasi hanya transform/opacity (komposit), tanpa framer di jalur utama */
+@keyframes landing-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes landing-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes landing-tagline-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+@keyframes landing-hero-badge-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-12deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-12deg);
+  }
+}
+.landing-backdrop-in {
+  animation: landing-backdrop-in 0.2s ease-out both;
+}
+.landing-drawer-in {
+  animation: landing-drawer-in 0.28s ease-out both;
+}
+.landing-tagline-shimmer {
+  background-size: 200% auto;
+  animation: landing-tagline-shimmer 5s linear infinite;
+}
+.landing-hero-badge-float {
+  animation: landing-hero-badge-float 4s ease-in-out infinite;
+}
+@keyframes landing-sticky-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.landing-sticky-in {
+  animation: landing-sticky-in 0.35s ease-out both;
+}
+@keyframes landing-modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes landing-modal-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.landing-modal-backdrop-in {
+  animation: landing-modal-backdrop-in 0.2s ease-out both;
+}
+.landing-modal-panel-in {
+  animation: landing-modal-panel-in 0.22s ease-out both;
+}
+@keyframes landing-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.landing-toast-in {
+  animation: landing-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-backdrop-in,
+  .landing-drawer-in,
+  .landing-tagline-shimmer,
+  .landing-hero-badge-float,
+  .landing-sticky-in,
+  .landing-modal-backdrop-in,
+  .landing-modal-panel-in,
+  .landing-toast-in {
+    animation: none !important;
+  }
+  .landing-drawer-in {
+    transform: translateX(0);
+  }
+}

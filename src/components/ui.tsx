@@ -1,5 +1,4 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/utils/cn";
 
 export const Button = React.forwardRef<
@@ -61,19 +60,59 @@ export const Section = ({
   );
 };
 
+/** Reveal ringan tanpa framer-motion. `eager` = langsung terlihat (penting untuk LCP hero). */
 export const FadeUp = ({
   children,
   delay = 0,
+  eager = false,
 }: {
   children: React.ReactNode;
   delay?: number;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.7, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
-  >
-    {children}
-  </motion.div>
-);
+  eager?: boolean;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(eager);
+
+  useEffect(() => {
+    if (eager) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const show = () => setVisible(true);
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight + 100 && r.bottom > -100) {
+      show();
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          show();
+          io.disconnect();
+        }
+      },
+      { rootMargin: "100px 0px", threshold: 0.01 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [eager]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "will-change-[opacity,transform]",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+      )}
+      style={{
+        transitionProperty: "opacity, transform",
+        transitionDuration: "0.65s",
+        transitionTimingFunction: "cubic-bezier(0.21, 0.47, 0.32, 0.98)",
+        transitionDelay: visible ? `${delay}s` : "0s",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
