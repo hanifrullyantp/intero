@@ -92,6 +92,24 @@ export default function ContactPage() {
             }
           />
         </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-600 mb-1">
+            Pesan WhatsApp jika form ditutup tanpa kirim
+          </label>
+          <p className="text-xs text-gray-500 mb-1">
+            Pengguna yang menutup popup konsultasi (X atau di luar form) akan diarahkan ke WA dengan teks ini.
+          </p>
+          <textarea
+            className="w-full rounded-lg border px-3 py-2 text-sm min-h-[72px]"
+            value={settings.leadForm.dismissRedirectMessage ?? ""}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                leadForm: { ...s.leadForm, dismissRedirectMessage: e.target.value },
+              }))
+            }
+          />
+        </div>
       </div>
     </div>
   );

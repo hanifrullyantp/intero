@@ -2,6 +2,8 @@
  * Shared site/CMS model — keep in sync with server seed & admin forms.
  */
 
+import { coerceFacebookStandardEvent } from "@/lib/facebookPixelEvents";
+
 export type StepIconName =
   | "MessageCircle"
   | "Layout"
@@ -74,6 +76,8 @@ export interface SiteSettings {
   leadForm: {
     needTypes: string[];
     budgetRanges: string[];
+    /** Pesan prateks WA saat pengguna menutup form tanpa mengirim. */
+    dismissRedirectMessage: string;
   };
   sections: LandingSections;
 }
@@ -245,8 +249,27 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
     s.sections.hero
   ) {
     const base = s as SiteSettings;
+    const def = getDefaultSiteSettings();
+    const ev = base.tracking?.events ?? def.tracking.events;
+    const leadForm = {
+      ...def.leadForm,
+      ...(base.leadForm ?? {}),
+      dismissRedirectMessage:
+        base.leadForm?.dismissRedirectMessage?.trim() ||
+        def.leadForm.dismissRedirectMessage,
+    };
     return {
       ...base,
+      leadForm,
+      tracking: {
+        ...def.tracking,
+        ...(base.tracking ?? {}),
+        events: {
+          pageView: coerceFacebookStandardEvent(ev?.pageView, "PageView"),
+          lead: coerceFacebookStandardEvent(ev?.lead, "Lead"),
+          contactClick: coerceFacebookStandardEvent(ev?.contactClick, "Contact"),
+        },
+      },
       sections: patchLegacyLandingData(base.sections),
     };
   }
@@ -373,6 +396,8 @@ export function getDefaultSiteSettings(): SiteSettings {
         "Di atas 100jt",
         "Belum tahu",
       ],
+      dismissRedirectMessage:
+        "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.",
     },
     sections: {
       hero: {

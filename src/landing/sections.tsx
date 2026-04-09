@@ -26,9 +26,12 @@ type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSett
 function HeroPrimaryCtaLink({
   href,
   children,
+  onIntent,
 }: {
   href: string;
   children: ReactNode;
+  /** Pixel / analytics: klik tombol utama hero (pesan / ke harga). */
+  onIntent?: () => void;
 }) {
   const external = /^https?:\/\//i.test(href) || href.startsWith("//");
   const hashOnly = href.startsWith("#");
@@ -39,13 +42,19 @@ function HeroPrimaryCtaLink({
   );
   if (external || hashOnly) {
     return (
-      <a href={href} className={cls}>
+      <a
+        href={href}
+        className={cls}
+        onClick={() => {
+          onIntent?.();
+        }}
+      >
         {children}
       </a>
     );
   }
   return (
-    <Link to={href} className={cls}>
+    <Link to={href} className={cls} onClick={() => onIntent?.()}>
       {children}
     </Link>
   );
@@ -177,7 +186,10 @@ export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
   );
 }
 
-export function LandingHero({ settings }: Pick<CTA, "settings">) {
+export function LandingHero({
+  settings,
+  onPrimaryCtaIntent,
+}: Pick<CTA, "settings"> & { onPrimaryCtaIntent?: () => void }) {
   const h = settings.sections.hero;
   const yt = getYoutubeEmbedSrc(h.youtubeUrl);
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
@@ -201,7 +213,7 @@ export function LandingHero({ settings }: Pick<CTA, "settings">) {
             <p className="text-2xl md:text-3xl font-bold text-blue-100 mb-6 italic">{h.subtitle}</p>
             <p className="text-lg md:text-xl text-blue-50/80 mb-10 leading-relaxed max-w-lg">{h.description}</p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12 items-stretch sm:items-center">
-              <HeroPrimaryCtaLink href={h.primaryCtaHref}>
+              <HeroPrimaryCtaLink href={h.primaryCtaHref} onIntent={onPrimaryCtaIntent}>
                 <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
                 {h.primaryCta}
                 <ArrowRight
@@ -942,7 +954,6 @@ export function LandingFooter({
     if (d) window.location.href = `tel:+${d}`;
   };
   const onWaToPrice = () => {
-    trackContactClick(settings);
     onScrollToPrice();
   };
   const onMailClick = () => {

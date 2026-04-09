@@ -3,7 +3,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import type { SiteSettings } from "../src/types/site-settings.ts";
-import { getDefaultSiteSettings } from "../src/types/site-settings.ts";
+import {
+  getDefaultSiteSettings,
+  normalizeSiteSettings,
+} from "../src/types/site-settings.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "data");
@@ -47,7 +50,7 @@ export function getSettings(): SiteSettings {
     return defaults;
   }
   try {
-    return JSON.parse(row.value) as SiteSettings;
+    return normalizeSiteSettings(JSON.parse(row.value));
   } catch {
     const defaults = getDefaultSiteSettings();
     saveSettings(defaults);

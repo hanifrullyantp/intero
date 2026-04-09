@@ -9,9 +9,13 @@ declare global {
 }
 
 export function trackFacebook(eventName: string, params?: Record<string, unknown>) {
-  if (typeof window === "undefined" || !window.fbq) return;
-  if (params) window.fbq("track", eventName, params);
-  else window.fbq("track", eventName);
+  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
+  try {
+    if (params) window.fbq("track", eventName, params);
+    else window.fbq("track", eventName);
+  } catch {
+    /* fbq belum siap */
+  }
 }
 
 export function trackContactClick(settings: SiteSettings) {
@@ -74,6 +78,9 @@ export function injectMetaAndLinks(s: SiteSettings) {
   );
 }
 
+/**
+ * Memuat Meta Pixel. Memakai script.textContent (bukan innerHTML) agar browser mengeksekusi snippet.
+ */
 export function injectFacebookPixel(
   pixelId: string,
   enabled: boolean,
@@ -82,34 +89,45 @@ export function injectFacebookPixel(
   if (!enabled || !pixelId) return;
   const cleanId = pixelId.replace(/\D/g, "");
   if (!cleanId) return;
-  const pv = pageViewEvent || "PageView";
-  if (typeof window.fbq === "function") {
-    window.fbq("track", pv);
+  const pv = (pageViewEvent || "PageView").replace(/[^a-zA-Z0-9_]/g, "") || "PageView";
+
+  const existing = document.getElementById("intero-fbq-inline");
+  if (existing) {
+    if (typeof window.fbq === "function") {
+      try {
+        window.fbq("track", pv);
+      } catch {
+        /* ignore */
+      }
+    }
     return;
   }
-  if (document.getElementById("intero-fbq-inline")) return;
+
   const scr = document.createElement("script");
   scr.id = "intero-fbq-inline";
-  scr.innerHTML = `
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${cleanId}');
-fbq('track', '${pv.replace(/'/g, "\\'")}');
-  `;
+  scr.textContent = [
+    "!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?",
+    "n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;",
+    "n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;",
+    "t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,",
+    "document,'script','https://connect.facebook.net/en_US/fbevents.js');",
+    `fbq('init','${cleanId}');`,
+    `fbq('track','${pv}');`,
+  ].join("");
   document.head.appendChild(scr);
-  const nos = document.createElement("noscript");
-  nos.id = "intero-fbq-noscript";
-  const img = document.createElement("img");
-  img.height = 1;
-  img.width = 1;
-  img.style.display = "none";
-  img.alt = "";
-  img.src = `https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1`;
-  nos.appendChild(img);
-  document.body.appendChild(nos);
+
+  if (!document.getElementById("intero-fbq-noscript")) {
+    const nos = document.createElement("noscript");
+    nos.id = "intero-fbq-noscript";
+    const img = document.createElement("img");
+    img.height = 1;
+    img.width = 1;
+    img.style.display = "none";
+    img.alt = "";
+    img.src = `https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1`;
+    nos.appendChild(img);
+    document.body.appendChild(nos);
+  }
 }
 
 let gaIdInjected = "";

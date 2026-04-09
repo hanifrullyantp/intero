@@ -91,7 +91,8 @@ export async function fetchPublicSettings(): Promise<SiteSettings> {
   }
   const r = await fetch("/api/public/settings");
   if (!r.ok) throw new Error("Gagal memuat pengaturan");
-  return r.json() as Promise<SiteSettings>;
+  const data = (await r.json()) as unknown;
+  return normalizeSiteSettings(data);
 }
 
 export async function loginAdmin(usernameOrEmail: string, password: string): Promise<void> {
@@ -142,7 +143,8 @@ export async function fetchAdminSettings(): Promise<SiteSettings> {
   }
   const r = await fetch("/api/admin/settings", { credentials: "include" });
   if (!r.ok) throw new Error("Unauthorized");
-  return r.json() as Promise<SiteSettings>;
+  const data = (await r.json()) as unknown;
+  return normalizeSiteSettings(data);
 }
 
 export async function saveAdminSettings(s: SiteSettings): Promise<void> {

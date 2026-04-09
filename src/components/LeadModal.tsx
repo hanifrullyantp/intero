@@ -14,6 +14,20 @@ export function LeadModal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Tutup form → arahkan ke WA (kecuali sedang submit). */
+  function dismissToWhatsApp() {
+    if (busy) return;
+    const phone = settings.contact.whatsapp.replace(/\D/g, "");
+    if (phone) {
+      const text =
+        settings.leadForm.dismissRedirectMessage?.trim() ||
+        "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.";
+      window.location.href = whatsappUrl(settings.contact.whatsapp, text);
+      return;
+    }
+    close();
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -57,7 +71,7 @@ export function LeadModal() {
         type="button"
         aria-label="Tutup"
         className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm landing-modal-backdrop-in"
-        onClick={() => !busy && close()}
+        onClick={dismissToWhatsApp}
       />
       <div className="fixed inset-0 z-[101] flex items-center justify-center p-3 pointer-events-none">
         <div
@@ -73,7 +87,7 @@ export function LeadModal() {
             <button
               type="button"
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
-              onClick={() => !busy && close()}
+              onClick={dismissToWhatsApp}
             >
               <X size={22} />
             </button>
