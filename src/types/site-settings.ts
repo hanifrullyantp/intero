@@ -178,7 +178,7 @@ export interface LandingSections {
     id: string;
     eyebrow: string;
     title: string;
-    projects: { title: string; area: string; img: string }[];
+    projects: { title: string; area: string; img: string; videoUrl: string | null }[];
   };
   whyNow: {
     titleHtml: string;
@@ -212,12 +212,38 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
     const heroPatch: Partial<typeof hero> = {};
     if (hero.youtubeUrl === undefined) heroPatch.youtubeUrl = null;
     if (hero.primaryCtaHref === undefined) heroPatch.primaryCtaHref = "/pricelist";
+    const galleryProjects = base.sections.gallery?.projects ?? [];
+    const galleryNeedsPatch = galleryProjects.some((p) => p.videoUrl === undefined);
     if (Object.keys(heroPatch).length > 0) {
       return {
         ...base,
         sections: {
           ...base.sections,
           hero: { ...hero, ...heroPatch },
+          gallery: galleryNeedsPatch
+            ? {
+                ...base.sections.gallery,
+                projects: galleryProjects.map((p) => ({
+                  ...p,
+                  videoUrl: p.videoUrl ?? null,
+                })),
+              }
+            : base.sections.gallery,
+        },
+      };
+    }
+    if (galleryNeedsPatch) {
+      return {
+        ...base,
+        sections: {
+          ...base.sections,
+          gallery: {
+            ...base.sections.gallery,
+            projects: galleryProjects.map((p) => ({
+              ...p,
+              videoUrl: p.videoUrl ?? null,
+            })),
+          },
         },
       };
     }
@@ -602,31 +628,37 @@ export function getDefaultSiteSettings(): SiteSettings {
             title: "Modern Minimalist",
             area: "Jakarta Selatan",
             img: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
           {
             title: "Elegant Grey",
             area: "Tangerang",
             img: "https://images.unsplash.com/photo-1556912177-c54030639a6d?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
           {
             title: "Luxury White",
             area: "Bekasi",
             img: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
           {
             title: "Industrial Gold",
             area: "Depok",
             img: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
           {
             title: "Classic Wood Look",
             area: "Jakarta Pusat",
             img: "https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
           {
             title: "Compact Suite",
             area: "Bogor",
             img: "https://images.unsplash.com/photo-1556909190-7336338e55e5?auto=format&fit=crop&w=800&q=80",
+            videoUrl: null,
           },
         ],
       },

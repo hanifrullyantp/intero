@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Phone,
   Menu,
+  Play,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SiteSettings } from "@/types/site-settings";
@@ -118,6 +119,7 @@ export function LandingNavbar({ onLead, settings }: CTA) {
 export function LandingHero({ settings }: CTA) {
   const h = settings.sections.hero;
   const yt = getYoutubeEmbedSrc(h.youtubeUrl);
+  const [playHeroVideo, setPlayHeroVideo] = useState(false);
   return (
     <section className="relative min-h-[100vh] flex items-center pt-24 pb-12 px-6 bg-navy-900 text-white overflow-hidden">
       <div className="absolute inset-0 opacity-20">
@@ -167,20 +169,34 @@ export function LandingHero({ settings }: CTA) {
         </div>
         <div className="relative space-y-5">
           <FadeUp delay={0.2}>
-            {yt && (
-              <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl aspect-video bg-black">
+            <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl bg-black aspect-[4/5]">
+              {yt && playHeroVideo ? (
                 <iframe
                   title="Video hero"
-                  src={`${yt}?rel=0`}
+                  src={`${yt}?autoplay=1&rel=0`}
                   className="absolute inset-0 w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
-              </div>
-            )}
-            <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl">
-              <img src={h.imageUrl} alt={h.imageAlt} className="w-full aspect-[4/5] object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy-900/60 to-transparent" />
+              ) : (
+                <button
+                  type="button"
+                  className="absolute inset-0 text-left"
+                  onClick={() => {
+                    if (yt) setPlayHeroVideo(true);
+                  }}
+                >
+                  <img src={h.imageUrl} alt={h.imageAlt} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-900/70 to-transparent" />
+                  {yt && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="h-16 w-16 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
+                        <Play className="h-7 w-7 ml-1" fill="currentColor" />
+                      </span>
+                    </div>
+                  )}
+                </button>
+              )}
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -202,6 +218,7 @@ export function LandingHero({ settings }: CTA) {
 
 export function LandingProblem({ settings }: { settings: SiteSettings }) {
   const p = settings.sections.problem;
+  const heroProblemImg = p.images[0] || "";
   return (
     <Section bg="gray" className="relative overflow-hidden">
       <div className="absolute top-0 right-0 p-20 opacity-[0.03] rotate-12">
@@ -216,8 +233,8 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
           <p className="text-xl text-navy-800/70 max-w-2xl mx-auto leading-relaxed">{p.intro}</p>
         </FadeUp>
       </div>
-      <div className="relative z-10 bg-white p-8 md:p-16 rounded-[40px] shadow-2xl border border-gray-100 max-w-4xl mx-auto overflow-hidden">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div className="relative z-10 bg-white p-5 sm:p-8 md:p-12 rounded-[32px] shadow-2xl border border-gray-100 max-w-5xl mx-auto overflow-hidden">
+        <div className="grid grid-cols-2 gap-4 sm:gap-8 items-center">
           <div>
             <FadeUp>
               <h3
@@ -228,19 +245,19 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
               <p className="text-lg text-gray-600 leading-relaxed mb-6">{p.body}</p>
             </FadeUp>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {p.images.map((img, i) => (
-              <FadeUp key={i} delay={i * 0.1}>
-                <div className="rounded-2xl overflow-hidden aspect-square border-4 border-gray-50 shadow-inner group">
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                  />
-                </div>
-              </FadeUp>
-            ))}
-          </div>
+          <FadeUp delay={0.1}>
+            <div className="rounded-2xl overflow-hidden aspect-[4/6] sm:aspect-[4/7] md:aspect-[4/8] border-4 border-gray-50 shadow-inner group ml-auto w-full max-w-[260px]">
+              {heroProblemImg ? (
+                <img
+                  src={heroProblemImg}
+                  alt=""
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100" />
+              )}
+            </div>
+          </FadeUp>
         </div>
       </div>
     </Section>
@@ -601,6 +618,7 @@ export function LandingProductDetails({ settings }: { settings: SiteSettings }) 
 
 export function LandingGallery({ settings }: { settings: SiteSettings }) {
   const g = settings.sections.gallery;
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
   return (
     <Section id={g.id}>
       <div className="text-center mb-16">
@@ -615,12 +633,39 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
         {g.projects.map((item, i) => (
           <FadeUp key={i} delay={i * 0.05}>
             <div className="group relative rounded-[30px] overflow-hidden shadow-lg aspect-[4/5]">
-              <img
-                src={item.img}
-                alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+              {item.videoUrl && activeVideo === item.title + i ? (
+                <iframe
+                  title={item.title}
+                  src={`${getYoutubeEmbedSrc(item.videoUrl) ?? ""}?autoplay=1&rel=0`}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="w-full h-full text-left"
+                  onClick={() => {
+                    if (item.videoUrl && getYoutubeEmbedSrc(item.videoUrl)) {
+                      setActiveVideo(item.title + i);
+                    }
+                  }}
+                >
+                  <img
+                    src={item.img}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                  {item.videoUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="h-14 w-14 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
+                        <Play className="h-6 w-6 ml-1" fill="currentColor" />
+                      </span>
+                    </div>
+                  )}
+                </button>
+              )}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
                 <h4 className="text-white text-xl font-black">{item.title}</h4>
                 <p className="text-gold-400 font-bold">{item.area}</p>
               </div>

@@ -428,25 +428,13 @@ export default function SectionsVisualPage() {
               />
             </Field>
             <MediaField
-              label="Gambar problem 1"
+              label="Gambar problem (portrait)"
+              hint="Dipakai 1 gambar saja di sisi kanan (rasio potrait)."
               value={sec.problem.images[0] ?? ""}
               onChange={(url) =>
                 patchSections((p) => {
-                  const images = [...(p.problem.images.length ? p.problem.images : ["", ""])];
+                  const images = [...(p.problem.images.length ? p.problem.images : [""])];
                   images[0] = url;
-                  if (images.length < 2) images.push(p.problem.images[1] ?? "");
-                  return { ...p, problem: { ...p.problem, images } };
-                })
-              }
-            />
-            <MediaField
-              label="Gambar problem 2"
-              value={sec.problem.images[1] ?? ""}
-              onChange={(url) =>
-                patchSections((p) => {
-                  const images = [...p.problem.images];
-                  while (images.length < 2) images.push("");
-                  images[1] = url;
                   return { ...p, problem: { ...p.problem, images } };
                 })
               }
@@ -632,7 +620,7 @@ export default function SectionsVisualPage() {
                       ...p.gallery,
                       projects: [
                         ...p.gallery.projects,
-                        { title: "Proyek baru", area: "Kota", img: "" },
+                        { title: "Proyek baru", area: "Kota", img: "", videoUrl: null },
                       ],
                     },
                   }))
@@ -699,6 +687,23 @@ export default function SectionsVisualPage() {
                       })
                     }
                   />
+                  <Field label="URL video YouTube">
+                    <input
+                      className="w-full rounded-lg border px-3 py-2 text-sm bg-white"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={proj.videoUrl ?? ""}
+                      onChange={(e) =>
+                        patchSections((p) => {
+                          const projects = [...p.gallery.projects];
+                          projects[i] = {
+                            ...projects[i]!,
+                            videoUrl: e.target.value.trim() || null,
+                          };
+                          return { ...p, gallery: { ...p.gallery, projects } };
+                        })
+                      }
+                    />
+                  </Field>
                 </div>
               ))}
             </div>
