@@ -131,7 +131,7 @@ export function injectFacebookPixel(
     img.referrerPolicy = "no-referrer-when-downgrade";
     img.src = `https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1`;
     nos.appendChild(img);
-    document.body.appendChild(nos);
+    document.body.insertBefore(nos, document.body.firstChild);
   }
 }
 

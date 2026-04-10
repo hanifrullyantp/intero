@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from "react";
@@ -43,7 +44,7 @@ export function PublicSettingsProvider({ children }: { children: React.ReactNode
     void reload();
   }, [reload]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (loading) return;
     injectMetaAndLinks(settings);
     injectFacebookPixel(

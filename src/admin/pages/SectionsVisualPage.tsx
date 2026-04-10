@@ -267,7 +267,7 @@ export default function SectionsVisualPage() {
             </div>
             <Field
               label="Link tombol utama (href)"
-              hint="Untuk scroll ke blok harga di landing: #harga. Contoh lain: /pricelist, https://..."
+              hint="#harga atau tautan wa.me / WhatsApp: di halaman depan akan scroll ke section harga (tanpa tab baru). URL situs lain: dibuka di tab baru."
             >
               <input
                 className="w-full rounded-lg border px-3 py-2 text-sm font-mono text-xs"
@@ -293,12 +293,12 @@ export default function SectionsVisualPage() {
               />
             </Field>
             <Field
-              label="Video YouTube"
-              hint="Tempel URL lengkap (youtube.com/watch, youtu.be, atau /shorts/). Kosongkan bila tidak pakai video."
+              label="Video hero (YouTube atau TikTok)"
+              hint="YouTube: watch / Shorts. TikTok: URL halaman video (bukan vm.tiktok.com). Kosongkan bila hanya gambar."
             >
               <input
                 className="w-full rounded-lg border px-3 py-2 text-sm"
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="YouTube atau https://www.tiktok.com/@user/video/…"
                 value={sec.hero.youtubeUrl ?? ""}
                 onChange={(e) =>
                   patchSections((p) => ({

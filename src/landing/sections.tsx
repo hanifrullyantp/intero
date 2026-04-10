@@ -19,46 +19,49 @@ import { trackContactClick } from "@/lib/tracking";
 import { Link } from "react-router-dom";
 import { BonusIcon, CmpIcon, HeroIcon, StepIcon } from "@/landing/iconMap";
 import { Countdown } from "@/landing/Countdown";
-import { getYoutubeEmbedSrc } from "@/lib/youtube";
 import { getGalleryVideoEmbedSrc } from "@/lib/videoEmbed";
 
 type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSettings };
 
+/** Konsultasi WA / anchor # — scroll ke section harga di halaman ini (tanpa membuka tab baru). */
+function heroPrimaryUsesScrollToPrice(href: string): boolean {
+  const h = href.trim().toLowerCase();
+  if (!href.trim()) return false;
+  if (h.startsWith("#")) return true;
+  if (h.includes("wa.me") || h.includes("whatsapp.com") || h.includes("api.whatsapp.com")) return true;
+  return false;
+}
+
 function HeroPrimaryCtaLink({
   href,
   children,
-  onIntent,
+  onScrollToPrice,
 }: {
   href: string;
   children: ReactNode;
-  /** Pixel / analytics: klik tombol utama hero (pesan / ke harga). */
-  onIntent?: () => void;
+  onScrollToPrice: () => void;
 }) {
-  const external = /^https?:\/\//i.test(href) || href.startsWith("//");
-  const hashOnly = href.startsWith("#");
   const cls = cn(
     "group inline-flex items-center justify-center gap-2 rounded-full transition-all duration-300 active:scale-95",
     "bg-gold-500 text-navy-900 hover:bg-gold-400 shadow-lg",
     "px-7 py-3 sm:px-8 sm:py-3.5 text-sm sm:text-base font-bold uppercase tracking-wide",
   );
-  if (external || hashOnly) {
+  if (heroPrimaryUsesScrollToPrice(href)) {
     return (
-      <a
-        href={href}
-        className={cls}
-        onClick={() => {
-          onIntent?.();
-        }}
-      >
+      <button type="button" className={cls} onClick={() => onScrollToPrice()}>
+        {children}
+      </button>
+    );
+  }
+  const external = /^https?:\/\//i.test(href) || href.startsWith("//");
+  if (external) {
+    return (
+      <a href={href} className={cls} target="_blank" rel="noopener noreferrer">
         {children}
       </a>
     );
   }
-  return (
-    <Link to={href} className={cls} onClick={() => onIntent?.()}>
-      {children}
-    </Link>
-  );
+  return <Link to={href} className={cls}>{children}</Link>;
 }
 
 export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
@@ -189,10 +192,10 @@ export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
 
 export function LandingHero({
   settings,
-  onPrimaryCtaIntent,
-}: Pick<CTA, "settings"> & { onPrimaryCtaIntent?: () => void }) {
+  onScrollToPrice,
+}: Pick<CTA, "settings" | "onScrollToPrice">) {
   const h = settings.sections.hero;
-  const yt = getYoutubeEmbedSrc(h.youtubeUrl);
+  const heroVideo = getGalleryVideoEmbedSrc(h.youtubeUrl);
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
   return (
     <section className="relative min-h-[100vh] flex items-center pt-24 pb-12 px-6 bg-navy-900 text-white overflow-hidden">
@@ -214,7 +217,7 @@ export function LandingHero({
             <p className="text-2xl md:text-3xl font-bold text-blue-100 mb-6 italic">{h.subtitle}</p>
             <p className="text-lg md:text-xl text-blue-50/80 mb-10 leading-relaxed max-w-lg">{h.description}</p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12 items-stretch sm:items-center">
-              <HeroPrimaryCtaLink href={h.primaryCtaHref} onIntent={onPrimaryCtaIntent}>
+              <HeroPrimaryCtaLink href={h.primaryCtaHref} onScrollToPrice={onScrollToPrice}>
                 <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
                 {h.primaryCta}
                 <ArrowRight
@@ -247,20 +250,25 @@ export function LandingHero({
         <div className="relative space-y-5">
           <FadeUp eager delay={0.05}>
             <div className="relative rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl bg-black aspect-[4/5]">
-              {yt && playHeroVideo ? (
+              {heroVideo && playHeroVideo ? (
                 <iframe
                   title="Video hero"
-                  src={`${yt}?autoplay=1&rel=0`}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  src={
+                    heroVideo.kind === "youtube"
+                      ? `${heroVideo.src}?autoplay=1&rel=0`
+                      : `${heroVideo.src}?autoplay=1`
+                  }
+                  className="absolute inset-0 z-10 w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
                 />
               ) : (
                 <button
                   type="button"
-                  className="absolute inset-0 text-left"
+                  className="absolute inset-0 text-left z-0"
                   onClick={() => {
-                    if (yt) setPlayHeroVideo(true);
+                    if (heroVideo) setPlayHeroVideo(true);
                   }}
                 >
                   <img
@@ -274,8 +282,8 @@ export function LandingHero({
                     fetchPriority="high"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy-900/70 to-transparent" />
-                  {yt && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                  {heroVideo && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <span className="h-16 w-16 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
                         <Play className="h-7 w-7 ml-1" fill="currentColor" />
                       </span>
@@ -748,7 +756,7 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
       </div>
       <div className={gridClass}>
         {visibleProjects.map((item, i) => {
-          const cardKey = `${item.title}-${item.area}-${i}`;
+          const cardKey = `g-${g.id}-${i}`;
           const playing = Boolean(item.videoUrl && activeVideo === cardKey);
           const emb = playing && item.videoUrl ? getGalleryVideoEmbedSrc(item.videoUrl) : null;
           const embedSrc =
@@ -763,14 +771,15 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                   <iframe
                     title={item.title}
                     src={embedSrc}
-                    className="w-full h-full border-0"
+                    className="absolute inset-0 z-20 w-full h-full border-0 bg-black"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
                   />
                 ) : (
                   <button
                     type="button"
-                    className="w-full h-full text-left"
+                    className="relative z-0 w-full h-full min-h-0 text-left block"
                     onClick={() => {
                       if (item.videoUrl && getGalleryVideoEmbedSrc(item.videoUrl)) {
                         setActiveVideo(cardKey);
@@ -788,7 +797,7 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                       decoding="async"
                     />
                     {item.videoUrl && getGalleryVideoEmbedSrc(item.videoUrl) && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                         <span className="h-14 w-14 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
                           <Play className="h-6 w-6 ml-1" fill="currentColor" />
                         </span>
@@ -796,10 +805,18 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                     )}
                   </button>
                 )}
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
-                  <h4 className="text-white text-xl font-black">{item.title}</h4>
-                  <p className="text-gold-400 font-bold">{item.area}</p>
-                </div>
+                {!playing && (
+                  <div className="absolute inset-0 z-[15] pointer-events-none bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+                    <h4 className="text-white text-xl font-black">{item.title}</h4>
+                    <p className="text-gold-400 font-bold">{item.area}</p>
+                  </div>
+                )}
+                {playing && (
+                  <div className="absolute bottom-0 left-0 right-0 z-[21] pointer-events-none bg-gradient-to-t from-navy-900/95 to-transparent p-4 pt-12">
+                    <h4 className="text-white text-lg font-black">{item.title}</h4>
+                    <p className="text-gold-400 font-bold text-sm">{item.area}</p>
+                  </div>
+                )}
               </div>
             </FadeUp>
           );
