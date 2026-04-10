@@ -2,7 +2,14 @@ import type { SiteSettings } from "@/types/site-settings";
 
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void;
+    fbq?: ((...args: unknown[]) => void) & {
+      callMethod?: (...args: unknown[]) => void;
+      queue?: unknown[][];
+      push?: (...args: unknown[]) => void;
+      loaded?: boolean;
+      version?: string;
+    };
+    _fbq?: typeof window.fbq;
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
   }
@@ -78,9 +85,12 @@ export function injectMetaAndLinks(s: SiteSettings) {
   );
 }
 
+let _fbqPixelInjected = false;
+
 /**
- * Memuat Meta Pixel (snippet resmi Meta). Jangan memanggil fbq('track') lagi jika script sudah ada —
- * itu menduplikasi PageView (React Strict Mode / re-render).
+ * Meta Pixel — menjalankan kode bootstrap fbq secara LANGSUNG di JS,
+ * bukan lewat inject <script textContent> yang sering gagal di SPA / module bundler.
+ * Kemudian memuat fbevents.js via <script src>.
  */
 export function injectFacebookPixel(
   pixelId: string,
@@ -90,47 +100,48 @@ export function injectFacebookPixel(
   if (!enabled || !pixelId) return;
   const cleanId = pixelId.replace(/\D/g, "");
   if (!cleanId) return;
+  if (_fbqPixelInjected) return;
+  _fbqPixelInjected = true;
+
   const pv = (pageViewEvent || "PageView").replace(/[^a-zA-Z0-9_]/g, "") || "PageView";
 
-  const existing = document.getElementById("intero-fbq-inline");
-  if (existing) {
-    return;
+  // --- 1. Bootstrap fbq function (sama persis dengan snippet resmi Meta) ---
+  if (!window.fbq) {
+    const n: Window["fbq"] = function (this: unknown, ...args: unknown[]) {
+      if (n!.callMethod) {
+        n!.callMethod(...args);
+      } else {
+        n!.queue!.push(args);
+      }
+    } as Window["fbq"];
+    n!.push = n!;
+    n!.loaded = true;
+    n!.version = "2.0";
+    n!.queue = [];
+    window.fbq = n;
+    if (!window._fbq) window._fbq = n;
   }
 
-  const pre = document.getElementById("intero-fbq-preconnect");
-  if (!pre) {
-    const p = document.createElement("link");
-    p.id = "intero-fbq-preconnect";
-    p.rel = "preconnect";
-    p.href = "https://connect.facebook.net";
-    document.head.appendChild(p);
+  // --- 2. Muat fbevents.js via <script src> ---
+  if (!document.getElementById("intero-fbq-sdk")) {
+    const sdk = document.createElement("script");
+    sdk.id = "intero-fbq-sdk";
+    sdk.async = true;
+    sdk.src = "https://connect.facebook.net/en_US/fbevents.js";
+    document.head.appendChild(sdk);
   }
 
-  const scr = document.createElement("script");
-  scr.id = "intero-fbq-inline";
-  scr.type = "text/javascript";
-  scr.textContent = [
-    "!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?",
-    "n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;",
-    "n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;",
-    "t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,",
-    "document,'script','https://connect.facebook.net/en_US/fbevents.js');",
-    `fbq('init','${cleanId}');`,
-    `fbq('track','${pv}');`,
-  ].join("");
-  document.head.appendChild(scr);
+  // --- 3. Init + PageView ---
+  window.fbq!("init", cleanId);
+  window.fbq!("track", pv);
 
+  // --- 4. Noscript fallback ---
   if (!document.getElementById("intero-fbq-noscript")) {
     const nos = document.createElement("noscript");
     nos.id = "intero-fbq-noscript";
-    const img = document.createElement("img");
-    img.height = 1;
-    img.width = 1;
-    img.style.display = "none";
-    img.alt = "";
-    img.referrerPolicy = "no-referrer-when-downgrade";
-    img.src = `https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1`;
-    nos.appendChild(img);
+    nos.innerHTML =
+      `<img height="1" width="1" style="display:none" ` +
+      `src="https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1" />`;
     document.body.insertBefore(nos, document.body.firstChild);
   }
 }
@@ -145,7 +156,7 @@ export function injectGoogleAnalytics(gaId: string) {
   s1.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
   document.head.appendChild(s1);
   const s2 = document.createElement("script");
-  s2.innerHTML = `
+  s2.textContent = `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
