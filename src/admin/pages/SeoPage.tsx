@@ -68,7 +68,9 @@ export default function SeoPage() {
           <label className="block text-xs font-bold text-gray-600 mb-1">Facebook Pixel ID</label>
           <p className="text-xs text-gray-500 mb-1">
             Hanya angka (contoh: 288418147246485). Di Events Manager pastikan domain Anda terdaftar. Centang
-            &quot;Aktifkan&quot; di atas lalu simpan.
+            &quot;Aktifkan&quot; di atas lalu simpan. Meta Pixel Helper di Chrome membutuhkan halaman publik
+            dimuat ulang setelah menyimpan; nonaktifkan pemblokir iklan untuk domain ini jika pixel tidak
+            terbaca.
           </p>
           <input
             className="w-full rounded-lg border px-3 py-2 text-sm font-mono"

@@ -79,7 +79,8 @@ export function injectMetaAndLinks(s: SiteSettings) {
 }
 
 /**
- * Memuat Meta Pixel. Memakai script.textContent (bukan innerHTML) agar browser mengeksekusi snippet.
+ * Memuat Meta Pixel (snippet resmi Meta). Jangan memanggil fbq('track') lagi jika script sudah ada —
+ * itu menduplikasi PageView (React Strict Mode / re-render).
  */
 export function injectFacebookPixel(
   pixelId: string,
@@ -93,18 +94,21 @@ export function injectFacebookPixel(
 
   const existing = document.getElementById("intero-fbq-inline");
   if (existing) {
-    if (typeof window.fbq === "function") {
-      try {
-        window.fbq("track", pv);
-      } catch {
-        /* ignore */
-      }
-    }
     return;
+  }
+
+  const pre = document.getElementById("intero-fbq-preconnect");
+  if (!pre) {
+    const p = document.createElement("link");
+    p.id = "intero-fbq-preconnect";
+    p.rel = "preconnect";
+    p.href = "https://connect.facebook.net";
+    document.head.appendChild(p);
   }
 
   const scr = document.createElement("script");
   scr.id = "intero-fbq-inline";
+  scr.type = "text/javascript";
   scr.textContent = [
     "!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?",
     "n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;",
@@ -124,6 +128,7 @@ export function injectFacebookPixel(
     img.width = 1;
     img.style.display = "none";
     img.alt = "";
+    img.referrerPolicy = "no-referrer-when-downgrade";
     img.src = `https://www.facebook.com/tr?id=${cleanId}&ev=PageView&noscript=1`;
     nos.appendChild(img);
     document.body.appendChild(nos);

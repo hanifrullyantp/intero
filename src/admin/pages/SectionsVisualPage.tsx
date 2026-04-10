@@ -741,10 +741,13 @@ export default function SectionsVisualPage() {
                       })
                     }
                   />
-                  <Field label="URL video YouTube">
+                  <Field label="URL video (YouTube atau TikTok)">
+                    <p className="text-[11px] text-gray-500 mb-1">
+                      YouTube: tautan watch / Shorts. TikTok: tempel URL halaman video lengkap (bukan vm.tiktok.com).
+                    </p>
                     <input
                       className="w-full rounded-lg border px-3 py-2 text-sm bg-white"
-                      placeholder="https://www.youtube.com/watch?v=..."
+                      placeholder="YouTube atau https://www.tiktok.com/@user/video/…"
                       value={proj.videoUrl ?? ""}
                       onChange={(e) =>
                         patchSections((p) => {

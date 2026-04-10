@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { BonusIcon, CmpIcon, HeroIcon, StepIcon } from "@/landing/iconMap";
 import { Countdown } from "@/landing/Countdown";
 import { getYoutubeEmbedSrc } from "@/lib/youtube";
+import { getGalleryVideoEmbedSrc } from "@/lib/videoEmbed";
 
 type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSettings };
 
@@ -321,7 +322,7 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
       </div>
       <div className="relative z-10 bg-white p-5 sm:p-8 md:p-12 rounded-[32px] shadow-2xl border border-gray-100 max-w-5xl mx-auto overflow-hidden">
         <div className="flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.28fr)] md:items-stretch gap-8 md:gap-10 lg:gap-12">
-          <div className="order-1 md:order-none w-full min-w-0">
+          <div className="w-full min-w-0">
             <FadeUp>
               <h3
                 className="text-3xl md:text-4xl font-black text-navy-900 leading-tight mb-6"
@@ -331,8 +332,8 @@ export function LandingProblem({ settings }: { settings: SiteSettings }) {
               <p className="text-lg text-gray-600 leading-relaxed mb-6">{p.body}</p>
             </FadeUp>
           </div>
-          <div className="order-2 md:order-none w-full min-w-0 flex md:items-center md:justify-end">
-            <FadeUp delay={0.1}>
+          <div className="w-full min-w-0 flex md:items-center md:justify-end shrink-0">
+            <FadeUp delay={0.08} eager>
               <div className="w-full max-w-sm mx-auto md:max-w-none md:mx-0 md:w-full">
                 <div className="rounded-2xl overflow-hidden aspect-square border-4 border-gray-50 shadow-inner group w-full max-w-[320px] mx-auto md:max-w-[min(100%,480px)] md:ml-auto md:mr-0">
                 {heroProblemImg ? (
@@ -365,7 +366,7 @@ export function LandingSolution({ settings }: { settings: SiteSettings }) {
     <Section id={sol.id}>
       <div className="grid md:grid-cols-2 gap-16 items-center">
         <div className="order-2 md:order-1">
-          <FadeUp>
+          <FadeUp eager>
             <div className="relative rounded-3xl overflow-hidden shadow-2xl">
               <img
                 src={sol.imageUrl}
@@ -746,53 +747,63 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
         </FadeUp>
       </div>
       <div className={gridClass}>
-        {visibleProjects.map((item, i) => (
-          <FadeUp key={`${item.title}-${item.area}-${i}`} delay={i * 0.05}>
-            <div className="group relative rounded-[30px] overflow-hidden shadow-lg aspect-[4/5]">
-              {item.videoUrl && activeVideo === `${item.title}-${item.area}-${i}` ? (
-                <iframe
-                  title={item.title}
-                  src={`${getYoutubeEmbedSrc(item.videoUrl) ?? ""}?autoplay=1&rel=0`}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              ) : (
-                <button
-                  type="button"
-                  className="w-full h-full text-left"
-                  onClick={() => {
-                    if (item.videoUrl && getYoutubeEmbedSrc(item.videoUrl)) {
-                      setActiveVideo(`${item.title}-${item.area}-${i}`);
-                    }
-                  }}
-                >
-                  <img
-                    src={item.img}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    width={800}
-                    height={1000}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    loading="lazy"
-                    decoding="async"
+        {visibleProjects.map((item, i) => {
+          const cardKey = `${item.title}-${item.area}-${i}`;
+          const playing = Boolean(item.videoUrl && activeVideo === cardKey);
+          const emb = playing && item.videoUrl ? getGalleryVideoEmbedSrc(item.videoUrl) : null;
+          const embedSrc =
+            emb &&
+            (emb.kind === "youtube"
+              ? `${emb.src}?autoplay=1&rel=0`
+              : `${emb.src}?autoplay=1`);
+          return (
+            <FadeUp key={cardKey} delay={i * 0.05}>
+              <div className="group relative rounded-[30px] overflow-hidden shadow-lg aspect-[4/5]">
+                {playing && embedSrc ? (
+                  <iframe
+                    title={item.title}
+                    src={embedSrc}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
                   />
-                  {item.videoUrl && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="h-14 w-14 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
-                        <Play className="h-6 w-6 ml-1" fill="currentColor" />
-                      </span>
-                    </div>
-                  )}
-                </button>
-              )}
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
-                <h4 className="text-white text-xl font-black">{item.title}</h4>
-                <p className="text-gold-400 font-bold">{item.area}</p>
+                ) : (
+                  <button
+                    type="button"
+                    className="w-full h-full text-left"
+                    onClick={() => {
+                      if (item.videoUrl && getGalleryVideoEmbedSrc(item.videoUrl)) {
+                        setActiveVideo(cardKey);
+                      }
+                    }}
+                  >
+                    <img
+                      src={item.img}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      width={800}
+                      height={1000}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {item.videoUrl && getGalleryVideoEmbedSrc(item.videoUrl) && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span className="h-14 w-14 rounded-full bg-white/90 text-navy-900 flex items-center justify-center shadow-xl">
+                          <Play className="h-6 w-6 ml-1" fill="currentColor" />
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                )}
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+                  <h4 className="text-white text-xl font-black">{item.title}</h4>
+                  <p className="text-gold-400 font-bold">{item.area}</p>
+                </div>
               </div>
-            </div>
-          </FadeUp>
-        ))}
+            </FadeUp>
+          );
+        })}
       </div>
     </Section>
   );
