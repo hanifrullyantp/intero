@@ -743,7 +743,8 @@ export default function SectionsVisualPage() {
                   />
                   <Field label="URL video (YouTube atau TikTok)">
                     <p className="text-[11px] text-gray-500 mb-1">
-                      YouTube: tautan watch / Shorts. TikTok: tempel URL halaman video lengkap (bukan vm.tiktok.com).
+                      YouTube: watch / Shorts. TikTok: URL lengkap berisi /video/123… (bukan vm.tiktok.com — tidak bisa
+                      di-embed dari browser).
                     </p>
                     <input
                       className="w-full rounded-lg border px-3 py-2 text-sm bg-white"

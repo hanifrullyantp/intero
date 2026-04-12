@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { BonusIcon, CmpIcon, HeroIcon, StepIcon } from "@/landing/iconMap";
 import { Countdown } from "@/landing/Countdown";
 import { getGalleryVideoEmbedSrc } from "@/lib/videoEmbed";
+import { tiktokPlayerQueryAfterClick } from "@/lib/tiktok";
 
 type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSettings };
 
@@ -256,12 +257,20 @@ export function LandingHero({
                   src={
                     heroVideo.kind === "youtube"
                       ? `${heroVideo.src}?autoplay=1&rel=0`
-                      : `${heroVideo.src}?autoplay=1`
+                      : `${heroVideo.src}?${tiktokPlayerQueryAfterClick()}`
                   }
                   className="absolute inset-0 z-10 w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allow={
+                    heroVideo.kind === "youtube"
+                      ? "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      : "autoplay; fullscreen; encrypted-media; picture-in-picture"
+                  }
                   allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
+                  referrerPolicy={
+                    heroVideo.kind === "youtube"
+                      ? "strict-origin-when-cross-origin"
+                      : "no-referrer-when-downgrade"
+                  }
                 />
               ) : (
                 <button
@@ -763,7 +772,7 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
             emb &&
             (emb.kind === "youtube"
               ? `${emb.src}?autoplay=1&rel=0`
-              : `${emb.src}?autoplay=1`);
+              : `${emb.src}?${tiktokPlayerQueryAfterClick()}`);
           return (
             <FadeUp key={cardKey} delay={i * 0.05}>
               <div className="group relative rounded-[30px] overflow-hidden shadow-lg aspect-[4/5]">
@@ -772,9 +781,17 @@ export function LandingGallery({ settings }: { settings: SiteSettings }) {
                     title={item.title}
                     src={embedSrc}
                     className="absolute inset-0 z-20 w-full h-full border-0 bg-black"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allow={
+                      emb.kind === "youtube"
+                        ? "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                        : "autoplay; fullscreen; encrypted-media; picture-in-picture"
+                    }
                     allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
+                    referrerPolicy={
+                      emb.kind === "youtube"
+                        ? "strict-origin-when-cross-origin"
+                        : "no-referrer-when-downgrade"
+                    }
                   />
                 ) : (
                   <button
