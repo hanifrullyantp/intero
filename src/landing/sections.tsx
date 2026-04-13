@@ -24,7 +24,18 @@ import { tiktokPlayerQueryAfterClick } from "@/lib/tiktok";
 
 type CTA = { onLead: () => void; onScrollToPrice: () => void; settings: SiteSettings };
 
-/** Konsultasi WA / anchor # — scroll ke section harga di halaman ini (tanpa membuka tab baru). */
+/** Tautan absolut ke situs intero.id — buka di tab yang sama (biasanya ke #harga). */
+function isInteroSiteAbsoluteUrl(href: string): boolean {
+  try {
+    const u = new URL(href.trim());
+    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+    return host === "intero.id";
+  } catch {
+    return false;
+  }
+}
+
+/** Anchor # saja atau WA — scroll ke section harga di halaman ini. */
 function heroPrimaryUsesScrollToPrice(href: string): boolean {
   const h = href.trim().toLowerCase();
   if (!href.trim()) return false;
@@ -37,16 +48,29 @@ function HeroPrimaryCtaLink({
   href,
   children,
   onScrollToPrice,
+  onTrackContact,
 }: {
   href: string;
   children: ReactNode;
   onScrollToPrice: () => void;
+  onTrackContact?: () => void;
 }) {
   const cls = cn(
     "group inline-flex items-center justify-center gap-2 rounded-full transition-all duration-300 active:scale-95",
     "bg-gold-500 text-navy-900 hover:bg-gold-400 shadow-lg",
     "px-7 py-3 sm:px-8 sm:py-3.5 text-sm sm:text-base font-bold uppercase tracking-wide",
   );
+  if (isInteroSiteAbsoluteUrl(href)) {
+    return (
+      <a
+        href={href}
+        className={cls}
+        onClick={() => onTrackContact?.()}
+      >
+        {children}
+      </a>
+    );
+  }
   if (heroPrimaryUsesScrollToPrice(href)) {
     return (
       <button type="button" className={cls} onClick={() => onScrollToPrice()}>
@@ -57,12 +81,22 @@ function HeroPrimaryCtaLink({
   const external = /^https?:\/\//i.test(href) || href.startsWith("//");
   if (external) {
     return (
-      <a href={href} className={cls} target="_blank" rel="noopener noreferrer">
+      <a
+        href={href}
+        className={cls}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => onTrackContact?.()}
+      >
         {children}
       </a>
     );
   }
-  return <Link to={href} className={cls}>{children}</Link>;
+  return (
+    <Link to={href} className={cls} onClick={() => onTrackContact?.()}>
+      {children}
+    </Link>
+  );
 }
 
 export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
@@ -194,7 +228,8 @@ export function LandingNavbar({ onScrollToPrice, settings }: CTA) {
 export function LandingHero({
   settings,
   onScrollToPrice,
-}: Pick<CTA, "settings" | "onScrollToPrice">) {
+  onTrackContact,
+}: Pick<CTA, "settings" | "onScrollToPrice"> & { onTrackContact?: () => void }) {
   const h = settings.sections.hero;
   const heroVideo = getGalleryVideoEmbedSrc(h.youtubeUrl);
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
@@ -218,7 +253,11 @@ export function LandingHero({
             <p className="text-2xl md:text-3xl font-bold text-blue-100 mb-6 italic">{h.subtitle}</p>
             <p className="text-lg md:text-xl text-blue-50/80 mb-10 leading-relaxed max-w-lg">{h.description}</p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12 items-stretch sm:items-center">
-              <HeroPrimaryCtaLink href={h.primaryCtaHref} onScrollToPrice={onScrollToPrice}>
+              <HeroPrimaryCtaLink
+                href={h.primaryCtaHref}
+                onScrollToPrice={onScrollToPrice}
+                onTrackContact={onTrackContact}
+              >
                 <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
                 {h.primaryCta}
                 <ArrowRight

@@ -69,7 +69,11 @@ export default function LandingPage() {
       <GlobalStyles settings={settings} />
       <LandingNavbar settings={settings} onLead={onLeadOpen} onScrollToPrice={onScrollToPrice} />
       <main>
-        <LandingHero settings={settings} onScrollToPrice={onScrollToPrice} />
+        <LandingHero
+          settings={settings}
+          onScrollToPrice={onScrollToPrice}
+          onTrackContact={() => trackContactClick(settings)}
+        />
         <LandingProblem settings={settings} />
         <LandingSolution settings={settings} />
         <LandingTaglineBig settings={settings} onLead={onLeadOpen} onScrollToPrice={onScrollToPrice} />

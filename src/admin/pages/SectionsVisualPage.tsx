@@ -267,11 +267,11 @@ export default function SectionsVisualPage() {
             </div>
             <Field
               label="Link tombol utama (href)"
-              hint="#harga atau tautan wa.me / WhatsApp: di halaman depan akan scroll ke section harga (tanpa tab baru). URL situs lain: dibuka di tab baru."
+              hint="Disarankan: https://www.intero.id/#harga (tab sama). Hanya #harga = scroll di halaman ini. wa.me = scroll ke harga. URL luar: tab baru."
             >
               <input
                 className="w-full rounded-lg border px-3 py-2 text-sm font-mono text-xs"
-                value={sec.hero.primaryCtaHref ?? "#harga"}
+                value={sec.hero.primaryCtaHref ?? "https://www.intero.id/#harga"}
                 onChange={(e) =>
                   patchSections((p) => ({
                     ...p,
