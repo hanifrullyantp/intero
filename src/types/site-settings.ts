@@ -252,8 +252,13 @@ export interface LandingSections {
 function patchLegacyLandingData(sec: LandingSections): LandingSections {
   const hero = { ...sec.hero };
   if (hero.youtubeUrl === undefined) hero.youtubeUrl = null;
-  if (hero.primaryCtaHref === undefined || hero.primaryCtaHref === "#harga") {
-    hero.primaryCtaHref = "https://www.intero.id/#harga";
+  if (
+    hero.primaryCtaHref === undefined ||
+    hero.primaryCtaHref === "#harga" ||
+    hero.primaryCtaHref === "#bonus" ||
+    hero.primaryCtaHref === "https://www.intero.id/#harga"
+  ) {
+    hero.primaryCtaHref = "https://www.intero.id/#bonus";
   }
   if (hero.videoDisclaimer === undefined) {
     hero.videoDisclaimer = "*testimoni asli pelanggan intero";
@@ -560,7 +565,7 @@ export function getDefaultSiteSettings(): SiteSettings {
         description:
           "Kitchen set tahan air = dapur bunda bebas rayap, warna awet, dan gak ribet bersihin.",
         primaryCta: "KONSULTASI WA",
-        primaryCtaHref: "https://www.intero.id/#harga",
+        primaryCtaHref: "https://www.intero.id/#bonus",
         secondaryCta: "LIHAT KEUNGGULAN",
         secondaryCtaHref: "#solusi",
         youtubeUrl: null,
