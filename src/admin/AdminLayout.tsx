@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Bell,
+  ClipboardList,
   Code,
   FileText,
   HelpCircle,
@@ -29,6 +30,7 @@ const NAV: NavDef[] = [
   { to: "/admin/dashboard", label: "Beranda", icon: LayoutDashboard },
   { to: "/admin/global", label: "Global & merek", icon: Palette },
   { to: "/admin/contact", label: "Kontak & sosial", icon: Phone },
+  { to: "/admin/form", label: "FORM", icon: ClipboardList },
   { to: "/admin/seo", label: "SEO & tracking", icon: Search },
   { to: "/admin/toast", label: "Notifikasi toast", icon: Bell },
   { to: "/admin/faq", label: "FAQ", icon: HelpCircle },

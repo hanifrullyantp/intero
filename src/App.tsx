@@ -17,6 +17,7 @@ import SectionsJsonPage from "@/admin/pages/SectionsJsonPage";
 import SectionsVisualPage from "@/admin/pages/SectionsVisualPage";
 import LeadsPage from "@/admin/pages/LeadsPage";
 import CrmSettingsPage from "@/admin/pages/CrmSettingsPage";
+import FormPage from "@/admin/pages/FormPage";
 
 function PublicShell() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="global" element={<GlobalPage />} />
           <Route path="contact" element={<ContactPage />} />
+          <Route path="form" element={<FormPage />} />
           <Route path="seo" element={<SeoPage />} />
           <Route path="toast" element={<ToastPage />} />
           <Route path="faq" element={<FaqPage />} />

@@ -74,10 +74,36 @@ export interface SiteSettings {
     ctaLabel: string;
   };
   leadForm: {
+    title: string;
+    subtitle: string;
+    submitButtonLabel: string;
+    skipButtonLabel: string;
+    consentText: string;
+    requireSubmitBeforeWhatsApp: boolean;
+    relinkBackToWhatsapp: boolean;
+    autoRedirectAfterOpenSec: number;
+    submitMessageTemplate: string;
     needTypes: string[];
     budgetRanges: string[];
-    /** Pesan prateks WA saat pengguna menutup form tanpa mengirim. */
+    /** Pesan WA saat pengguna menutup form / timeout tanpa submit. */
     dismissRedirectMessage: string;
+    fields: {
+      nameLabel: string;
+      namePlaceholder: string;
+      whatsappLabel: string;
+      whatsappPlaceholder: string;
+      cityLabel: string;
+      cityPlaceholder: string;
+      needTypeLabel: string;
+      needTypePlaceholder: string;
+      sizeEstimateLabel: string;
+      sizeEstimatePlaceholder: string;
+      budgetLabel: string;
+      budgetPlaceholder: string;
+      referenceLabel: string;
+      notesLabel: string;
+      notesPlaceholder: string;
+    };
   };
   /** Pengaturan CRM (kategori, pipeline, template WA follow-up). */
   crm: {
@@ -268,9 +294,19 @@ export function normalizeSiteSettings(raw: unknown): SiteSettings {
     const leadForm = {
       ...def.leadForm,
       ...(base.leadForm ?? {}),
+      fields: {
+        ...def.leadForm.fields,
+        ...(base.leadForm?.fields ?? {}),
+      },
+      autoRedirectAfterOpenSec: Math.max(
+        0,
+        Number(base.leadForm?.autoRedirectAfterOpenSec ?? def.leadForm.autoRedirectAfterOpenSec),
+      ),
       dismissRedirectMessage:
         base.leadForm?.dismissRedirectMessage?.trim() ||
         def.leadForm.dismissRedirectMessage,
+      submitMessageTemplate:
+        base.leadForm?.submitMessageTemplate?.trim() || def.leadForm.submitMessageTemplate,
     };
     const crm = {
       ...def.crm,
@@ -410,6 +446,16 @@ export function getDefaultSiteSettings(): SiteSettings {
       ctaLabel: "Konsultasi Gratis",
     },
     leadForm: {
+      title: "Konsultasi gratis",
+      subtitle: "Isi form — kami arahkan ke WhatsApp.",
+      submitButtonLabel: "Kirim & buka WhatsApp",
+      skipButtonLabel: "Lanjut WhatsApp tanpa isi form",
+      consentText: "Dengan mengirim, Anda menyetujui pemrosesan data sesuai kebijakan privasi kami.",
+      requireSubmitBeforeWhatsApp: true,
+      relinkBackToWhatsapp: true,
+      autoRedirectAfterOpenSec: 600,
+      submitMessageTemplate:
+        "Halo, saya tertarik konsultasi Intero / WOCENSA.\nNama: {{name}}\nWhatsApp: {{whatsapp}}\nKota: {{city}}\nKebutuhan: {{need_type}}\n{{size_estimate_line}}{{budget_range_line}}{{notes_line}}",
       needTypes: [
         "Kitchen set baru full",
         "Renovasi / upgrade",
@@ -425,6 +471,23 @@ export function getDefaultSiteSettings(): SiteSettings {
       ],
       dismissRedirectMessage:
         "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.",
+      fields: {
+        nameLabel: "Nama",
+        namePlaceholder: "",
+        whatsappLabel: "WhatsApp",
+        whatsappPlaceholder: "08...",
+        cityLabel: "Kota",
+        cityPlaceholder: "",
+        needTypeLabel: "Jenis kebutuhan",
+        needTypePlaceholder: "Pilih",
+        sizeEstimateLabel: "Ukuran / estimasi meter (opsional)",
+        sizeEstimatePlaceholder: "",
+        budgetLabel: "Budget range (opsional)",
+        budgetPlaceholder: "—",
+        referenceLabel: "Upload referensi (opsional)",
+        notesLabel: "Catatan",
+        notesPlaceholder: "",
+      },
     },
     crm: {
       categories: [

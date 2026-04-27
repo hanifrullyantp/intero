@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useLeadModal } from "@/context/LeadModalContext";
 import { usePublicSettings } from "@/context/PublicSettingsContext";
@@ -13,19 +13,48 @@ export function LeadModal() {
   const { settings } = usePublicSettings();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  const formCfg = settings.leadForm;
+  const f = formCfg.fields;
+  const mustSubmit = formCfg.requireSubmitBeforeWhatsApp;
+  const relinkBack = formCfg.relinkBackToWhatsapp;
+  const timeoutSec = Math.max(0, formCfg.autoRedirectAfterOpenSec || 0);
+
+  useEffect(() => {
+    if (!isOpen || busy || !relinkBack || timeoutSec <= 0) return;
+    timeoutRef.current = window.setTimeout(() => {
+      goToWhatsApp(
+        formCfg.dismissRedirectMessage?.trim() ||
+          "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.",
+      );
+    }, timeoutSec * 1000);
+    return () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    };
+  }, [isOpen, busy, relinkBack, timeoutSec, formCfg.dismissRedirectMessage]);
+
+  function goToWhatsApp(message: string) {
+    const phone = settings.contact.whatsapp.replace(/\D/g, "");
+    if (!phone) {
+      close();
+      return;
+    }
+    window.location.href = whatsappUrl(phone, message);
+  }
 
   /** Tutup form → arahkan ke WA (kecuali sedang submit). */
   function dismissToWhatsApp() {
     if (busy) return;
-    const phone = settings.contact.whatsapp.replace(/\D/g, "");
-    if (phone) {
+    if (relinkBack) {
       const text =
-        settings.leadForm.dismissRedirectMessage?.trim() ||
+        formCfg.dismissRedirectMessage?.trim() ||
         "Halo, saya dari website Intero. Mohon info lebih lanjut tentang kitchen set / WOCENSA.";
-      window.location.href = whatsappUrl(settings.contact.whatsapp, text);
-      return;
+      goToWhatsApp(text);
+    } else {
+      close();
     }
-    close();
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -36,7 +65,7 @@ export function LeadModal() {
     const whatsapp = String(fd.get("whatsapp") || "").trim();
     const city = String(fd.get("city") || "").trim();
     const needType = String(fd.get("need_type") || "").trim();
-    if (!name || !whatsapp || !city || !needType) {
+    if (mustSubmit && (!name || !whatsapp || !city || !needType)) {
       setError("Lengkapi nama, WhatsApp, kota, dan jenis kebutuhan.");
       return;
     }
@@ -53,6 +82,7 @@ export function LeadModal() {
         sizeEstimate: String(fd.get("size_estimate") || "").trim() || undefined,
         budgetRange: String(fd.get("budget_range") || "").trim() || undefined,
         notes: String(fd.get("notes") || "").trim() || undefined,
+        template: formCfg.submitMessageTemplate,
       });
       const url = whatsappUrl(settings.contact.whatsapp, msg);
       window.location.href = url;
@@ -81,8 +111,8 @@ export function LeadModal() {
         >
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-xl font-black text-navy-900">Konsultasi gratis</h2>
-              <p className="text-sm text-gray-500 mt-1">Isi form — kami arahkan ke WhatsApp.</p>
+              <h2 className="text-xl font-black text-navy-900">{formCfg.title}</h2>
+              <p className="text-sm text-gray-500 mt-1">{formCfg.subtitle}</p>
             </div>
             <button
               type="button"
@@ -93,17 +123,22 @@ export function LeadModal() {
             </button>
           </div>
           <form onSubmit={onSubmit} className="space-y-4">
-            <Field label="Nama" name="name" required />
-            <Field label="WhatsApp" name="whatsapp" required placeholder="08..." />
-            <Field label="Kota" name="city" required />
+            <Field label={f.nameLabel} name="name" required={mustSubmit} placeholder={f.namePlaceholder} />
+            <Field
+              label={f.whatsappLabel}
+              name="whatsapp"
+              required={mustSubmit}
+              placeholder={f.whatsappPlaceholder}
+            />
+            <Field label={f.cityLabel} name="city" required={mustSubmit} placeholder={f.cityPlaceholder} />
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Jenis kebutuhan</label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">{f.needTypeLabel}</label>
               <select
                 name="need_type"
-                required
+                required={mustSubmit}
                 className="w-full min-h-[48px] rounded-xl border border-gray-200 px-3 py-3 text-base md:text-sm"
               >
-                <option value="">Pilih</option>
+                <option value="">{f.needTypePlaceholder || "Pilih"}</option>
                 {settings.leadForm.needTypes.map((n) => (
                   <option key={n} value={n}>
                     {n}
@@ -111,16 +146,18 @@ export function LeadModal() {
                 ))}
               </select>
             </div>
-            <Field label="Ukuran / estimasi meter (opsional)" name="size_estimate" />
+            <Field
+              label={f.sizeEstimateLabel}
+              name="size_estimate"
+              placeholder={f.sizeEstimatePlaceholder}
+            />
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">
-                Budget range (opsional)
-              </label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">{f.budgetLabel}</label>
               <select
                 name="budget_range"
                 className="w-full min-h-[48px] rounded-xl border border-gray-200 px-3 py-3 text-base md:text-sm"
               >
-                <option value="">—</option>
+                <option value="">{f.budgetPlaceholder || "—"}</option>
                 {settings.leadForm.budgetRanges.map((n) => (
                   <option key={n} value={n}>
                     {n}
@@ -129,9 +166,7 @@ export function LeadModal() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">
-                Upload referensi (opsional)
-              </label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">{f.referenceLabel}</label>
               <input
                 name="reference"
                 type="file"
@@ -140,20 +175,30 @@ export function LeadModal() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Catatan</label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">{f.notesLabel}</label>
               <textarea
                 name="notes"
                 rows={3}
+                placeholder={f.notesPlaceholder}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" variant="whatsapp" size="lg" className="w-full" disabled={busy}>
-              {busy ? "Mengirim…" : "Kirim & buka WhatsApp"}
+              {busy ? "Mengirim…" : formCfg.submitButtonLabel}
             </Button>
+            {!mustSubmit && (
+              <button
+                type="button"
+                className="w-full text-sm font-semibold rounded-xl border border-gray-200 px-4 py-3 hover:bg-gray-50"
+                onClick={dismissToWhatsApp}
+              >
+                {formCfg.skipButtonLabel}
+              </button>
+            )}
           </form>
           <p className="text-xs text-center text-gray-400 mt-4">
-            Dengan mengirim, Anda menyetujui pemrosesan data sesuai kebijakan privasi kami.
+            {formCfg.consentText}
           </p>
         </div>
       </div>
