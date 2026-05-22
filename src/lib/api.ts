@@ -71,6 +71,9 @@ async function submitLeadSupabase(fd: FormData): Promise<void> {
     const { data } = sb.storage.from("site-uploads").getPublicUrl(path);
     referencePath = data.publicUrl;
   }
+  // Hanya kolom dari skema dasar `leads`; kolom CRM (crm_*, admin_notes, follow_up_count,
+  // updated_at) memakai DEFAULT di DB bila migrasi 20250410130000_crm_leads.sql sudah dijalankan.
+  // Mengirim kolom yang belum ada memicu error schema cache PostgREST.
   const { error } = await sb.from("leads").insert({
     name,
     whatsapp,
@@ -81,10 +84,6 @@ async function submitLeadSupabase(fd: FormData): Promise<void> {
     notes,
     reference_path: referencePath,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    crm_status: "baru",
-    crm_category: "",
-    admin_notes: "",
-    follow_up_count: 0,
   });
   if (error) throw new Error(error.message);
 }
