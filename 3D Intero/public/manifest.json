@@ -1,0 +1,20 @@
+{
+  "name": "3D Intero - Furniture Designer",
+  "short_name": "3D Intero",
+  "description": "Parametric furniture design: kitchen sets, wardrobes and TV cabinets with 2D plan, 3D view, cutting lists and pricing.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1B9D6B",
+  "categories": ["productivity", "design"],
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New Project", "short_name": "New", "url": "/?action=new", "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ]
+}

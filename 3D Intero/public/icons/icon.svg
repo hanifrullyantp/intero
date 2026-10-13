@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4CBE93"/>
+      <stop offset="1" stop-color="#0F6B46"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path d="M256 118 L378 186 L256 254 L134 186 Z" fill="#FFFFFF"/>
+  <path d="M134 186 L256 254 L256 394 L134 326 Z" fill="#E8F5EF"/>
+  <path d="M378 186 L256 254 L256 394 L378 326 Z" fill="#CFEBDD"/>
+  <line x1="256" y1="254" x2="256" y2="394" stroke="#0F6B46" stroke-width="6"/>
+  <line x1="208" y1="262" x2="208" y2="300" stroke="#0F6B46" stroke-width="8" stroke-linecap="round"/>
+  <line x1="304" y1="262" x2="304" y2="300" stroke="#0F6B46" stroke-width="8" stroke-linecap="round"/>
+  <text x="256" y="456" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800" text-anchor="middle" fill="#FFFFFF">INTERO</text>
+</svg>

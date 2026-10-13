@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+/* Monefyi green brand + light/dark themes */
+:root {
+  --brand: #1b9d6b;
+  --brand-hover: #158558;
+  --brand-active: #0f6b46;
+  --brand-light: #4cbe93;
+  --brand-soft: #e8f5ef;
+}
+:root[data-theme='light'] {
+  --bg-main: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-canvas: #fafbfc;
+  --bg-panel: #ffffff;
+  --bg-hover: #f3f4f6;
+  --bg-selected: #e8f5ef;
+  --bg-input: #ffffff;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --accent: #1b9d6b;
+  --accent-hover: #158558;
+  --success: #1b9d6b;
+  --warning: #d97706;
+  --error: #dc2626;
+  --selected: #1b9d6b;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --bg-main: #0f1419;
+  --bg-secondary: #161b22;
+  --bg-canvas: #1c2128;
+  --bg-panel: #161b22;
+  --bg-hover: #21262d;
+  --bg-selected: #1f3a2e;
+  --bg-input: #0d1117;
+  --border: #30363d;
+  --border-strong: #484f58;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --accent: #4cbe93;
+  --accent-hover: #1b9d6b;
+  --success: #4cbe93;
+  --warning: #f0a832;
+  --error: #f0564f;
+  --selected: #4cbe93;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%; margin: 0;
+  background: var(--bg-main); color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 13px; overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+@layer components {
+  .badge { @apply text-[10px] font-semibold tracking-wider px-2 py-1 rounded border; background: color-mix(in srgb, var(--bg-panel) 70%, transparent); color: var(--text-secondary); border-color: var(--border); }
+  .vp-btn { @apply text-[11px] px-2 py-1 rounded border transition-colors cursor-pointer; background: color-mix(in srgb, var(--bg-panel) 92%, transparent); border-color: var(--border); color: var(--text-secondary); }
+  .vp-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .vp-btn.active { background: var(--bg-selected); border-color: var(--accent); color: var(--accent); }
+  .tab { @apply text-xs px-3 py-1 rounded transition-colors cursor-pointer; color: var(--text-secondary); }
+  .tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .tab.active { background: var(--bg-selected); color: var(--accent); }
+  .tb-btn { @apply h-8 min-w-8 px-2 inline-flex items-center justify-center gap-1 rounded transition-colors cursor-pointer text-xs disabled:opacity-30 disabled:cursor-not-allowed; color: var(--text-secondary); }
+  .tb-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .tb-btn.active { background: var(--bg-selected); color: var(--accent); }
+  .tb-sep { @apply w-px h-6 mx-1; background: var(--border); }
+  .btn { @apply px-3 py-1.5 rounded text-xs font-medium border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed; border-color: var(--border); background: var(--bg-panel); color: var(--text-primary); }
+  .btn:hover { background: var(--bg-hover); }
+  .btn-primary { @apply px-3 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-white; background: var(--brand); }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-danger { @apply px-3 py-1.5 rounded text-xs font-semibold text-white transition-colors cursor-pointer; background: var(--error); }
+  .input { @apply w-full border rounded px-2 py-1 text-xs transition-colors; background: var(--bg-input); border-color: var(--border); color: var(--text-primary); }
+  .input:focus { outline: none; border-color: var(--accent); }
+  select.input option { background: var(--bg-panel); color: var(--text-primary); }
+  .label { @apply text-[10px] uppercase tracking-wider font-semibold; color: var(--text-tertiary); }
+  .section { border-bottom: 1px solid var(--border); }
+  .section-h { @apply flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none; color: var(--text-secondary); }
+  .section-h:hover { color: var(--text-primary); }
+  .card { @apply rounded-lg; background: var(--bg-panel); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  .chip { @apply px-2 py-0.5 rounded text-[10px] border cursor-pointer transition-colors; border-color: var(--border); background: var(--bg-input); color: var(--text-secondary); }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { border-color: var(--accent); color: var(--accent); background: var(--bg-selected); }
+  .swatch { @apply w-7 h-7 rounded border-2 border-transparent cursor-pointer transition-transform hover:scale-110; }
+  .swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+  .table-xs th { @apply text-left text-[10px] uppercase tracking-wider font-semibold px-2 py-1.5 border-b sticky top-0; color: var(--text-tertiary); border-color: var(--border); background: var(--bg-panel); }
+  .table-xs td { @apply px-2 py-1 text-xs border-b; border-color: var(--border); color: var(--text-primary); }
+  .kbd { @apply inline-block px-1.5 py-0.5 rounded border text-[10px] font-mono; background: var(--bg-input); border-color: var(--border); color: var(--text-secondary); }
+  .tool-btn { @apply w-10 h-10 flex items-center justify-center text-base rounded-lg border border-transparent transition-all cursor-pointer relative; background: transparent; color: var(--text-secondary); transition: background 0.12s, color 0.12s, box-shadow 0.12s; }
+  .tool-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .tool-btn.active { background: var(--bg-selected); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); box-shadow: var(--shadow-sm); }
+  .tool-btn:focus-visible, .tb-btn:focus-visible, .btn:focus-visible, .btn-primary:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .input:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .layer-row { @apply flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer select-none text-xs; color: var(--text-primary); }
+  .layer-row:hover { background: var(--bg-hover); }
+  .layer-row.selected { background: var(--bg-selected); }
+  .layer-row.hidden-item { opacity: 0.45; }
+}
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.anim-in { animation: fadeInUp 0.18s ease-out; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+input[type='range'] { accent-color: var(--brand); }
+input[type='checkbox'], input[type='radio'] { accent-color: var(--brand); }
+.font-mono, .input { font-variant-numeric: tabular-nums; }
+.card, .btn, .chip, .tab, .layer-row { transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out; }
+button { font-family: inherit; }
+.section-h { font-size: 11px; font-weight: 500; letter-spacing: 0.5px; }
+.tool-tip { position: absolute; left: 46px; top: 50%; transform: translateY(-50%); white-space: nowrap; z-index: 60; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+.tool-btn:hover .tool-tip { opacity: 1; }
+.drop-line { height: 2px; background: var(--accent); border-radius: 1px; margin: 1px 0; }
+
+/* Simple mode: hide advanced-only UI */
+:root[data-mode='simple'] .adv-only { display: none !important; }
+
+/* Mobile bottom sheets */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-sheet { position: fixed !important; left: 0; right: 0; bottom: 0; top: auto !important; max-height: 62vh; border-radius: 16px 16px 0 0; z-index: 80; box-shadow: var(--shadow-lg); }
+}
+@media (min-width: 769px) { .mobile-only { display: none !important; } }
