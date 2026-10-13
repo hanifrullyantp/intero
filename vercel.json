@@ -21,6 +21,26 @@
   ],
   "rewrites": [
     {
+      "source": "/assets/(.*)",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/assets/$1"
+    },
+    {
+      "source": "/icons/(.*)",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/icons/$1"
+    },
+    {
+      "source": "/manifest.json",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/manifest.json"
+    },
+    {
+      "source": "/sw.js",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/sw.js"
+    },
+    {
       "source": "/",
       "has": [{ "type": "host", "value": "3d.intero.id" }],
       "destination": "/3d/index.html"

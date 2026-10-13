@@ -73,6 +73,20 @@ Frontend saja di **Vercel**, data di **Supabase** (Postgres + Storage + Auth). T
 
 Tanpa Supabase, hosting statis murni **tidak** bisa form lead/CMS (lihat paragraf di bawah).
 
+## 3D Intero di `3d.intero.id`
+
+Aplikasi **3D Intero** (`3D Intero/`) ikut ter-build ke folder `dist/3d` dan dilayani lewat proyek Vercel yang sama dengan landing (`vercel.json` mengarahkan host `3d.intero.id`).
+
+Setelah push ke `main`, Vercel redeploy otomatis. Agar subdomain hidup:
+
+1. **Vercel** → project **intero** → **Settings → Domains** → tambahkan `3d.intero.id`.
+2. **DNS** (Rumahweb / panel domain `intero.id`): buat record **CNAME**  
+   - **Host:** `3d`  
+   - **Value:** sesuai petunjuk Vercel (biasanya `cname.vercel-dns.com` atau target khusus project).  
+3. Tunggu propagasi DNS (beberapa menit–24 jam), lalu buka `https://3d.intero.id`.
+
+Tanpa langkah DNS di atas, deploy sudah jalan tetapi subdomain tidak akan resolve.
+
 ## Hosting statis saja (tanpa Supabase & tanpa Node)
 
 Tanpa Node dan tanpa Supabase tidak bisa form lead, CMS, atau penyimpanan. Gunakan **Opsi D** atau Docker/Opsi B.
