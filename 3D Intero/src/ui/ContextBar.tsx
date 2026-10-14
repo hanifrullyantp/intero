@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../core/store';
 import { footprint, center, r1 } from '../utils/geometry';
 import { getColor } from '../config/materials';
-import { Grid2x2, Scaling, Magnet, Maximize, MousePointer2, Move, RotateCw, PaintBucket, Ruler, Hand, ZoomIn, Pipette, Lock, LockOpen, Focus, AirVent } from './icons';
+import { Lock, LockOpen, Focus, AirVent } from './icons';
 
 function NumIn({ label, value, onCommit, w = 'w-16' }: { label: string; value: number; onCommit: (v: number) => void; w?: string }) {
   const [txt, setTxt] = useState(String(value));
@@ -21,15 +21,9 @@ export default function ContextBar() {
   const ui = useStore((s) => s.ui);
   const project = useStore((s) => s.project);
   const selectedIds = useStore((s) => s.selectedIds);
-  const { toggleUI, requestFit, select, updateItem, updateItems, setUI, toast, setItems } = useStore.getState();
+  const { select, updateItem, updateItems, setUI, toast, setItems } = useStore.getState();
   const sel = selectedIds.length === 1 ? project.items.find((i) => i.id === selectedIds[0]) : undefined;
   const Sep = () => <div className="w-px h-5 mx-1" style={{ background: 'var(--border)' }} />;
-  const toolMeta: Record<string, { icon: typeof Move; label: string }> = {
-    select: { icon: MousePointer2, label: 'Select' }, move: { icon: Move, label: 'Move' }, rotate: { icon: RotateCw, label: 'Rotate' },
-    paint: { icon: PaintBucket, label: 'Paint' }, measure: { icon: Ruler, label: 'Measure' }, pan: { icon: Hand, label: 'Pan' },
-    zoom: { icon: ZoomIn, label: 'Zoom' }, eyedropper: { icon: Pipette, label: 'Eyedropper' },
-  };
-  const tm = toolMeta[ui.tool] ?? toolMeta.select;
   const isHood = sel?.subtype.startsWith('app_hood');
   const cooktop = isHood ? project.items.find((c) => c.subtype.startsWith('app_cooktop')) : undefined;
   const ckTop = cooktop ? cooktop.elevation + cooktop.height : null;
@@ -39,17 +33,14 @@ export default function ContextBar() {
     updateItems(selectedIds.map((id) => { const it = project.items.find((i) => i.id === id)!; return { id, patch: { rotation: (((it.rotation + deg) % 360 + 360) % 360) as 0 | 90 | 180 | 270 } }; }));
   };
 
-  return (
-    <div className="h-10 flex items-center gap-1 px-2 border-b shrink-0 overflow-x-auto text-xs" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-      <span className="flex items-center gap-1.5 px-2 py-1 rounded font-semibold" style={{ background: 'var(--bg-selected)', color: 'var(--accent)' }}><tm.icon size={13} /> {tm.label}</span>
-      <Sep />
-      <button className={`tb-btn h-7! ${ui.showGrid ? 'active' : ''}`} title="Grid" onClick={() => toggleUI('showGrid')}><Grid2x2 size={13} /></button>
-      <button className={`tb-btn h-7! ${ui.showDims ? 'active' : ''}`} title="Dimensions" onClick={() => toggleUI('showDims')}><Scaling size={13} /></button>
-      <button className={`tb-btn h-7! ${ui.snap ? 'active' : ''}`} title="Snap (grid + edges)" onClick={() => toggleUI('snap')}><Magnet size={13} /> <span className="hidden xl:inline">Snap</span></button>
-      <button className="tb-btn h-7!" title="Fit all (F)" onClick={requestFit}><Maximize size={13} /></button>
-      <Sep />
+  const show =
+    (ui.tool === 'select' && selectedIds.length > 0) ||
+    ui.tool === 'move' || ui.tool === 'rotate' || ui.tool === 'paint' || ui.tool === 'measure';
+  if (!show) return null;
 
-      {ui.tool === 'select' && (
+  return (
+    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 max-w-[min(920px,calc(100%-16px))] flex items-center gap-1 px-2 py-1 rounded-lg border shadow-lg overflow-x-auto text-xs" style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}>
+      {ui.tool === 'select' && selectedIds.length > 0 && (
         <>
           <button className="btn py-0.5!" onClick={() => select(project.items.map((i) => i.id))}>Select All</button>
           <button className="btn py-0.5!" onClick={() => select([])}>Deselect</button>
@@ -106,7 +97,6 @@ export default function ContextBar() {
       )}
 
       {ui.tool === 'measure' && <span className="opacity-60">Click two points on the 2D plan · Esc to exit</span>}
-      {(ui.tool === 'pan' || ui.tool === 'zoom' || ui.tool === 'eyedropper') && <span className="opacity-60">{ui.tool === 'pan' ? 'Drag to pan the view · Space also pans' : ui.tool === 'zoom' ? 'Click to zoom in · Alt+click to zoom out' : 'Click a cabinet to sample its door colour'}</span>}
 
       {isHood && sel && (
         <>

@@ -10,8 +10,6 @@ import { getDrag, setDrag } from '../core/dragState';
 import type { Footprint, Item, Rotation } from '../models/types';
 import { isSink, isCooktop } from '../engine/constraints';
 import { defaultsForNewItem } from '../engine/projectDimensions';
-import { Maximize } from '../ui/icons';
-
 type DragMode = null | { kind: 'pan'; sx: number; sy: number; ox: number; oy: number } | { kind: 'move'; start: { x: number; y: number }; origin: Record<string, { x: number; y: number }>; moved: boolean; axis: 'x' | 'y' | null; dup: boolean } | { kind: 'resize'; handle: number; item: Item; start: { x: number; y: number } } | { kind: 'measure' };
 
 const HANDLE_PX = 7;
@@ -366,11 +364,6 @@ export default function Viewport2D({ className = '' }: { className?: string }) {
     const { cx, cy } = local(e);
     zoomAt(cx, cy, Math.exp(-e.deltaY * 0.0015));
   };
-  const zoomCenter = (factor: number) => {
-    const c = canvasRef.current!;
-    zoomAt(c.clientWidth / 2, c.clientHeight / 2, factor);
-  };
-
   const onDoubleClick = (e: React.MouseEvent) => {
     const { cx, cy } = local(e);
     const w = toWorld(cx, cy);
@@ -524,12 +517,6 @@ export default function Viewport2D({ className = '' }: { className?: string }) {
           ))}
         </div>
         {ui.tool === 'measure' && <span className="badge bg-amber-500/20 text-amber-300 border-amber-500/40">Measure: click two points · Esc to exit</span>}
-      </div>
-      <div className="absolute top-2 right-2 flex gap-1">
-        <button className="vp-btn" title="Zoom in" onClick={() => zoomCenter(1.4)}>+</button>
-        <button className="vp-btn" title="Zoom out" onClick={() => zoomCenter(1 / 1.4)}>−</button>
-        <button className="vp-btn flex items-center" title="Fit all (F)" onClick={fit}><Maximize size={12} /></button>
-        <button className={`vp-btn ${ui.showTriangle ? 'active' : ''}`} title="Work triangle overlay" onClick={() => setUI({ showTriangle: !ui.showTriangle })}>△</button>
       </div>
       <div className="absolute bottom-2 left-2 text-[10px] font-mono flex gap-3 px-2 py-1 rounded" style={{ color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--bg-panel) 75%, transparent)' }}>
         <span>{cursor ? `X ${cursor.x} · Y ${cursor.y} cm` : 'move cursor'}</span>

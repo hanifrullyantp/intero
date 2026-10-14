@@ -4,7 +4,7 @@ import { footprint } from '../utils/geometry';
 import { uid } from '../config/library';
 import {
   MousePointer2, Hand, Orbit, ZoomIn, Move, RotateCw, ArrowLeftRight, LayoutGrid, AlignCenter,
-  Ruler, Scissors, PaintBucket, Pipette, Copy, Clipboard, CopyPlus, Trash2, Group, Hammer, X, Scan, PanelLeft, type LucideIcon,
+  Ruler, Scissors, PaintBucket, Pipette, Copy, Clipboard, CopyPlus, Trash2, Group, Hammer, X, Scan, type LucideIcon,
 } from './icons';
 
 interface ToolDef { id: ToolId | 'group' | 'component' | 'copy' | 'paste' | 'dup' | 'del'; icon: LucideIcon; label: string; kbd: string; adv?: boolean; sub?: { label: string; run: () => void }[] }
@@ -124,8 +124,6 @@ export default function ToolsToolbar() {
   const visible = (t: ToolDef) => uiMode === 'advanced' || simpleTools.has(t.id);
   const isActive = (t: ToolDef) => tool === t.id;
 
-  const leftOpen = useStore((s) => s.ui.leftOpen);
-
   return (
     <div className="flex flex-col items-center gap-0.5 py-1 h-full overflow-y-auto overflow-x-visible relative" style={{ background: 'var(--bg-panel)' }}>
       {GROUPS.map((grp, gi) => {
@@ -158,17 +156,6 @@ export default function ToolsToolbar() {
                 )}
               </div>
             ))}
-            {gi === 0 && (
-              <>
-                <div className="w-6 h-px my-1" style={{ background: 'var(--border)' }} />
-                <button
-                  className={`tool-btn ${leftOpen ? 'active' : ''}`}
-                  title={`${leftOpen ? 'Sembunyikan' : 'Tampilkan'} bar komponen (${selectedIds.length ? '' : ''}Shift+C)`}
-                  onClick={() => useStore.getState().setUI({ leftOpen: !leftOpen })}>
-                  <PanelLeft size={17} />
-                </button>
-              </>
-            )}
           </div>
         );
       })}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from './core/store';
 import Toolbar from './ui/Toolbar';
 import ComponentLibrary from './ui/ComponentLibrary';
@@ -13,46 +13,7 @@ import CuttingListModal from './ui/CuttingListModal';
 import { ExportModal, PriceModal, TemplatesModal, HoodConfigModal, EditorModal, ShortcutsModal, ConfirmDialog } from './ui/modals';
 import { Toasts, ContextMenu, StatusBar, LoadingOverlay } from './ui/Overlays';
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts';
-import { Box, SlidersHorizontal, PanelLeft, X, DoorOpen, DoorClosed, GripVertical } from './ui/icons';
-
-/** Floating, draggable tools palette that overlays the viewport. */
-function FloatingTools() {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
-    try { const v = localStorage.getItem('i3d_tools_pos'); return v ? JSON.parse(v) : null; } catch { return null; }
-  });
-  const live = useRef(pos);
-  live.current = pos;
-  const drag = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const start = { x: e.clientX, y: e.clientY };
-    const orig = live.current ?? { x: 8, y: window.innerHeight / 2 };
-    const move = (ev: PointerEvent) => {
-      const np = {
-        x: Math.max(2, Math.min(window.innerWidth - 64, orig.x + ev.clientX - start.x)),
-        y: Math.max(56, Math.min(window.innerHeight - 90, orig.y + ev.clientY - start.y)),
-      };
-      live.current = np;
-      setPos(np);
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      try { if (live.current) localStorage.setItem('i3d_tools_pos', JSON.stringify(live.current)); } catch { /* ignore */ }
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-  };
-  return (
-    <div className="absolute z-40" style={pos ? { left: pos.x, top: pos.y } : { left: 8, top: '50%', transform: 'translateY(-50%)' }}>
-      <div className="card flex overflow-hidden shadow-xl" style={{ maxHeight: '72vh' }}>
-        <div onPointerDown={drag} className="w-4 grid place-items-center cursor-grab active:cursor-grabbing select-none" style={{ background: 'var(--bg-hover)' }} title="Geser untuk memindahkan toolbar">
-          <GripVertical size={12} className="opacity-50" />
-        </div>
-        <ToolsToolbar />
-      </div>
-    </div>
-  );
-}
+import { Box, SlidersHorizontal, PanelLeft, X, DoorOpen, DoorClosed } from './ui/icons';
 
 const LIB_KEY = 'instant3d_libopen';
 function setLeftOpen(v: boolean) {
@@ -182,11 +143,15 @@ export default function App() {
             <PanelLeft size={14} />
           </button>
         )}
-        <div className="flex-1 min-w-0 flex flex-col relative">
-          <ContextBar />
-          <div className="flex-1 min-h-0 relative flex flex-col">
+        <div className="flex-1 min-w-0 flex min-h-0">
+          {!simple && (
+            <div className="desktop-only shrink-0 h-full border-r border-[var(--border)]" style={{ width: 48, background: 'var(--bg-panel)' }}>
+              <ToolsToolbar />
+            </div>
+          )}
+          <div className="flex-1 min-w-0 min-h-0 relative flex flex-col">
             <ViewportManager />
-            {!simple && <FloatingTools />}
+            <ContextBar />
           </div>
         </div>
         {ui.rightOpen && (

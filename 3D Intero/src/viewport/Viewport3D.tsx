@@ -27,42 +27,6 @@ export function capture3D(): HTMLCanvasElement | null {
   return captureFn ? captureFn() : null;
 }
 
-/** Only the active preset is shown; clicking it opens a compact dropdown of choices. */
-function CameraDropdown() {
-  const preset = useStore((s) => s.ui.cameraPreset);
-  const setUI = useStore((s) => s.setUI);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    window.addEventListener('mousedown', h);
-    return () => window.removeEventListener('mousedown', h);
-  }, [open]);
-  const active = CAMERA_PRESETS.find((p) => p.id === preset) ?? CAMERA_PRESETS[0];
-  return (
-    <div ref={ref} className="absolute top-2 right-2 z-30">
-      <button className="vp-btn active flex items-center gap-1.5" onClick={() => setOpen((o) => !o)} title="Pilih sudut kamera">
-        {active.label}
-        <span className={`text-[9px] transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
-      </button>
-      {open && (
-        <div className="absolute right-0 top-9 card py-1 w-44 shadow-xl z-40">
-          {CAMERA_PRESETS.map((p) => (
-            <button key={p.id} className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 ${p.id === preset ? 'text-[var(--accent)]' : ''}`}
-              style={{ color: p.id === preset ? 'var(--accent)' : undefined }}
-              onClick={() => { setUI({ cameraPreset: p.id, fitRequest: useStore.getState().ui.fitRequest + 1 }); setOpen(false); }}>
-              <span className="w-4 text-center opacity-70">{p.key}</span>
-              <span className="flex-1">{p.label}</span>
-              {p.id === preset && <span className="text-[var(--accent)]">•</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Viewport3D() {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<{
@@ -697,7 +661,6 @@ export default function Viewport3D() {
       {dragInfo && (
         <div className="absolute top-12 left-1/2 -translate-x-1/2 card px-3 py-1.5 text-xs font-mono shadow-lg" style={{ borderColor: 'var(--accent)' }}>{dragInfo}</div>
       )}
-      <CameraDropdown />
       {ui.tool === 'move' && !dragInfo && (
         <div className="absolute bottom-2 left-2 text-[10px] px-2 py-1 rounded" style={{ color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--bg-panel) 75%, transparent)' }}>
           Move: drag object or XYZ arrows · green = up/down · scroll = elevation · Shift = axis lock

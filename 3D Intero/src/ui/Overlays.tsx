@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../core/store';
 import { LIBRARY, uid } from '../config/library';
-import { footprint, r1 } from '../utils/geometry';
+import { r1 } from '../utils/geometry';
 import { formatLength } from '../core/units';
 import { downloadBlob, safeName } from '../core/projectManager';
 import { LibIcon, Info, Check, TriangleAlert, CircleAlert, X } from './icons';
@@ -133,37 +133,25 @@ export function ContextMenu() {
 
 export function StatusBar() {
   const project = useStore((s) => s.project);
-  const selectedIds = useStore((s) => s.selectedIds);
-  const issues = useStore((s) => s.issues);
   const ui = useStore((s) => s.ui);
-  const past = useStore((s) => s.past.length);
+  const dirty = useStore((s) => s.dirty);
   const { setSettings } = useStore.getState();
-  const item = selectedIds.length === 1 ? project.items.find((i) => i.id === selectedIds[0]) : undefined;
   const cabinets = project.items.filter((i) => i.kind === 'cabinet').length;
   const running = r1(project.items.filter((i) => i.kind === 'cabinet' && i.category !== 'wall').reduce((s, i) => s + i.width, 0) / 100);
   const unit = project.settings.unit;
-  const issueColor = issues.some((i) => i.severity === 'error') ? 'var(--error)' : issues.length ? 'var(--warning)' : 'var(--success)';
   return (
-    <div className="h-7 flex items-center gap-4 px-3 text-[11px] shrink-0 select-none border-t" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-      <span className="flex items-center gap-1.5"><i className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--success)' }} />{ui.loading ? ui.loading : 'Ready'} · <span className="capitalize">{ui.tool}</span></span>
-      <span><b>{cabinets}</b> cabinets · <b>{project.items.length}</b> items · {running} m run</span>
-      <span>Room {formatLength(project.room.width, unit)} × {formatLength(project.room.depth, unit)} · ceiling {formatLength(project.room.ceilingHeight, unit)}</span>
-      {item && (
-        <span className="font-mono" style={{ color: 'var(--accent)' }}>
-          {item.name}: {formatLength(item.width, unit)} W × {formatLength(item.height, unit)} H × {formatLength(item.depth, unit)} D @ ({r1(footprint(item).x)}, {r1(footprint(item).y)}) elev {item.elevation}
-        </span>
-      )}
+    <div className="h-7 flex items-center gap-3 px-3 text-[11px] shrink-0 select-none border-t overflow-x-auto" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+      <span className="flex items-center gap-1.5 shrink-0"><i className="w-1.5 h-1.5 rounded-full" style={{ background: ui.loading ? 'var(--warning)' : 'var(--success)' }} />{ui.loading ? ui.loading : 'Ready'}</span>
+      <span className="shrink-0"><b>{cabinets}</b> cabinets · {running} m</span>
+      <span className="shrink-0">Room {formatLength(project.room.width, unit)} × {formatLength(project.room.depth, unit)}</span>
       <span className="flex-1" />
-      <span style={{ color: issueColor }}>{issues.length ? `${issues.length} issue${issues.length > 1 ? 's' : ''}` : 'design valid'}</span>
-      <span>{past} undo steps</span>
-      <span className="flex items-center gap-1">
-        units
+      <span className="flex items-center gap-1 shrink-0">
         {(['cm', 'mm', 'inch'] as const).map((u) => (
           <button key={u} className={`px-1 rounded ${unit === u ? 'bg-[var(--bg-selected)] text-[var(--accent)]' : ''}`} onClick={() => setSettings({ unit: u })}>{u}</button>
         ))}
       </span>
-      <span>{ui.snap ? 'SNAP' : 'snap off'}</span>
-      <span>autosave on</span>
+      <span className="shrink-0">{ui.snap ? 'SNAP' : 'snap off'}</span>
+      <span className="shrink-0" style={{ color: dirty ? 'var(--warning)' : 'var(--success)' }}>{dirty ? 'Modified' : 'Saved'}</span>
     </div>
   );
 }
