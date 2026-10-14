@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { newShareId } from "./instant3dShares.ts";
+import { newShareId } from "./shareId.ts";
 
 let admin: SupabaseClient | null = null;
 

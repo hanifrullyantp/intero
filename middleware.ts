@@ -3,6 +3,7 @@ import { next, rewrite } from "@vercel/functions";
 const HOST_3D = "3d.intero.id";
 
 function pathFor3dApp(pathname: string): string {
+  if (pathname.startsWith("/api/")) return pathname;
   if (pathname === "/") return "/3d/index.html";
   if (/^\/v\/[A-Za-z0-9_-]{8,32}\/?$/.test(pathname)) return "/3d/index.html";
   if (

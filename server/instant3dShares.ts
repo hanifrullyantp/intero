@@ -1,5 +1,5 @@
-import { randomBytes } from "crypto";
 import { db } from "./db.ts";
+import { newShareId } from "./shareId.ts";
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS instant3d_shares (
@@ -9,15 +9,6 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 `);
-
-const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-export function newShareId(len = 12): string {
-  const bytes = randomBytes(len);
-  let id = "";
-  for (let i = 0; i < len; i++) id += ALPHABET[bytes[i]! % ALPHABET.length];
-  return id;
-}
 
 export function createShare(name: string, payload: unknown): { id: string } {
   const id = newShareId();
