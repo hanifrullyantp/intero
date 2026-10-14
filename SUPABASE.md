@@ -48,6 +48,9 @@ Di **Vercel** → Project → **Settings** → **Environment Variables**:
 |------|--------|
 | `VITE_SUPABASE_URL` | `https://xxxxx.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | anon key |
+| `VITE_3D_PUBLIC_ORIGIN` | (opsional) `https://3d.intero.id` — URL share link |
+| `SUPABASE_URL` | sama dengan Project URL (untuk API share di Vercel, opsional) |
+| `SUPABASE_SERVICE_ROLE_KEY` | service role (opsional, fallback API serverless) |
 
 **Penting:** variabel diawali `VITE_` disematkan saat **`npm run build`**. Setelah mengubah env, **redeploy**.
 

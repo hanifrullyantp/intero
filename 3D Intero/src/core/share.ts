@@ -1,5 +1,7 @@
 import type { Project } from '../models/types';
 import { normalizeProject } from './projectManager';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { newShareId } from './shareId';
 
 const SHARE_PATH = /^\/v\/([A-Za-z0-9_-]{8,32})\/?$/;
 
@@ -21,7 +23,7 @@ async function apiBase(): Promise<string> {
   return '';
 }
 
-export async function createShareLink(project: Project): Promise<{ id: string; url: string }> {
+async function createShareViaApi(project: Project): Promise<{ id: string; url: string }> {
   const base = await apiBase();
   const r = await fetch(`${base}/api/instant3d/shares`, {
     method: 'POST',
@@ -34,12 +36,60 @@ export async function createShareLink(project: Project): Promise<{ id: string; u
   return { id: data.id, url: shareUrlForId(data.id) };
 }
 
-export async function fetchSharedProject(id: string): Promise<Project> {
+async function createShareViaSupabase(project: Project): Promise<{ id: string; url: string }> {
+  const id = newShareId();
+  const name = project.name || 'Shared project';
+  const payload = { app: 'Instant 3D', version: 1, project };
+  const { error } = await getSupabase().from('instant3d_shares').insert({ id, name: name.slice(0, 200), payload });
+  if (error) throw new Error(error.message);
+  return { id, url: shareUrlForId(id) };
+}
+
+async function fetchShareViaApi(id: string): Promise<Project> {
   const base = await apiBase();
   const r = await fetch(`${base}/api/instant3d/shares/${encodeURIComponent(id)}`);
   const data = (await r.json()) as { payload?: unknown; error?: string };
   if (!r.ok) throw new Error(data.error || `Could not load share (${r.status})`);
-  const envelope = data.payload as { project?: unknown } | unknown;
+  return normalizeSharePayload(data.payload);
+}
+
+async function fetchShareViaSupabase(id: string): Promise<Project> {
+  const { data, error } = await getSupabase().from('instant3d_shares').select('payload').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Share link not found or expired');
+  return normalizeSharePayload(data.payload);
+}
+
+function normalizeSharePayload(payload: unknown): Project {
+  const envelope = payload as { project?: unknown } | unknown;
   const raw = envelope && typeof envelope === 'object' && 'project' in envelope ? (envelope as { project: unknown }).project : envelope;
   return normalizeProject(raw);
+}
+
+export async function createShareLink(project: Project): Promise<{ id: string; url: string }> {
+  if (isSupabaseConfigured()) {
+    try {
+      return await createShareViaSupabase(project);
+    } catch (e) {
+      const msg = (e as Error).message || '';
+      if (!msg.includes('instant3d_shares') && !msg.includes('relation') && !msg.includes('schema cache')) {
+        throw e;
+      }
+    }
+  }
+  return createShareViaApi(project);
+}
+
+export async function fetchSharedProject(id: string): Promise<Project> {
+  if (isSupabaseConfigured()) {
+    try {
+      return await fetchShareViaSupabase(id);
+    } catch (e) {
+      const msg = (e as Error).message || '';
+      if (!msg.includes('instant3d_shares') && !msg.includes('relation') && !msg.includes('schema cache') && !msg.includes('not found')) {
+        throw e;
+      }
+    }
+  }
+  return fetchShareViaApi(id);
 }
