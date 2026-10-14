@@ -15,6 +15,7 @@ import { defaultsForNewItem } from '../engine/projectDimensions';
 
 export const CAMERA_PRESETS: { id: string; label: string; key: string }[] = [
   { id: 'perspective', label: 'Perspective', key: '1' },
+  { id: 'parallel', label: 'Parallel', key: '7' },
   { id: 'front', label: 'Front', key: '2' },
   { id: 'back', label: 'Back', key: '3' },
   { id: 'left', label: 'Left', key: '4' },
@@ -25,6 +26,44 @@ export const CAMERA_PRESETS: { id: string; label: string; key: string }[] = [
 let captureFn: (() => HTMLCanvasElement | null) | null = null;
 export function capture3D(): HTMLCanvasElement | null {
   return captureFn ? captureFn() : null;
+}
+
+/** Mobile-only camera preset picker (desktop uses header 3D menu). */
+function MobileCameraDropdown() {
+  const preset = useStore((s) => s.ui.cameraPreset);
+  const setUI = useStore((s) => s.setUI);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
+  }, [open]);
+  const active = CAMERA_PRESETS.find((p) => p.id === preset) ?? CAMERA_PRESETS[0];
+  return (
+    <div ref={ref} className="mobile-only absolute top-2 right-2 z-30">
+      <button type="button" className="vp-btn active flex items-center gap-1.5" onClick={() => setOpen((o) => !o)} title="Camera angle">
+        {active.label}
+        <span className={`text-[9px] transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-9 card py-1 w-44 shadow-xl z-40">
+          {CAMERA_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 ${p.id === preset ? 'text-[var(--accent)]' : ''}`}
+              onClick={() => { setUI({ cameraPreset: p.id, fitRequest: useStore.getState().ui.fitRequest + 1 }); setOpen(false); }}
+            >
+              <span className="w-4 text-center opacity-70">{p.key}</span>
+              <span className="flex-1">{p.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Viewport3D() {
@@ -301,6 +340,8 @@ export default function Viewport3D() {
     const dist = size * 1.4;
     const top = project.settings.defaults?.totalHeight ?? 220;
     const target = new THREE.Vector3(cx, top * 0.46, cz * 0.65);
+    st.camera.fov = ui.cameraPreset === 'parallel' ? 28 : 42;
+    st.camera.updateProjectionMatrix();
     let pos: THREE.Vector3;
     switch (ui.cameraPreset) {
       case 'front':
@@ -318,6 +359,10 @@ export default function Viewport3D() {
       case 'top':
         pos = new THREE.Vector3(cx, dist * 1.3, cz + 1);
         target.set(cx, 0, cz);
+        break;
+      case 'parallel':
+        pos = new THREE.Vector3(cx + dist * 0.85, top * 0.95, cz + dist * 0.35);
+        target.set(cx, top * 0.35, cz);
         break;
       default: {
         // View from the open side of the L, not through its returning wall.
@@ -658,6 +703,7 @@ export default function Viewport3D() {
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mountRef} className="w-full h-full" />
+      <MobileCameraDropdown />
       {dragInfo && (
         <div className="absolute top-12 left-1/2 -translate-x-1/2 card px-3 py-1.5 text-xs font-mono shadow-lg" style={{ borderColor: 'var(--accent)' }}>{dragInfo}</div>
       )}

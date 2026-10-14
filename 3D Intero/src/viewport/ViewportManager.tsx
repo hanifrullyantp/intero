@@ -1,14 +1,32 @@
-import { useRef, useState } from 'react';
-import { useStore } from '../core/store';
+import { useEffect, useRef, useState } from 'react';
+import { useStore, type ViewMode } from '../core/store';
 import Viewport2D from './Viewport2D';
 import Viewport3D from './Viewport3D';
 import ViewportElevation from './ViewportElevation';
+import { PencilRuler, Box, Building, Columns2, ChevronDown, Check, type LucideIcon } from '../ui/icons';
 
-/** Viewport host. View switching lives in the header. */
+const MODES: { id: ViewMode; label: string; icon: LucideIcon; adv?: boolean; hint: string }[] = [
+  { id: '2d', label: '2D Plan', icon: PencilRuler, hint: 'Floor plan, drag & snap' },
+  { id: '3d', label: '3D View', icon: Box, hint: '3D model, orbit & select' },
+  { id: 'elevation', label: 'Elevation', icon: Building, adv: true, hint: 'Wall elevation with dimensions' },
+  { id: 'split', label: 'Split', icon: Columns2, adv: true, hint: '2D + 3D side by side' },
+];
+
 export default function ViewportManager() {
   const mode = useStore((s) => s.ui.viewMode);
+  const uiMode = useStore((s) => s.ui.uiMode);
+  const setUI = useStore((s) => s.setUI);
   const [split, setSplit] = useState(0.5);
+  const [menu, setMenu] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const dd = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const h = (e: MouseEvent) => { if (!dd.current?.contains(e.target as Node)) setMenu(false); };
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
+  }, [menu]);
 
   const startSplitDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,13 +42,17 @@ export default function ViewportManager() {
     window.addEventListener('mouseup', onUp);
   };
 
+  const modes = MODES.filter((m) => uiMode === 'advanced' || !m.adv);
+  const active = modes.some((m) => m.id === mode) ? mode : '3d';
+  const cur = MODES.find((m) => m.id === active)!;
+
   return (
-    <div className="flex-1 min-h-0 min-w-0 relative flex flex-col">
+    <div className="flex-1 min-h-0 min-w-0 relative flex flex-col mobile-viewport-pad">
       <div ref={wrap} className="flex-1 min-h-0 relative flex">
-        {mode === '2d' && <Viewport2D />}
-        {mode === '3d' && <Viewport3D />}
-        {mode === 'elevation' && <ViewportElevation />}
-        {mode === 'split' && (
+        {active === '2d' && <Viewport2D />}
+        {active === '3d' && <Viewport3D />}
+        {active === 'elevation' && <ViewportElevation />}
+        {active === 'split' && (
           <>
             <div style={{ width: `${split * 100}%` }} className="h-full min-w-0">
               <Viewport2D />
@@ -40,6 +62,32 @@ export default function ViewportManager() {
               <Viewport3D />
             </div>
           </>
+        )}
+      </div>
+
+      {/* Mobile: view switcher (desktop uses header 3D menu) */}
+      <div ref={dd} className="mobile-only absolute top-2 left-2 z-30">
+        <button type="button" className="vp-btn flex items-center gap-1.5 !px-2.5 !py-1.5 font-semibold" onClick={() => setMenu((o) => !o)} title="Switch view">
+          <cur.icon size={13} /> {cur.label} <ChevronDown size={12} className={`transition-transform ${menu ? 'rotate-180' : ''}`} />
+        </button>
+        {menu && (
+          <div className="absolute left-0 top-full mt-1 card py-1 w-56 shadow-2xl anim-in">
+            {modes.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className="w-full text-left px-3 py-2 flex items-center gap-2.5 hover:bg-[var(--bg-hover)]"
+                onClick={() => { setUI({ viewMode: m.id }); setMenu(false); }}
+              >
+                <m.icon size={14} className="opacity-80" />
+                <span className="flex-1">
+                  <span className="block text-xs">{m.label}</span>
+                  <span className="block text-[10px] opacity-60">{m.hint}</span>
+                </span>
+                {active === m.id && <Check size={13} style={{ color: 'var(--accent)' }} />}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

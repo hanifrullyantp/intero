@@ -1,23 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { useStore, persist, type ViewMode } from '../core/store';
+import { useStore, persist } from '../core/store';
 import { saveProjectFile, openProjectFile } from '../core/projectManager';
 import { exportCuttingListCSV, exportDXF, exportJSON, exportTechnicalPDF, exportQuotationPDF, renderPlanImage, downloadCanvasPNG } from '../utils/exporters';
 import { CAMERA_PRESETS, capture3D } from '../viewport/Viewport3D';
 import { safeName } from '../core/projectManager';
+import InteroLogo from './InteroLogo';
 import {
   FilePlus2, Save, FolderOpen, Undo2, Redo2, Scissors, Calculator, Download, Hammer,
-  Check, TriangleAlert, CircleAlert, Sun, Moon, Monitor, Sparkles, Settings, Keyboard, ChevronDown,
+  Sun, Moon, Monitor, Sparkles, Settings, Keyboard, ChevronDown,
   DraftingCompass, Receipt, ClipboardList, Image, FileText, Package, Info, PencilRuler, Box, Building, Columns2, type LucideIcon,
 } from './icons';
 
 type MenuItem = { label: string; onClick: () => void; icon?: LucideIcon; sep?: boolean; kbd?: string };
 
-export /**
- * Toolbar menu. The panel is rendered with `position: fixed` because the toolbar
- * scrolls horizontally (`overflow-x: auto`), which would clip an absolutely
- * positioned dropdown inside it.
- */
-function Dropdown({ label, icon: Icon, items, title, iconOnly, disabled }: { label: string; icon?: LucideIcon; title?: string; items: MenuItem[]; iconOnly?: boolean; disabled?: boolean }) {
+export function Dropdown({ label, icon: Icon, items, title, iconOnly, disabled }: { label: string; icon?: LucideIcon; title?: string; items: MenuItem[]; iconOnly?: boolean; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -65,19 +61,14 @@ export default function Toolbar() {
   const past = useStore((s) => s.past.length);
   const future = useStore((s) => s.future.length);
   const dirty = useStore((s) => s.dirty);
-  const issues = useStore((s) => s.issues);
-  const { setUI, undo, redo, setProject, toast, requestFit } = useStore.getState();
+  const { setUI, undo, redo, setProject, toast } = useStore.getState();
   const [editingName, setEditingName] = useState(false);
 
-  const errors = issues.filter((i) => i.severity === 'error').length;
-  const warnings = issues.filter((i) => i.severity === 'warning').length;
-  const cameraOn = ui.viewMode === '3d' || ui.viewMode === 'split';
-  const viewLabel: Record<ViewMode, string> = { '2d': '2D Plan', '3d': '3D View', elevation: 'Elevation', split: 'Split' };
-  const cameraLabel = CAMERA_PRESETS.find((p) => p.id === ui.cameraPreset)?.label ?? 'Perspective';
+  const ThemeIcon = ui.theme === 'system' ? Monitor : ui.resolvedTheme === 'dark' ? Moon : Sun;
 
   const doSave = () => { saveProjectFile(project); persist(project); useStore.setState({ dirty: false }); toast({ severity: 'success', message: 'Project saved (.i3d.json downloaded)' }); };
   const doLoad = async () => {
-    try { const p = await openProjectFile(); setProject(p); requestFit(); toast({ severity: 'success', message: `Loaded "${p.name}"` }); }
+    try { const p = await openProjectFile(); setProject(p); useStore.getState().requestFit(); toast({ severity: 'success', message: `Loaded "${p.name}"` }); }
     catch (e) { toast({ severity: 'error', message: `Load failed: ${(e as Error).message}` }); }
   };
   const export3D = (type: 'image/png' | 'image/jpeg') => {
@@ -97,13 +88,13 @@ export default function Toolbar() {
     toast({ severity: 'success', message: 'High-res render captured', ttl: 2500 });
   };
 
-  const ThemeIcon = ui.theme === 'system' ? Monitor : ui.resolvedTheme === 'dark' ? Moon : Sun;
-  const issueColor = errors ? 'var(--error)' : warnings ? 'var(--warning)' : 'var(--success)';
-  const IssueIcon = errors ? CircleAlert : warnings ? TriangleAlert : Check;
+  const ensure3dView = () => {
+    if (ui.viewMode === '2d' || ui.viewMode === 'elevation') setUI({ viewMode: 'split' });
+  };
 
   const fileMenu: MenuItem[] = [
     { label: 'New Project — Magic Generator…', icon: FilePlus2, kbd: 'Ctrl+N', onClick: () => setUI({ modal: 'magic' }) },
-    { label: 'New Project (lanjutan)…', icon: DraftingCompass, onClick: () => setUI({ modal: 'wizard' }) },
+    { label: 'New Project (wizard)…', icon: DraftingCompass, onClick: () => setUI({ modal: 'wizard' }) },
     { label: 'Open…', icon: FolderOpen, onClick: doLoad },
     { label: 'Save', icon: Save, kbd: 'Ctrl+S', onClick: doSave },
     { label: 'Templates…', icon: Package, onClick: () => setUI({ modal: 'templates' }) },
@@ -121,64 +112,74 @@ export default function Toolbar() {
     { label: 'Component Builder', icon: Hammer, kbd: 'Ctrl+⇧K', onClick: () => setUI({ modal: 'builder' }) },
   ];
 
-  const viewItems: MenuItem[] = [
+  const threeDMenu: MenuItem[] = [
     { label: '2D Plan', icon: PencilRuler, onClick: () => setUI({ viewMode: '2d' }) },
     { label: '3D View', icon: Box, onClick: () => setUI({ viewMode: '3d' }) },
     ...(ui.uiMode === 'advanced' ? [
       { label: 'Elevation', icon: Building, onClick: () => setUI({ viewMode: 'elevation' }) },
       { label: 'Split', icon: Columns2, onClick: () => setUI({ viewMode: 'split' }) },
     ] : []),
+    { sep: true, label: '', onClick: () => {} },
+    ...CAMERA_PRESETS.map((p) => ({
+      label: p.label,
+      kbd: p.key,
+      onClick: () => {
+        const vm = ui.viewMode === '2d' || ui.viewMode === 'elevation' ? 'split' : ui.viewMode;
+        setUI({ cameraPreset: p.id, fitRequest: useStore.getState().ui.fitRequest + 1, viewMode: vm });
+      },
+    })),
+    { sep: true, label: '', onClick: () => {} },
+    { label: 'X-ray', onClick: () => { ensure3dView(); setUI({ openView: 'xray' }); } },
+    { label: 'Explode', onClick: () => { ensure3dView(); setUI({ openView: 'explode' }); } },
+    { label: 'Normal shading', onClick: () => setUI({ openView: 'normal' }) },
   ];
-  const cameraItems: MenuItem[] = CAMERA_PRESETS.map((p) => ({
-    label: p.label,
-    kbd: p.key,
-    onClick: () => setUI({ cameraPreset: p.id, fitRequest: useStore.getState().ui.fitRequest + 1 }),
-  }));
+
   const settingsItems: MenuItem[] = [
     { label: `Theme: ${ui.theme}`, icon: ThemeIcon, kbd: 'Ctrl+⇧T', onClick: () => { const next = ui.theme === 'light' ? 'dark' : ui.theme === 'dark' ? 'system' : 'light'; useStore.getState().setTheme(next); } },
     { label: ui.uiMode === 'simple' ? 'Switch to Advanced' : 'Switch to Simple', icon: ui.uiMode === 'simple' ? Sparkles : Settings, kbd: 'Ctrl+⇧U', onClick: () => useStore.getState().setUIMode(ui.uiMode === 'simple' ? 'advanced' : 'simple') },
     { label: 'Keyboard shortcuts', icon: Keyboard, onClick: () => setUI({ modal: 'shortcuts' }) },
-    { label: 'About 3D Intero', icon: Info, onClick: () => toast({ severity: 'info', message: '3D Intero - parametric furniture designer (kitchen, wardrobe, TV cabinet).', ttl: 3500 }) },
+    { label: 'About Instant 3D', icon: Info, onClick: () => toast({ severity: 'info', message: 'Instant 3D — parametric furniture designer by Intero.', ttl: 3500 }) },
   ];
 
   return (
-    <div className="h-14 flex items-center gap-1.5 px-3 border-b shrink-0 select-none" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', overflowX: 'auto' }}>
-      {/* left: menu, logo, name */}
+    <div className="desktop-only h-14 flex items-center gap-2 px-3 border-b shrink-0 select-none" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', overflowX: 'auto' }}>
       <Dropdown label="Menu" items={fileMenu} iconOnly icon={MenuIcon as unknown as LucideIcon} title="File menu" />
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-xs shadow cursor-pointer shrink-0" style={{ background: 'linear-gradient(135deg, var(--brand-light), var(--brand-active))' }} title="Fit view" onClick={requestFit}>3D</div>
-      <div className="leading-tight mr-2">
-        <div className="text-[13px] font-semibold tracking-wide">3D Intero</div>
+      <InteroLogo size={36} className="shrink-0 rounded-lg shadow-sm" />
+      <div className="leading-tight shrink-0">
+        <div className="text-[14px] font-bold tracking-tight">Instant 3D</div>
         {editingName ? (
-          <input autoFocus className="input py-0! text-[11px]! w-44" defaultValue={project.name}
+          <input autoFocus className="input py-0! text-[11px]! w-44 mt-0.5" defaultValue={project.name}
             onBlur={(e) => { setProject({ ...project, name: e.target.value || project.name }, false); setEditingName(false); }}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
         ) : (
-          <div className="text-[11px] cursor-text truncate max-w-48 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }} title="Click to rename" onClick={() => setEditingName(true)}>
-            {project.name}.i3d <span className="w-1.5 h-1.5 rounded-full" style={{ background: dirty ? 'var(--warning)' : 'var(--success)' }} title={dirty ? 'Modified' : 'Saved'} />
+          <div className="text-[11px] cursor-text truncate max-w-[12rem] flex items-center gap-1.5 mt-0.5" style={{ color: 'var(--text-secondary)' }} title="Click to rename" onClick={() => setEditingName(true)}>
+            {project.name}.i3d
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dirty ? 'var(--warning)' : 'var(--success)' }} title={dirty ? 'Modified' : 'Saved'} />
           </div>
         )}
       </div>
-      <button className="btn-primary flex items-center gap-1.5 py-1.5! shrink-0" title="New project — Magic Generator (Ctrl+N)" onClick={() => setUI({ modal: 'magic' })}>
-        <FilePlus2 size={14} /> <span className="hidden md:inline">New Project</span>
-      </button>
       <div className="tb-sep" />
-      <button className="tb-btn" title="Undo (Ctrl+Z)" disabled={!past} onClick={undo}><Undo2 size={16} /></button>
-      <button className="tb-btn" title="Redo (Ctrl+Shift+Z)" disabled={!future} onClick={redo}><Redo2 size={16} /></button>
-      <div className="tb-sep" />
-      <span className="text-[11px] shrink-0 hidden sm:inline" style={{ color: 'var(--text-tertiary)' }}>View</span>
-      <Dropdown label={viewLabel[ui.viewMode]} items={viewItems} title="Switch view" />
-      <span className="text-[11px] shrink-0 hidden lg:inline" style={{ color: 'var(--text-tertiary)' }}>Camera</span>
-      <Dropdown label={cameraLabel} items={cameraItems} title={cameraOn ? 'Camera angle' : 'Camera is available in 3D or Split view'} disabled={!cameraOn} />
-
-      <div className="flex-1" />
-
-      <button className="tb-btn adv-only" style={{ color: issueColor }} title="Design validation — open Check" onClick={() => setUI({ rightOpen: true, rightTab: 'issues', materialStudioOpen: false })}>
-        <IssueIcon size={15} /> <span className="hidden lg:inline text-[11px]">{errors ? `${errors}` : warnings ? `${warnings}` : '0'}</span>
+      <button
+        type="button"
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white shadow-md hover:brightness-105 active:scale-[0.98] transition-all shrink-0"
+        style={{ background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 55%, var(--brand-active) 100%)', border: '1px solid color-mix(in srgb, var(--brand) 40%, white)' }}
+        title="New project — Magic Generator (Ctrl+N)"
+        onClick={() => setUI({ modal: 'magic' })}
+      >
+        <FilePlus2 size={15} strokeWidth={2.25} />
+        <span className="hidden sm:inline">New Project</span>
       </button>
+      <button type="button" className="tb-btn" title="Undo (Ctrl+Z)" disabled={!past} onClick={undo}><Undo2 size={16} /></button>
+      <button type="button" className="tb-btn" title="Redo (Ctrl+Shift+Z)" disabled={!future} onClick={redo}><Redo2 size={16} /></button>
+      <div className="tb-sep" />
+      <Dropdown label="3D" items={threeDMenu} title="Views, camera & render modes" />
+
+      <div className="flex-1 min-w-2" />
+
       <Dropdown label="" icon={Settings} iconOnly items={settingsItems} title="Settings" />
       <div className="tb-sep" />
-      <button className="btn-primary flex items-center gap-1.5 py-1.5!" title="AI Render — capture high-res 3D" onClick={aiRender}><Sparkles size={14} /> <span className="hidden md:inline">AI Render</span></button>
-      <button className="btn flex items-center gap-1.5 py-1.5!" title="Save project (Ctrl+S)" onClick={doSave}><Save size={14} /> <span className="hidden md:inline">Save</span></button>
+      <button type="button" className="btn-primary flex items-center gap-1.5 py-1.5!" title="AI Render — capture high-res 3D" onClick={aiRender}><Sparkles size={14} /> <span className="hidden md:inline">AI Render</span></button>
+      <button type="button" className="btn flex items-center gap-1.5 py-1.5!" title="Save project (Ctrl+S)" onClick={doSave}><Save size={14} /> <span className="hidden md:inline">Save</span></button>
     </div>
   );
 }

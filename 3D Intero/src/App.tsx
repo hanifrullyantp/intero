@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from './core/store';
 import Toolbar from './ui/Toolbar';
+import MobileHeader from './ui/MobileHeader';
+import PanelToggleBar from './ui/PanelToggleBar';
 import ComponentLibrary from './ui/ComponentLibrary';
 import PropertiesPanel from './ui/PropertiesPanel';
 import ToolsToolbar, { ArrayModal, AlignModal } from './ui/ToolsToolbar';
+import MobileFloatingTools from './ui/MobileToolbar';
 import ComponentBuilder from './ui/ComponentBuilder';
 import ViewportManager from './viewport/ViewportManager';
 import ContextBar from './ui/ContextBar';
@@ -48,7 +51,6 @@ function Divider({ side }: { side: 'left' | 'right' }) {
   return <div onMouseDown={onDown} className="w-1 h-full cursor-col-resize shrink-0 transition-colors hover:bg-[var(--accent)]" style={{ background: 'var(--border)' }} title="Drag to resize panel" />;
 }
 
-/** Mobile bottom sheets: backdrop tap, × button, or handle tap closes them. */
 function MobileNav() {
   const sheet = useStore((s) => s.ui.mobileSheet);
   const doorsOpen = useStore((s) => s.ui.doorsOpen);
@@ -57,34 +59,38 @@ function MobileNav() {
   const close = () => setUI({ mobileSheet: null });
   return (
     <>
-      {sheet && <div className="mobile-only fixed inset-0 z-[79] bg-black/40" onClick={close} />}
+      {sheet && <div className="mobile-only fixed inset-0 z-[79] bg-black/40" onClick={close} style={{ bottom: 'var(--mobile-nav-h)' }} />}
       {sheet && (
-        <div className="mobile-only mobile-sheet border-t" style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}>
+        <div className="mobile-only mobile-sheet border-t" style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', bottom: 'var(--mobile-nav-h)' }}>
           <div className="flex items-center justify-center py-2 relative" onClick={close}>
             <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border-strong)' }} />
-            <button className="absolute right-2 top-1.5 tb-btn" onClick={(e) => { e.stopPropagation(); close(); }} title="Close"><X size={16} /></button>
+            <button type="button" className="absolute right-2 top-1.5 tb-btn" onClick={(e) => { e.stopPropagation(); close(); }} title="Close"><X size={16} /></button>
           </div>
-          <div className="overflow-y-auto" style={{ maxHeight: '52vh' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: 'min(52vh, calc(100dvh - var(--mobile-nav-h) - 80px))' }}>
             {sheet === 'components' && <ComponentLibrary />}
             {sheet === 'props' && <PropertiesPanel />}
           </div>
         </div>
       )}
-      {/* Parts | OPEN (all cabinets + accessories) | Props */}
-      <div className="mobile-only flex items-stretch border-t shrink-0" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-        <button className={`flex-1 py-2 flex flex-col items-center gap-0.5 ${sheet === 'components' ? 'text-[var(--accent)]' : ''}`} onClick={() => setUI({ mobileSheet: sheet === 'components' ? null : 'components' })}>
+      <div
+        className="mobile-only mobile-bottom-nav flex items-stretch border-t shrink-0"
+        style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+      >
+        <button type="button" className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 min-h-[56px] ${sheet === 'components' ? 'text-[var(--accent)]' : ''}`} onClick={() => setUI({ mobileSheet: sheet === 'components' ? null : 'components' })}>
           <Box size={20} /><div className="text-[9px]">Parts</div>
         </button>
         <button
-          className="flex-1 -mt-5 flex flex-col items-center gap-0.5"
+          type="button"
+          className="flex-1 py-2 flex flex-col items-center justify-center gap-0.5 min-h-[56px]"
           onClick={() => setDoorsOpen(!doorsOpen)}
-          title="Buka / tutup seluruh kabinet dan aksesoris">
-          <span className="w-12 h-12 rounded-full grid place-items-center shadow-lg" style={{ background: doorsOpen ? 'var(--brand)' : 'var(--bg-panel)', border: '2px solid var(--brand)', color: doorsOpen ? '#fff' : 'var(--accent)' }}>
-            {doorsOpen ? <DoorClosed size={22} /> : <DoorOpen size={22} />}
+          title="Open / close all doors"
+        >
+          <span className="w-10 h-10 rounded-full grid place-items-center shadow-md" style={{ background: doorsOpen ? 'var(--brand)' : 'var(--bg-panel)', border: '2px solid var(--brand)', color: doorsOpen ? '#fff' : 'var(--accent)' }}>
+            {doorsOpen ? <DoorClosed size={20} /> : <DoorOpen size={20} />}
           </span>
-          <div className="text-[9px]">{doorsOpen ? 'Tutup' : 'Open'}</div>
+          <div className="text-[9px]">{doorsOpen ? 'Close' : 'Open'}</div>
         </button>
-        <button className={`flex-1 py-2 flex flex-col items-center gap-0.5 ${sheet === 'props' ? 'text-[var(--accent)]' : ''}`} onClick={() => setUI({ mobileSheet: sheet === 'props' ? null : 'props' })}>
+        <button type="button" className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 min-h-[56px] ${sheet === 'props' ? 'text-[var(--accent)]' : ''}`} onClick={() => setUI({ mobileSheet: sheet === 'props' ? null : 'props' })}>
           <SlidersHorizontal size={20} /><div className="text-[9px]">Props</div>
         </button>
       </div>
@@ -98,22 +104,20 @@ export default function App() {
   const installEvt = useRef<Event & { prompt?: () => Promise<unknown> } | null>(null);
   useKeyboardShortcuts();
 
-  // welcome toast
   useEffect(() => {
     const t = setTimeout(() => {
-      toast({ severity: 'info', message: ui.uiMode === 'simple' ? 'Simple mode — big viewport, essentials only. Toggle Advanced for pro tools.' : 'Welcome — drag components into the plan or 3D view. Right sidebar: Props · Material · Display · Open.', ttl: 6000 });
+      toast({ severity: 'info', message: ui.uiMode === 'simple' ? 'Simple mode — big viewport, essentials only.' : 'Welcome — drag components into the plan or 3D view.', ttl: 6000 });
     }, 600);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // PWA install prompt → offered as a toast action
   useEffect(() => {
     const onBefore = (e: Event) => {
       e.preventDefault();
       installEvt.current = e as Event & { prompt?: () => Promise<unknown> };
       useStore.getState().toast({
-        severity: 'info', ttl: 12000, message: 'Install 3D Intero sebagai aplikasi desktop/mobile untuk akses offline.',
+        severity: 'info', ttl: 12000, message: 'Install Instant 3D as an app for offline access.',
         actions: [{ label: 'Install', onClick: () => { void installEvt.current?.prompt?.(); } }],
       });
     };
@@ -122,16 +126,19 @@ export default function App() {
   }, []);
 
   const simple = ui.uiMode === 'simple';
+  const showToolsRail = !simple && ui.toolsOpen;
 
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Toolbar />
+      <MobileHeader />
+      <PanelToggleBar />
       <div className="flex-1 flex min-h-0 relative">
         {ui.leftOpen && (
           <div className="desktop-only flex shrink-0 h-full">
             <div style={{ width: simple ? 200 : ui.leftWidth }} className="h-full border-r border-[var(--border)] relative">
               <ComponentLibrary />
-              <button className="absolute top-2 right-2 tb-btn h-6! min-w-6! px-1! z-10" title="Collapse library (Shift+C)" onClick={() => setLeftOpen(false)}>
+              <button type="button" className="absolute top-2 right-2 tb-btn h-6! min-w-6! px-1! z-10" title="Collapse library (Shift+C)" onClick={() => setLeftOpen(false)}>
                 <PanelLeft size={13} />
               </button>
             </div>
@@ -139,12 +146,12 @@ export default function App() {
           </div>
         )}
         {!ui.leftOpen && (
-          <button className="desktop-only absolute left-2 top-14 z-30 tb-btn shadow-lg" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)' }} title="Expand library (Shift+C)" onClick={() => setLeftOpen(true)}>
+          <button type="button" className="desktop-only absolute left-2 top-[7.5rem] z-30 tb-btn shadow-lg" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)' }} title="Expand library (Shift+C)" onClick={() => setLeftOpen(true)}>
             <PanelLeft size={14} />
           </button>
         )}
         <div className="flex-1 min-w-0 flex min-h-0">
-          {!simple && (
+          {showToolsRail && (
             <div className="desktop-only shrink-0 h-full border-r border-[var(--border)]" style={{ width: 48, background: 'var(--bg-panel)' }}>
               <ToolsToolbar />
             </div>
@@ -152,6 +159,7 @@ export default function App() {
           <div className="flex-1 min-w-0 min-h-0 relative flex flex-col">
             <ViewportManager />
             <ContextBar />
+            <MobileFloatingTools />
           </div>
         </div>
         {ui.rightOpen && (
