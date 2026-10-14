@@ -46,10 +46,16 @@
       "destination": "/3d/index.html"
     },
     {
+      "source": "/v/:id",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "3d.intero.id" }],
       "destination": "/3d/:path*"
     },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

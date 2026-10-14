@@ -2,10 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
+import ShareApp from "./ShareApp";
+import { parseShareIdFromPath } from "./core/share";
+
+const shareId = typeof window !== "undefined" ? parseShareIdFromPath(window.location.pathname) : null;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    {shareId ? <ShareApp /> : <App />}
   </StrictMode>
 );
 

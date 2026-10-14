@@ -422,6 +422,7 @@ export default function Viewport3D() {
     };
     const onDown = (e: MouseEvent) => {
       downPos = { x: e.clientX, y: e.clientY };
+      if (useStore.getState().ui.accessMode === 'view') return;
       // XYZ gizmo grab (Move or Select tool, single selection)
       if (e.button === 0 && st.gizmo && useStore.getState().selectedIds.length === 1) {
         const rect = el.getBoundingClientRect();
@@ -467,6 +468,39 @@ export default function Viewport3D() {
       }
     };
     const onUp = (e: MouseEvent) => {
+      const viewOnly = useStore.getState().ui.accessMode === 'view';
+      if (viewOnly) {
+        if (gizmoDrag) { gizmoDrag = null; stateRef.current!.controls.enabled = true; downPos = null; setDragInfo(null); return; }
+        if (drag3d) { drag3d = null; stateRef.current!.controls.enabled = true; downPos = null; return; }
+        if (!downPos || Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 4) return;
+        const st = useStore.getState();
+        if (st.ui.tool === 'zoom' && e.button === 0) {
+          const SR = stateRef.current!;
+          const f = e.altKey ? 1.5 : 0.67;
+          const dir = SR.camera.position.clone().sub(SR.controls.target).multiplyScalar(f);
+          SR.tween = { from: SR.camera.position.clone(), to: SR.controls.target.clone().add(dir), tFrom: SR.controls.target.clone(), tTo: SR.controls.target.clone(), start: performance.now(), dur: 300 };
+          return;
+        }
+        if (e.button === 0) {
+          const id = pick(e);
+          if (id) {
+            const it = st.project.items.find((i) => i.id === id);
+            if (it?.kind === 'cabinet') {
+              const target = (it.openAmount ?? 0) > 0.5 ? 0 : 1;
+              const start = performance.now(); const from = it.openAmount ?? 0;
+              const dur = st.ui.openSpeed * 1000;
+              const step = (t: number) => {
+                const k = Math.min(1, (t - start) / dur);
+                const e2 = 1 - Math.pow(1 - k, 3);
+                useStore.getState().updateItem(id, { openAmount: from + (target - from) * e2 }, false);
+                if (k < 1) requestAnimationFrame(step);
+              };
+              requestAnimationFrame(step);
+            }
+          }
+        }
+        return;
+      }
       // finish gizmo drag
       if (gizmoDrag) {
         const wasMoved = gizmoDrag.moved;

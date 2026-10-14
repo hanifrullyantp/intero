@@ -163,6 +163,13 @@ export default function Viewport2D({ className = '' }: { className?: string }) {
     const { cx, cy } = local(e);
     const w = toWorld(cx, cy);
     setUI({ contextMenu: null });
+    if (ui.accessMode === 'view') {
+      if (e.button === 1 || ui.tool === 'pan') {
+        dragRef.current = { kind: 'pan', sx: cx, sy: cy, ox: viewRef.current.ox, oy: viewRef.current.oy };
+        e.preventDefault();
+      } else if (ui.tool === 'zoom') zoomAt(cx, cy, e.altKey ? 1 / 1.5 : 1.5);
+      return;
+    }
     if (e.button === 1 || spaceRef.current || ui.tool === 'pan') {
       dragRef.current = { kind: 'pan', sx: cx, sy: cy, ox: viewRef.current.ox, oy: viewRef.current.oy };
       e.preventDefault();

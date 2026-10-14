@@ -7,9 +7,10 @@ import { safeName } from '../core/projectManager';
 import InteroLogo from './InteroLogo';
 import {
   FilePlus2, Save, FolderOpen, Undo2, Redo2, Scissors, Calculator, Download, Hammer,
-  Sun, Moon, Monitor, Sparkles, Settings, Keyboard, ChevronDown,
+  Sun, Moon, Monitor, Sparkles, Settings, Keyboard, ChevronDown, Link2,
   DraftingCompass, Receipt, ClipboardList, Image, FileText, Package, Info, PencilRuler, Box, Building, Columns2, type LucideIcon,
 } from './icons';
+import { createShareLink } from '../core/share';
 
 type MenuItem = { label: string; onClick: () => void; icon?: LucideIcon; sep?: boolean; kbd?: string };
 
@@ -81,6 +82,28 @@ export default function Toolbar() {
     if (c) downloadCanvasPNG(c, `${safeName(project.name)}_3d.${type === 'image/png' ? 'png' : 'jpg'}`, type);
     else toast({ severity: 'warning', message: 'Open the 3D view first' });
   };
+  const shareProject = async () => {
+    setUI({ loading: 'Creating share link…' });
+    try {
+      const { url } = await createShareLink(project);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ severity: 'success', message: 'Share link copied — anyone can view in 3D (no login)', ttl: 5000 });
+      } catch {
+        toast({
+          severity: 'success',
+          message: 'Share link ready',
+          ttl: 12000,
+          actions: [{ label: 'Copy link', onClick: () => { void navigator.clipboard.writeText(url); } }],
+        });
+      }
+    } catch (e) {
+      toast({ severity: 'error', message: (e as Error).message || 'Could not create share link' });
+    } finally {
+      setUI({ loading: null });
+    }
+  };
+
   const aiRender = () => {
     const c = capture3D();
     if (!c) { setUI({ viewMode: 'split' }); toast({ severity: 'info', message: 'Opening 3D view — click AI Render again to capture', ttl: 2500 }); return; }
@@ -97,6 +120,7 @@ export default function Toolbar() {
     { label: 'New Project (wizard)…', icon: DraftingCompass, onClick: () => setUI({ modal: 'wizard' }) },
     { label: 'Open…', icon: FolderOpen, onClick: doLoad },
     { label: 'Save', icon: Save, kbd: 'Ctrl+S', onClick: doSave },
+    { label: 'Copy share link (view only)', icon: Link2, onClick: () => { void shareProject(); } },
     { label: 'Templates…', icon: Package, onClick: () => setUI({ modal: 'templates' }) },
     { sep: true, label: '', onClick: () => {} },
     { label: 'Export center…', icon: Download, onClick: () => setUI({ modal: 'export' }) },
@@ -178,6 +202,7 @@ export default function Toolbar() {
 
       <Dropdown label="" icon={Settings} iconOnly items={settingsItems} title="Settings" />
       <div className="tb-sep" />
+      <button type="button" className="btn flex items-center gap-1.5 py-1.5!" title="Copy view-only share link" onClick={() => { void shareProject(); }}><Link2 size={14} /> <span className="hidden lg:inline">Share</span></button>
       <button type="button" className="btn-primary flex items-center gap-1.5 py-1.5!" title="AI Render — capture high-res 3D" onClick={aiRender}><Sparkles size={14} /> <span className="hidden md:inline">AI Render</span></button>
       <button type="button" className="btn flex items-center gap-1.5 py-1.5!" title="Save project (Ctrl+S)" onClick={doSave}><Save size={14} /> <span className="hidden md:inline">Save</span></button>
     </div>

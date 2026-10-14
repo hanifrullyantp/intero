@@ -17,6 +17,10 @@ import {
 } from "./auth.ts";
 import type { SiteSettings } from "../src/types/site-settings.ts";
 import { notifyLeadCreated } from "./notify.ts";
+import { createShare, getShare } from "./instant3dShares.ts";
+import { createShareSupabase, getShareSupabase, supabaseSharesEnabled } from "./supabaseShares.ts";
+import { createShare, getShare } from "./instant3dShares.ts";
+import { createShareSupabase, getShareSupabase, supabaseSharesEnabled } from "./supabaseShares.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -58,6 +62,52 @@ app.use("/uploads", express.static(uploadsDir));
 
 app.get("/api/public/settings", (_req, res) => {
   res.json(getSettings());
+});
+
+/** Instant 3D — public share links (SQLite locally; Supabase on Vercel when env set) */
+app.post("/api/instant3d/shares", async (req, res) => {
+  const project = req.body?.project;
+  if (!project || typeof project !== "object") {
+    res.status(400).json({ error: "Missing project" });
+    return;
+  }
+  const name = String(project.name || req.body?.name || "Shared project");
+  try {
+    if (supabaseSharesEnabled()) {
+      const { id } = await createShareSupabase(name, project);
+      res.json({ id });
+      return;
+    }
+    const { id } = createShare(name, project);
+    res.json({ id });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message || "Failed to create share" });
+  }
+});
+
+app.get("/api/instant3d/shares/:id", async (req, res) => {
+  const id = String(req.params.id || "");
+  try {
+    if (supabaseSharesEnabled()) {
+      const row = await getShareSupabase(id);
+      if (!row) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.json({ name: row.name, payload: row.payload });
+      return;
+    }
+    const row = getShare(id);
+    if (!row) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json({ name: row.name, payload: JSON.parse(row.payload) });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message || "Failed to load share" });
+  }
 });
 
 app.post("/api/auth/login", async (req, res) => {

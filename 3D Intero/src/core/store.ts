@@ -72,6 +72,8 @@ export interface UIState {
   rightTab: RightTab;
   /** 2D plan: separate upper/lower cabinets so they never overlap while editing */
   planFilter: 'all' | 'base' | 'wall';
+  /** `view` = shared link viewer (no edits) */
+  accessMode: 'edit' | 'view';
 }
 
 export type RightTab = 'props' | 'mat' | 'layers' | 'issues' | 'display' | 'open';
@@ -148,6 +150,7 @@ function initialProject(): Project {
 }
 
 export function persist(project: Project) {
+  if (useStore.getState().ui.accessMode === 'view') return;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); } catch { /* ignore */ }
 }
 export function hasAutosave() { return !!localStorage.getItem(STORAGE_KEY); }
@@ -213,6 +216,7 @@ export const useStore = create<AppState>((set, get) => {
       fitRequest: 0, dragEntry: null, showContents: true,
       isolateIds: null, tourIndex: 0, tourPlaying: false, mobileSheet: null, rightTab: 'props',
       planFilter: 'all',
+      accessMode: 'edit',
     },
 
     setProject: (p, pushHistory = true) => set((s) => ({ ...withHistory(s, migrateKitchenProject({ ...p, items: p.items.map((i) => ({ visible: true, openAmount: 0, ...i })) }), pushHistory), selectedIds: [] })),
