@@ -10,7 +10,7 @@ import {
   Info, Check, TriangleAlert, CircleAlert, DraftingCompass, DoorOpen, DoorClosed, Eraser, Files,
   ClipboardList, MoveHorizontal, PencilRuler, Rocket, Scaling, Building, Columns2, Grid2x2, Utensils,
   AirVent, CookingPot, Refrigerator, Library, Microwave, Axis3d, Focus, Scan, Crosshair, Home, Folder, Users,
-  Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink,
+  Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink, LogOut,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,7 +25,7 @@ export {
   Info, Check, TriangleAlert, CircleAlert, DraftingCompass, DoorOpen, DoorClosed, Eraser, Files,
   ClipboardList, MoveHorizontal, PencilRuler, Rocket, Scaling, Building, Columns2, Grid2x2, Utensils,
   AirVent, CookingPot, Refrigerator, Library, Microwave, Axis3d, Focus, Scan, Crosshair, Home, Folder, Users,
-  Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink,
+  Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink, LogOut,
 };
 export type { LucideIcon };
 

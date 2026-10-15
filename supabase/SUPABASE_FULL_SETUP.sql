@@ -121,6 +121,9 @@ CREATE POLICY "instant3d_shares_insert_anon" ON public.instant3d_shares
   FOR INSERT TO anon, authenticated
   WITH CHECK (char_length(id) >= 8 AND char_length(id) <= 32);
 
+-- --- Instant 3D SaaS (organizations & cloud projects) ---
+-- Full DDL: supabase/migrations/20250416100000_instant3d_saas.sql
+
 
 -- --- Seed konten default ---
 

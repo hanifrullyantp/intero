@@ -12,7 +12,11 @@ export function getSupabase(): SupabaseClient {
   }
   if (!client) {
     client = createClient(import.meta.env.VITE_SUPABASE_URL!, import.meta.env.VITE_SUPABASE_ANON_KEY!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
     });
   }
   return client;

@@ -11,6 +11,8 @@ import {
   DraftingCompass, Receipt, ClipboardList, Image, FileText, Package, Info, PencilRuler, Box, Building, Columns2, type LucideIcon,
 } from './icons';
 import { createShareLink } from '../core/share';
+import SyncStatusBadge from './SyncStatusBadge';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 type MenuItem = { label: string; onClick: () => void; icon?: LucideIcon; sep?: boolean; kbd?: string };
 
@@ -197,6 +199,10 @@ export default function Toolbar() {
       <button type="button" className="tb-btn" title="Redo (Ctrl+Shift+Z)" disabled={!future} onClick={redo}><Redo2 size={16} /></button>
       <div className="tb-sep" />
       <Dropdown label="3D" items={threeDMenu} title="Views, camera & render modes" />
+      <SyncStatusBadge />
+      {isSupabaseConfigured() && (
+        <a href="/app" className="tb-btn text-xs shrink-0" title="All projects">Projects</a>
+      )}
 
       <div className="flex-1 min-w-2" />
 

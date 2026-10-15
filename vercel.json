@@ -51,6 +51,16 @@
       "destination": "/3d/index.html"
     },
     {
+      "source": "/app",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
+    },
+    {
+      "source": "/p/:id",
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
+    },
+    {
       "source": "/api/:path*",
       "has": [{ "type": "host", "value": "3d.intero.id" }],
       "destination": "/api/:path*"

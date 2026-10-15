@@ -19,6 +19,8 @@ Server Express + SQLite **tidak dipakai** untuk fitur ini saat mode Supabase akt
 
 Di **SQL Editor**, tempel **seluruh** isi **[`supabase/SUPABASE_FULL_SETUP.sql`](supabase/SUPABASE_FULL_SETUP.sql)** lalu **Run**.
 
+Untuk **Instant 3D cloud workspace** (akun, organisasi, proyek): jalankan juga [`supabase/migrations/20250416100000_instant3d_saas.sql`](supabase/migrations/20250416100000_instant3d_saas.sql) jika DB sudah ada sebelumnya.
+
 File itu sudah berisi: tabel, RLS, bucket `site-uploads`, dan **konten situs default** penuh (tidak perlu “Simpan” pertama di CMS).
 
 Alternatif manual: jalankan dulu [`supabase/migrations/20250403120000_intero_cms.sql`](supabase/migrations/20250403120000_intero_cms.sql), lalu [`supabase/seed_site_default.sql`](supabase/seed_site_default.sql).

@@ -152,6 +152,7 @@ function initialProject(): Project {
 export function persist(project: Project) {
   if (useStore.getState().ui.accessMode === 'view') return;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); } catch { /* ignore */ }
+  void import('../sync/syncEngine').then(({ scheduleCloudSave }) => scheduleCloudSave(project)).catch(() => undefined);
 }
 export function hasAutosave() { return !!localStorage.getItem(STORAGE_KEY); }
 
