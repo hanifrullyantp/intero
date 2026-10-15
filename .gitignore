@@ -1,6 +1,10 @@
 node_modules
 dist
 .env
+.env.local
+.env.*.local
+!.env.example
+!env.intero.template
 server/data
 server/uploads
 .DS_Store

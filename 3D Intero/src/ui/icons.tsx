@@ -11,6 +11,7 @@ import {
   ClipboardList, MoveHorizontal, PencilRuler, Rocket, Scaling, Building, Columns2, Grid2x2, Utensils,
   AirVent, CookingPot, Refrigerator, Library, Microwave, Axis3d, Focus, Scan, Crosshair, Home, Folder, Users,
   Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink, LogOut,
+  LayoutTemplate, CreditCard, BarChart3, HelpCircle, Bell, User, MoreHorizontal, List,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export {
   ClipboardList, MoveHorizontal, PencilRuler, Rocket, Scaling, Building, Columns2, Grid2x2, Utensils,
   AirVent, CookingPot, Refrigerator, Library, Microwave, Axis3d, Focus, Scan, Crosshair, Home, Folder, Users,
   Table, Table2, Armchair, ArrowRight, ArrowLeft, Wand, Link2, ExternalLink, LogOut,
+  LayoutTemplate, CreditCard, BarChart3, HelpCircle, Bell, User, MoreHorizontal, List,
 };
 export type { LucideIcon };
 
