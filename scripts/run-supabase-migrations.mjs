@@ -35,6 +35,7 @@ if (!token) {
 const files = [
   "supabase/migrations/20250415100000_instant3d_shares.sql",
   "supabase/migrations/20250416100000_instant3d_saas.sql",
+  "supabase/migrations/20250417100000_ensure_personal_workspace.sql",
 ];
 
 async function runQuery(query) {

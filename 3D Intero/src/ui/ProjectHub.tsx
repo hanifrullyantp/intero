@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthProvider';
 import {
   createCloudProject,
   duplicateCloudProject,
+  ensurePersonalWorkspace,
   fetchMyOrganizations,
   fetchProjectPayload,
   listOrgProjects,
@@ -80,18 +81,27 @@ export default function ProjectHub() {
 
   useEffect(() => {
     if (!user) return;
-    void fetchMyOrganizations().then((list) => {
-      setOrgs(list);
-      let stored: string | null = null;
-      try { stored = localStorage.getItem(ORG_KEY); } catch { /* ignore */ }
-      const pick = stored && list.some((o) => o.id === stored) ? stored : list[0]?.id ?? null;
-      if (pick) {
-        setOrgId(pick);
-        try { localStorage.setItem(ORG_KEY, pick); } catch { /* ignore */ }
-        const org = list.find((o) => o.id === pick)!;
-        useWorkspaceStore.getState().setOrg(pick, org.role as OrgRole);
+    void (async () => {
+      try {
+        let list = await fetchMyOrganizations();
+        if (!list.length) {
+          await ensurePersonalWorkspace();
+          list = await fetchMyOrganizations();
+        }
+        setOrgs(list);
+        let stored: string | null = null;
+        try { stored = localStorage.getItem(ORG_KEY); } catch { /* ignore */ }
+        const pick = stored && list.some((o) => o.id === stored) ? stored : list[0]?.id ?? null;
+        if (pick) {
+          setOrgId(pick);
+          try { localStorage.setItem(ORG_KEY, pick); } catch { /* ignore */ }
+          const org = list.find((o) => o.id === pick)!;
+          useWorkspaceStore.getState().setOrg(pick, org.role as OrgRole);
+        }
+      } catch (e) {
+        setErr((e as Error).message);
       }
-    }).catch((e) => setErr((e as Error).message));
+    })();
   }, [user]);
 
   useEffect(() => {

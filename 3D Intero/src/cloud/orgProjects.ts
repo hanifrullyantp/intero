@@ -17,6 +17,20 @@ export interface ProjectSummary {
   revision: number;
 }
 
+/** Creates profile + org + membership when signup trigger did not run (legacy users). */
+export async function ensurePersonalWorkspace(): Promise<string> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc('ensure_personal_workspace');
+  if (error) {
+    if (error.message.includes('Could not find the function') || error.code === 'PGRST202') {
+      throw new Error('Server belum di-update: jalankan migrasi ensure_personal_workspace di Supabase.');
+    }
+    throw new Error(error.message);
+  }
+  if (!data) throw new Error('Gagal membuat workspace.');
+  return data as string;
+}
+
 export async function fetchMyOrganizations(): Promise<OrgSummary[]> {
   const sb = getSupabase();
   const { data: { user } } = await sb.auth.getUser();
