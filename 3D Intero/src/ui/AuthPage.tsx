@@ -2,12 +2,8 @@ import { useEffect, useState } from 'react';
 import { getSupabase } from '../lib/supabase';
 import InteroLogo from './InteroLogo';
 import { Star } from './icons';
-
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=960&q=80',
-  'https://images.unsplash.com/photo-1556912177-c54030639a6d?auto=format&fit=crop&w=960&q=80',
-  'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=960&q=80',
-];
+import KitchenPreviewVisual from './saas/KitchenPreviewVisual';
+import { useSaasPage } from './saas/useSaasPage';
 
 const ROLES = ['Designer', 'Workshop', 'Architect', 'Personal'];
 
@@ -23,7 +19,27 @@ function passwordStrength(pw: string): { pct: number; label: string; color: stri
   return { pct: 100, label: 'Kuat', color: '#1b9d6b' };
 }
 
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.24 5.45-4.78 7.12l7.73 6.01c4.51-4.16 7.11-10.28 7.11-17.6z" />
+      <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6.01c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
 export default function AuthPage() {
+  useSaasPage('Masuk · Instant 3D');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,12 +48,12 @@ export default function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [terms, setTerms] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [slide, setSlide] = useState(0);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = 'light';
-    const t = setInterval(() => setSlide((s) => (s + 1) % HERO_IMAGES.length), 5000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % 4), 5000);
     return () => clearInterval(t);
   }, []);
 
@@ -46,6 +62,7 @@ export default function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
+    setInfo(null);
     if (mode === 'signup' && !terms) {
       setErr('Setujui syarat & ketentuan untuk melanjutkan.');
       return;
@@ -75,11 +92,35 @@ export default function AuthPage() {
 
   const oauth = async (provider: 'google' | 'apple') => {
     setErr(null);
+    setInfo(null);
+    setBusy(true);
     const { error } = await getSupabase().auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/app` },
     });
+    setBusy(false);
     if (error) setErr(error.message);
+  };
+
+  const forgotPassword = async () => {
+    setErr(null);
+    setInfo(null);
+    if (!email.trim()) {
+      setErr('Masukkan email Anda dulu, lalu klik Lupa password.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/app`,
+      });
+      if (error) throw error;
+      setInfo('Link reset password telah dikirim ke email Anda.');
+    } catch (ex) {
+      setErr((ex as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -96,11 +137,11 @@ export default function AuthPage() {
           Platform furniture design untuk designer Indonesia — cepat, parametric, siap produksi.
         </p>
         <div className="saas-auth-preview saas-hero-carousel relative z-10">
-          <img src={HERO_IMAGES[slide]} alt="Kitchen set 3D preview" key={slide} />
+          <KitchenPreviewVisual variant={slide} animate />
         </div>
         <div className="flex items-center gap-4 mt-auto pt-6 relative z-10 text-sm text-[#374151]">
           <span><strong>10,000+</strong> designer</span>
-          <span className="flex items-center gap-1"><Star size={14} className="text-amber-500 fill-amber-500" /> 4.9 rating</span>
+          <span className="flex items-center gap-1"><Star size={14} className="text-amber-500" /> 4.9 rating</span>
         </div>
       </section>
 
@@ -114,12 +155,11 @@ export default function AuthPage() {
           </p>
 
           <div className="space-y-3 mb-4">
-            <button type="button" className="saas-btn-oauth" onClick={() => { void oauth('google'); }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden><path fill="#4285F4" d="M22 12h-4.5v-2H12V7h5.5V4.5A8.5 8.5 0 0 0 12 3.5 8.5 8.5 0 0 0 3.5 12 8.5 8.5 0 0 0 12 20.5c4.1 0 7.6-2.7 8.8-6.5H12v-2H22z"/></svg>
-              Lanjutkan dengan Google
+            <button type="button" className="saas-btn-oauth" disabled={busy} onClick={() => { void oauth('google'); }}>
+              <GoogleIcon /> Lanjutkan dengan Google
             </button>
-            <button type="button" className="saas-btn-oauth" onClick={() => { void oauth('apple'); }}>
-              <span aria-hidden>🍎</span> Lanjutkan dengan Apple
+            <button type="button" className="saas-btn-oauth" disabled={busy} onClick={() => { void oauth('apple'); }}>
+              <AppleIcon /> Lanjutkan dengan Apple
             </button>
           </div>
 
@@ -130,15 +170,15 @@ export default function AuthPage() {
           <form onSubmit={submit} className="space-y-3">
             {mode === 'signup' && (
               <>
-                <input className={`saas-input ${err && !name ? 'saas-input-error' : ''}`} placeholder="Nama lengkap" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+                <input className="saas-input" placeholder="Nama lengkap" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
                 <select className="saas-input" value={role} onChange={(e) => setRole(e.target.value)}>
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </>
             )}
-            <input className={`saas-input ${err ? 'saas-input-error' : ''}`} type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <input className={`saas-input ${err && !info ? 'saas-input-error' : ''}`} type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             <div>
-              <input className={`saas-input ${err ? 'saas-input-error' : ''}`} type="password" placeholder="Password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
+              <input className={`saas-input ${err && !info ? 'saas-input-error' : ''}`} type="password" placeholder="Password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
               {mode === 'signup' && password && (
                 <div className="saas-pw-bar"><span style={{ width: `${pw.pct}%`, background: pw.color }} /></div>
               )}
@@ -149,7 +189,7 @@ export default function AuthPage() {
                 <label className="flex items-center gap-2 text-[#6b7280]">
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Ingat saya
                 </label>
-                <button type="button" className="text-[#1b9d6b] hover:underline bg-transparent border-none cursor-pointer" onClick={() => setErr('Reset password: gunakan link dari email Supabase (Forgot password di dashboard).')}>Lupa password?</button>
+                <button type="button" className="text-[#1b9d6b] hover:underline bg-transparent border-none cursor-pointer" onClick={() => { void forgotPassword(); }}>Lupa password?</button>
               </div>
             )}
             {mode === 'signup' && (
@@ -158,6 +198,7 @@ export default function AuthPage() {
                 Saya setuju Syarat Layanan & Kebijakan Privasi
               </label>
             )}
+            {info && <p className="text-xs text-[#158558]">{info}</p>}
             {err && <p className="text-xs text-[#dc2626]">{err}</p>}
             <button type="submit" className="saas-btn-primary" disabled={busy}>
               {busy ? 'Mohon tunggu…' : mode === 'signin' ? 'Masuk →' : 'Daftar gratis →'}
@@ -166,18 +207,17 @@ export default function AuthPage() {
 
           <p className="text-sm text-center mt-5 text-[#6b7280]">
             {mode === 'signin' ? (
-              <>Belum punya akun? <button type="button" className="text-[#1b9d6b] font-semibold bg-transparent border-none cursor-pointer" onClick={() => setMode('signup')}>Daftar gratis</button></>
+              <>Belum punya akun? <button type="button" className="text-[#1b9d6b] font-semibold bg-transparent border-none cursor-pointer" onClick={() => { setMode('signup'); setErr(null); setInfo(null); }}>Daftar gratis</button></>
             ) : (
-              <>Sudah punya akun? <button type="button" className="text-[#1b9d6b] font-semibold bg-transparent border-none cursor-pointer" onClick={() => setMode('signin')}>Masuk</button></>
+              <>Sudah punya akun? <button type="button" className="text-[#1b9d6b] font-semibold bg-transparent border-none cursor-pointer" onClick={() => { setMode('signin'); setErr(null); setInfo(null); }}>Masuk</button></>
             )}
           </p>
           <p className="text-center mt-4">
-            <a href="/" className="text-sm text-[#6b7280] hover:text-[#1b9d6b]">🚀 Coba tanpa akun (local only)</a>
+            <a href="/" className="text-sm text-[#6b7280] hover:text-[#1b9d6b]">Coba tanpa akun (editor lokal)</a>
           </p>
           <footer className="flex flex-wrap justify-center gap-3 mt-8 pt-6 border-t border-[#e5e7eb] text-[11px] text-[#9ca3af]">
-            <span>🇮🇩 ID</span>
-            <a href="#" className="hover:underline">Terms</a>
-            <a href="#" className="hover:underline">Privacy</a>
+            <span>ID · Bahasa Indonesia</span>
+            <a href="https://intero.id" target="_blank" rel="noreferrer" className="hover:underline">intero.id</a>
           </footer>
         </div>
       </section>

@@ -84,3 +84,17 @@ export async function softDeleteProject(projectId: string): Promise<void> {
   const { error } = await sb.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', projectId);
   if (error) throw new Error(error.message);
 }
+
+export async function renameProject(projectId: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Nama proyek tidak boleh kosong.');
+  const sb = getSupabase();
+  const { error } = await sb.from('projects').update({ name: trimmed }).eq('id', projectId);
+  if (error) throw new Error(error.message);
+}
+
+export async function duplicateCloudProject(orgId: string, sourceProjectId: string): Promise<string> {
+  const payload = await fetchProjectPayload(sourceProjectId);
+  const copyName = `${payload.name || 'Project'} (salinan)`;
+  return createCloudProject(orgId, copyName, { ...payload, name: copyName });
+}
