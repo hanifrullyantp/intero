@@ -439,7 +439,7 @@ export default function ProjectHub() {
       orgs={orgs}
       orgId={orgId}
       onOrgChange={onOrgChange}
-      onSignOut={() => { void signOut().then(() => { window.location.href = '/login'; }); }}
+      onSignOut={() => { void signOut().then(() => { window.location.replace('/login'); }); }}
       searchQuery={query}
       onSearchChange={setQuery}
       activeSection={hubSection}

@@ -80,7 +80,7 @@ export default function EditorRoute({ projectId }: { projectId: string }) {
       <div className="h-full grid place-items-center p-6 text-center">
         <InteroLogo size={48} className="mx-auto mb-4 rounded-xl" />
         <p className="text-sm text-[var(--error)] mb-4">{error}</p>
-        <a href="/app" className="btn-primary px-4 py-2 rounded-lg text-sm">Back to projects</a>
+        <a href="/projects" className="btn-primary px-4 py-2 rounded-lg text-sm">Back to projects</a>
       </div>
     );
   }

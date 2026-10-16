@@ -66,7 +66,7 @@ export default function DashboardShell({
   return (
     <div className="saas-app">
       <header className="saas-dash-header">
-        <a href="/app" className="flex items-center gap-2 shrink-0 no-underline text-inherit">
+        <a href="/projects" className="flex items-center gap-2 shrink-0 no-underline text-inherit">
           <InteroLogo size={36} className="rounded-lg" />
           <span className="font-bold text-[#111827] hidden sm:inline">Instant 3D</span>
         </a>

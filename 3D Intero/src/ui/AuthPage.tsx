@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthProvider';
 import { getSupabase } from '../lib/supabase';
 import InteroLogo from './InteroLogo';
 import { Star } from './icons';
@@ -40,6 +41,7 @@ function AppleIcon() {
 
 export default function AuthPage() {
   useSaasPage('Masuk · Instant 3D');
+  const { user, loading } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,6 +58,10 @@ export default function AuthPage() {
     const t = setInterval(() => setSlide((s) => (s + 1) % 4), 5000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!loading && user) window.location.replace('/enter');
+  }, [loading, user]);
 
   const pw = passwordStrength(password);
 
@@ -77,11 +83,11 @@ export default function AuthPage() {
           options: { data: { full_name: name || email.split('@')[0], role } },
         });
         if (error) throw error;
-        window.location.href = '/app';
+        window.location.href = '/enter';
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = '/app';
+        window.location.href = '/enter';
       }
     } catch (ex) {
       setErr((ex as Error).message);
@@ -96,7 +102,7 @@ export default function AuthPage() {
     setBusy(true);
     const { error } = await getSupabase().auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: `${window.location.origin}/enter` },
     });
     setBusy(false);
     if (error) setErr(error.message);
@@ -112,7 +118,7 @@ export default function AuthPage() {
     setBusy(true);
     try {
       const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/app`,
+        redirectTo: `${window.location.origin}/enter`,
       });
       if (error) throw error;
       setInfo('Link reset password telah dikirim ke email Anda.');
@@ -213,7 +219,7 @@ export default function AuthPage() {
             )}
           </p>
           <p className="text-center mt-4">
-            <a href="/" className="text-sm text-[#6b7280] hover:text-[#1b9d6b]">Coba tanpa akun (editor lokal)</a>
+            <a href="/?local=1" className="text-sm text-[#6b7280] hover:text-[#1b9d6b]">Coba tanpa akun (editor lokal)</a>
           </p>
           <footer className="flex flex-wrap justify-center gap-3 mt-8 pt-6 border-t border-[#e5e7eb] text-[11px] text-[#9ca3af]">
             <span>ID · Bahasa Indonesia</span>

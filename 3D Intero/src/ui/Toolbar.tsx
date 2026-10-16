@@ -201,7 +201,7 @@ export default function Toolbar() {
       <Dropdown label="3D" items={threeDMenu} title="Views, camera & render modes" />
       <SyncStatusBadge />
       {isSupabaseConfigured() && (
-        <a href="/app" className="tb-btn text-xs shrink-0" title="All projects">Projects</a>
+        <a href="/projects" className="tb-btn text-xs shrink-0" title="All projects">Projects</a>
       )}
 
       <div className="flex-1 min-w-2" />
