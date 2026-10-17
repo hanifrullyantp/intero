@@ -5,7 +5,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { applyTheme, getInitialTheme, type ThemeMode } from '../lib/ui';
 import { useSaasPage } from '../ui/saas/useSaasPage';
 import type { AuthTab } from '../ui/auth/AuthPopup';
-import NewLanding from './NewLanding';
+import Landing from './Landing fix';
 import './landing.css';
 
 function initialAuthTab(): AuthTab {
@@ -77,7 +77,7 @@ export default function LandingPage({ forceOpenAuth = false }: { forceOpenAuth?:
 
   return (
     <>
-      <NewLanding
+      <Landing
         theme={theme}
         setTheme={setTheme}
         loggedIn={loggedIn}

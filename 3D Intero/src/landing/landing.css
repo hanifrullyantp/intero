@@ -2,6 +2,26 @@
   font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
 }
 
+.glass {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 72%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-md);
+}
+
+.anim-up {
+  animation: landing-fade-up 0.7s ease-out both;
+}
+
+.landing-fix-root canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* ---- New landing (mock-aligned) ---- */
 .landing-new-root {
   position: fixed;
