@@ -16,7 +16,6 @@ import { createShareLink } from '../core/share';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
 import { canEditProjects } from '../permissions/roles';
 import type { OrgRole } from '../permissions/roles';
-import AuthPage from './AuthPage';
 import DashboardShell, { type HubSection } from './saas/DashboardShell';
 import OnboardingWizard from './saas/OnboardingWizard';
 import KitchenPreviewVisual from './saas/KitchenPreviewVisual';
@@ -263,7 +262,10 @@ export default function ProjectHub() {
       </div>
     );
   }
-  if (!user) return <AuthPage />;
+  if (!user) {
+    window.location.replace('/?auth=login');
+    return null;
+  }
 
   const empty = projects.length === 0;
   const showWelcome = empty && (hubSection === 'home' || hubSection === 'projects');

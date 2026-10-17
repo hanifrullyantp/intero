@@ -17,6 +17,7 @@ function route() {
   const editorId = parseEditorProjectId(path);
   if (editorId) return { kind: 'editor' as const, editorId };
   if (path === '/login' || path === '/login/') return { kind: 'login' as const };
+  if (path === '/landing' || path === '/landing/') return { kind: 'cloudRoot' as const };
   if (path === '/projects' || path === '/projects/' || path === '/app/projects' || path === '/app/projects/') {
     return { kind: 'hub' as const };
   }
