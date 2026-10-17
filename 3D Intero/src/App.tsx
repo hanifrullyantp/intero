@@ -13,7 +13,7 @@ import ContextBar from './ui/ContextBar';
 import WizardModal from './ui/WizardModal';
 import MagicWizard from './ui/MagicWizard';
 import CuttingListModal from './ui/CuttingListModal';
-import { ExportModal, PriceModal, TemplatesModal, HoodConfigModal, EditorModal, ShortcutsModal, ConfirmDialog } from './ui/modals';
+import { ExportModal, ShareLinkModal, PriceModal, TemplatesModal, HoodConfigModal, EditorModal, ShortcutsModal, ConfirmDialog } from './ui/modals';
 import { Toasts, ContextMenu, StatusBar, LoadingOverlay } from './ui/Overlays';
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts';
 import { Box, SlidersHorizontal, PanelLeft, X, DoorOpen, DoorClosed } from './ui/icons';
@@ -178,6 +178,7 @@ export default function App() {
       {ui.modal === 'wizard' && <WizardModal />}
       {ui.modal === 'templates' && <TemplatesModal />}
       {ui.modal === 'export' && <ExportModal />}
+      {ui.modal === 'share' && <ShareLinkModal />}
       {ui.modal === 'cutting' && <CuttingListModal />}
       {ui.modal === 'price' && <PriceModal />}
       {ui.modal === 'hood' && <HoodConfigModal />}

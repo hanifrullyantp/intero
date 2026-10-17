@@ -10,7 +10,7 @@ import { applyProjectDimensions, defaultsForNewItem, migrateKitchenProject, proj
 import { detectCornerOrientation } from '../engine/cornerOrientation';
 
 export type ViewMode = '2d' | '3d' | 'elevation' | 'split';
-export type ModalId = null | 'wizard' | 'magic' | 'export' | 'cutting' | 'price' | 'templates' | 'hood' | 'editor' | 'shortcuts' | 'about' | 'array' | 'align' | 'builder' | 'tour';
+export type ModalId = null | 'wizard' | 'magic' | 'export' | 'cutting' | 'price' | 'templates' | 'hood' | 'editor' | 'shortcuts' | 'about' | 'array' | 'align' | 'builder' | 'tour' | 'share';
 export type ToolId = 'select' | 'pan' | 'orbit' | 'zoom' | 'move' | 'rotate' | 'measure' | 'paint' | 'eyedropper' | 'mirror' | 'array' | 'align' | 'section';
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type UIMode = 'simple' | 'advanced';

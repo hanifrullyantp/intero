@@ -4,7 +4,7 @@ import { fetchProjectPayload } from './cloud/orgProjects';
 import { useStore } from './core/store';
 import { normalizeProject } from './core/projectManager';
 import { useWorkspaceStore } from './workspace/workspaceStore';
-import { setupSyncListeners, scheduleCloudSave } from './sync/syncEngine';
+import { setupSyncListeners, scheduleCloudSave, flushSyncQueue } from './sync/syncEngine';
 import { getLocalByCloudId, upsertLocalProject } from './storage/localDb';
 import InteroLogo from './ui/InteroLogo';
 
@@ -22,6 +22,7 @@ export default function EditorRoute({ projectId }: { projectId: string }) {
     useWorkspaceStore.getState().setSyncStatus(navigator.onLine ? 'syncing' : 'offline');
     const off = setupSyncListeners();
     let cancelled = false;
+    if (navigator.onLine) void flushSyncQueue();
 
     (async () => {
       try {

@@ -14,13 +14,28 @@ export interface LocalProjectRecord {
   syncState: LocalSyncState;
 }
 
+export interface SyncQueueRow {
+  cloudId: string;
+  orgId: string | null;
+  name: string;
+  payload: Project;
+  updatedAt: number;
+  attempts: number;
+  lastError: string | null;
+}
+
 class Instant3DDatabase extends Dexie {
   projects!: Table<LocalProjectRecord, string>;
+  syncQueue!: Table<SyncQueueRow, string>;
 
   constructor() {
     super('instant3d_v1');
     this.version(1).stores({
       projects: 'localId, cloudId, orgId, updatedAt',
+    });
+    this.version(2).stores({
+      projects: 'localId, cloudId, orgId, updatedAt',
+      syncQueue: 'cloudId, updatedAt, orgId',
     });
   }
 }

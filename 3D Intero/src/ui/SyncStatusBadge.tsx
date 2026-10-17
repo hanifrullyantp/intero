@@ -1,3 +1,5 @@
+import { useStore } from '../core/store';
+import { flushCloudSave, flushSyncQueue } from '../sync/syncEngine';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
 
 const LABEL: Record<string, string> = {
@@ -19,10 +21,27 @@ export default function SyncStatusBadge() {
     status === 'offline' ? 'var(--warning)' :
     status === 'error' ? 'var(--error)' : 'var(--accent)';
 
+  const retry = () => {
+    if (!navigator.onLine) return;
+    void flushSyncQueue().then(() => {
+      const { project } = useStore.getState();
+      void flushCloudSave(project);
+    });
+  };
+
+  const canRetry = status === 'error' || status === 'pending' || status === 'offline';
+
   return (
-    <div className="desktop-only flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border border-[var(--border)] shrink-0" style={{ background: 'var(--bg-panel)' }} title={err ?? undefined}>
+    <button
+      type="button"
+      className="desktop-only flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border border-[var(--border)] shrink-0"
+      style={{ background: 'var(--bg-panel)' }}
+      title={canRetry ? (err ? `${err} — click to retry` : 'Click to sync now') : err ?? undefined}
+      onClick={canRetry ? retry : undefined}
+      disabled={!canRetry}
+    >
       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
       <span className="opacity-80">{LABEL[status] ?? status}</span>
-    </div>
+    </button>
   );
 }

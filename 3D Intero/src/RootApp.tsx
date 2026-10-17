@@ -1,13 +1,16 @@
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './auth/AuthProvider';
 import { isSupabaseConfigured } from './lib/supabase';
-import ShareApp from './ShareApp';
-import ProjectHub from './ui/ProjectHub';
-import AuthPage from './ui/AuthPage';
-import CloudEntry from './ui/CloudEntry';
-import AutoLaunchEditor from './ui/saas/AutoLaunchEditor';
-import EditorRoute, { parseEditorProjectId } from './EditorRoute';
-import App from './App';
 import { parseShareIdFromPath } from './core/share';
+import { parseEditorProjectId } from './EditorRoute';
+
+const ShareApp = lazy(() => import('./ShareApp'));
+const ProjectHub = lazy(() => import('./ui/ProjectHub'));
+const AuthPage = lazy(() => import('./ui/AuthPage'));
+const CloudEntry = lazy(() => import('./ui/CloudEntry'));
+const AutoLaunchEditor = lazy(() => import('./ui/saas/AutoLaunchEditor'));
+const EditorRoute = lazy(() => import('./EditorRoute'));
+const App = lazy(() => import('./App'));
 
 function route() {
   const path = window.location.pathname;
@@ -32,17 +35,28 @@ function route() {
   return { kind: 'local' as const };
 }
 
+function RouteFallback() {
+  return (
+    <div className="h-full min-h-[50vh] grid place-items-center gap-3">
+      <div className="spinner" />
+      <p className="text-sm opacity-70">Loading…</p>
+    </div>
+  );
+}
+
 export default function RootApp() {
   const r = route();
   return (
     <AuthProvider>
-      {r.kind === 'share' && <ShareApp />}
-      {r.kind === 'login' && <AuthPage />}
-      {r.kind === 'hub' && <ProjectHub />}
-      {r.kind === 'launch' && <AutoLaunchEditor />}
-      {r.kind === 'cloudRoot' && <CloudEntry />}
-      {r.kind === 'editor' && <EditorRoute projectId={r.editorId} />}
-      {r.kind === 'local' && <App />}
+      <Suspense fallback={<RouteFallback />}>
+        {r.kind === 'share' && <ShareApp />}
+        {r.kind === 'login' && <AuthPage />}
+        {r.kind === 'hub' && <ProjectHub />}
+        {r.kind === 'launch' && <AutoLaunchEditor />}
+        {r.kind === 'cloudRoot' && <CloudEntry />}
+        {r.kind === 'editor' && <EditorRoute projectId={r.editorId} />}
+        {r.kind === 'local' && <App />}
+      </Suspense>
     </AuthProvider>
   );
 }

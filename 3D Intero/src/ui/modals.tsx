@@ -5,14 +5,15 @@ import { HOOD_TYPES, APPLIANCES } from '../config/appliances';
 import { estimatePrice } from '../engine/price';
 import { formatIDR, footprint, center, r1 } from '../utils/geometry';
 import { isCooktop, hoodMinDistance } from '../engine/constraints';
-import { exportCuttingListCSV, exportBOMCSV, exportDXF, exportJSON, exportTechnicalPDF, exportQuotationPDF, exportCuttingListPDF, renderPlanImage, renderElevationImage, downloadCanvasPNG } from '../utils/exporters';
-import { capture3D } from '../viewport/Viewport3D';
+import { exportCuttingListCSV, exportBOMCSV, exportDXF, exportJSON, exportGLB, exportTechnicalPDF, exportQuotationPDF, exportCuttingListPDF, renderPlanImage, renderElevationImage, downloadCanvasPNG } from '../utils/exporters';
+import { capture3D, getExportRoot3D } from '../viewport/Viewport3D';
+import { createShareLink } from '../core/share';
 import { safeName } from '../core/projectManager';
 import { generateParts } from '../engine/parametric';
 import { getBoard, getColor } from '../config/materials';
 import { NumberField } from './PropertiesPanel';
 import type { HoodType, Item, DoorStyle, OpeningDirection } from '../models/types';
-import { DraftingCompass, Image, Scissors, Receipt, FileText, X, Check, TriangleAlert, MoveHorizontal, type LucideIcon } from './icons';
+import { DraftingCompass, Image, Scissors, Receipt, FileText, Link2, X, Check, TriangleAlert, MoveHorizontal, type LucideIcon } from './icons';
 
 export function Modal({ title, children, onClose, width = 'max-w-2xl', footer }: { title: string; children: React.ReactNode; onClose: () => void; width?: string; footer?: React.ReactNode }) {
   useEffect(() => {
@@ -196,11 +197,19 @@ export function ExportModal() {
           <Card title="Quotation (PDF)" desc="Cost breakdown with labour, markup and price per running metre." icon={Receipt} actions={[{ label: 'Download quotation', onClick: () => exportQuotationPDF(project) }]} />
           <Card
             title="CAD & data"
-            desc="DXF 2D plan with layers (WALLS, BASE, WALLCAB, APPLIANCE, DIMS) and project JSON for re-import."
+            desc="DXF 2D plan, `.intero` project file (re-import), and GLB 3D mesh from the current kitchen build."
             icon={FileText}
             actions={[
               { label: 'DXF', onClick: () => exportDXF(project) },
-              { label: 'Project JSON', onClick: () => exportJSON(project) },
+              { label: '.intero', onClick: () => exportJSON(project) },
+              {
+                label: 'GLB 3D',
+                onClick: () => {
+                  void exportGLB(getExportRoot3D(), project).catch((e) =>
+                    toast({ severity: 'warning', message: (e as Error).message }),
+                  );
+                },
+              },
             ]}
           />
         </div>
@@ -212,6 +221,75 @@ export function ExportModal() {
           </div>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+// ------------------------------------------------------------ Share link
+export function ShareLinkModal() {
+  const project = useStore((s) => s.project);
+  const { setUI, toast } = useStore.getState();
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { url: link } = await createShareLink(project);
+        if (!cancelled) setUrl(link);
+      } catch (e) {
+        if (!cancelled) {
+          toast({ severity: 'error', message: (e as Error).message || 'Could not create share link' });
+          setUI({ modal: null });
+        }
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project]);
+
+  const copy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ severity: 'success', message: 'Link copied to clipboard', ttl: 3000 });
+    } catch {
+      toast({ severity: 'info', message: 'Select the link and copy manually', ttl: 4000 });
+    }
+  };
+
+  return (
+    <Modal title="Share project (view only)" width="max-w-lg" onClose={() => setUI({ modal: null })}>
+      <p className="text-sm opacity-75 mb-3">
+        Anyone with this link can open the kitchen in 3D without logging in. Editing stays in your workspace.
+      </p>
+      {busy && (
+        <div className="flex items-center gap-2 text-sm opacity-70 py-4">
+          <span className="spinner w-4 h-4" /> Creating link…
+        </div>
+      )}
+      {!busy && url && (
+        <>
+          <input
+            className="input w-full text-xs font-mono mb-3"
+            readOnly
+            value={url}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-primary flex items-center gap-1.5" onClick={() => { void copy(); }}>
+              <Link2 size={14} /> Copy link
+            </button>
+            <a className="btn" href={url} target="_blank" rel="noreferrer">
+              Open preview
+            </a>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }

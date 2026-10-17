@@ -10,7 +10,6 @@ import {
   Sun, Moon, Monitor, Sparkles, Settings, Keyboard, ChevronDown, Link2,
   DraftingCompass, Receipt, ClipboardList, Image, FileText, Package, Info, PencilRuler, Box, Building, Columns2, type LucideIcon,
 } from './icons';
-import { createShareLink } from '../core/share';
 import SyncStatusBadge from './SyncStatusBadge';
 import { isSupabaseConfigured } from '../lib/supabase';
 
@@ -69,7 +68,7 @@ export default function Toolbar() {
 
   const ThemeIcon = ui.theme === 'system' ? Monitor : ui.resolvedTheme === 'dark' ? Moon : Sun;
 
-  const doSave = () => { saveProjectFile(project); persist(project); useStore.setState({ dirty: false }); toast({ severity: 'success', message: 'Project saved (.i3d.json downloaded)' }); };
+  const doSave = () => { saveProjectFile(project); persist(project); useStore.setState({ dirty: false }); toast({ severity: 'success', message: 'Project saved (.intero downloaded)' }); };
   const doLoad = async () => {
     try { const p = await openProjectFile(); setProject(p); useStore.getState().requestFit(); toast({ severity: 'success', message: `Loaded "${p.name}"` }); }
     catch (e) { toast({ severity: 'error', message: `Load failed: ${(e as Error).message}` }); }
@@ -84,27 +83,7 @@ export default function Toolbar() {
     if (c) downloadCanvasPNG(c, `${safeName(project.name)}_3d.${type === 'image/png' ? 'png' : 'jpg'}`, type);
     else toast({ severity: 'warning', message: 'Open the 3D view first' });
   };
-  const shareProject = async () => {
-    setUI({ loading: 'Creating share link…' });
-    try {
-      const { url } = await createShareLink(project);
-      try {
-        await navigator.clipboard.writeText(url);
-        toast({ severity: 'success', message: 'Share link copied — anyone can view in 3D (no login)', ttl: 5000 });
-      } catch {
-        toast({
-          severity: 'success',
-          message: 'Share link ready',
-          ttl: 12000,
-          actions: [{ label: 'Copy link', onClick: () => { void navigator.clipboard.writeText(url); } }],
-        });
-      }
-    } catch (e) {
-      toast({ severity: 'error', message: (e as Error).message || 'Could not create share link' });
-    } finally {
-      setUI({ loading: null });
-    }
-  };
+  const shareProject = () => setUI({ modal: 'share' });
 
   const aiRender = () => {
     const c = capture3D();

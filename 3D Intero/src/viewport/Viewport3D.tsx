@@ -24,8 +24,12 @@ export const CAMERA_PRESETS: { id: string; label: string; key: string }[] = [
 ];
 
 let captureFn: (() => HTMLCanvasElement | null) | null = null;
+let exportRootFn: (() => THREE.Object3D | null) | null = null;
 export function capture3D(): HTMLCanvasElement | null {
   return captureFn ? captureFn() : null;
+}
+export function getExportRoot3D(): THREE.Object3D | null {
+  return exportRootFn ? exportRootFn() : null;
 }
 
 /** Mobile-only camera preset picker (desktop uses header 3D menu). */
@@ -183,6 +187,11 @@ export default function Viewport3D() {
       renderer.render(scene, camera);
       return renderer.domElement;
     };
+    exportRootFn = () => {
+      const cur = stateRef.current?.furniture;
+      if (!cur) return null;
+      return cur.clone(true);
+    };
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
@@ -191,6 +200,7 @@ export default function Viewport3D() {
       renderer.dispose();
       mount.removeChild(renderer.domElement);
       captureFn = null;
+      exportRootFn = null;
     };
   }, []);
 

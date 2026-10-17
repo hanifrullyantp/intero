@@ -1,6 +1,9 @@
 import { jsPDF } from 'jspdf';
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import type { Project } from '../models/types';
 import { downloadBlob, safeName } from '../core/projectManager';
+import { interoFileBody, interoFilename } from '../core/interoFile';
 import { cuttingList, buildBOM } from '../engine/cuttingList';
 import { estimatePrice } from '../engine/price';
 import { computeCountertops } from '../engine/countertop';
@@ -73,7 +76,24 @@ export function exportDXF(project: Project) {
 
 // ---------- JSON ----------
 export function exportJSON(project: Project) {
-  downloadBlob(`${safeName(project.name)}.i3d.json`, JSON.stringify({ app: '3D Intero', version: 1, project }, null, 2), 'application/json');
+  downloadBlob(interoFilename(project.name), interoFileBody(project), 'application/json');
+}
+
+export async function exportGLB(root: THREE.Object3D | null, project: Project): Promise<void> {
+  if (!root) throw new Error('3D scene not ready — open 3D or Split view first');
+  const exporter = new GLTFExporter();
+  const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+    exporter.parse(
+      root,
+      (result) => {
+        if (result instanceof ArrayBuffer) resolve(result);
+        else reject(new Error('Expected GLB binary output'));
+      },
+      (err) => reject(err instanceof Error ? err : new Error(String(err))),
+      { binary: true, onlyVisible: true, truncateDrawRange: true },
+    );
+  });
+  downloadBlob(`${safeName(project.name)}.glb`, new Blob([buffer], { type: 'model/gltf-binary' }), 'model/gltf-binary');
 }
 
 // ---------- Canvas helpers ----------

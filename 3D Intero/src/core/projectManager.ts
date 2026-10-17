@@ -1,6 +1,7 @@
 import type { Project } from '../models/types';
 import { DEFAULT_CONFIG } from '../config/library';
 import { DEFAULT_MATERIALS } from '../engine/layoutEngine';
+import { interoFileBody, interoFilename, parseInteroPayload } from './interoFile';
 
 export function downloadBlob(filename: string, data: Blob | string, mime = 'application/octet-stream') {
   const blob = typeof data === 'string' ? new Blob([data], { type: mime }) : data;
@@ -19,7 +20,7 @@ export function safeName(name: string) {
 }
 
 export function saveProjectFile(project: Project) {
-  downloadBlob(`${safeName(project.name)}.i3d.json`, JSON.stringify({ app: '3D Intero', version: 1, project }, null, 2), 'application/json');
+  downloadBlob(interoFilename(project.name), interoFileBody(project), 'application/json');
 }
 
 /** Normalise and validate a loaded project */
@@ -42,14 +43,14 @@ export function openProjectFile(): Promise<Project> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.intero,.json,.i3d.json,application/json';
     input.onchange = () => {
       const f = input.files?.[0];
       if (!f) return reject(new Error('No file selected'));
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          resolve(normalizeProject(JSON.parse(String(reader.result))));
+          resolve(parseInteroPayload(JSON.parse(String(reader.result))));
         } catch (e) {
           reject(e);
         }
