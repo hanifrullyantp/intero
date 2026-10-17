@@ -34,10 +34,13 @@ function buildKitchen(root: THREE.Group) {
   const fridgeMat = mat(0xe8e8e8, { metalness: 0.3, roughness: 0.4 });
   const darkMetal = mat(0x333333, { metalness: 0.7, roughness: 0.35 });
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), floorMat);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat(0xf0f0f0, { roughness: 0.95 }));
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   root.add(floor);
+  const grid = new THREE.GridHelper(12, 24, 0xd1d5db, 0xe5e7eb);
+  grid.position.y = 0.002;
+  root.add(grid);
 
   const backWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), wallMat);
   backWall.position.set(0, 1.5, -1.5);
@@ -124,15 +127,16 @@ function buildKitchen(root: THREE.Group) {
 
 export function buildLandingKitchenScene(container: HTMLElement): LandingSceneApi {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87a8b8);
+  scene.background = new THREE.Color(0xf8faf9);
+  scene.fog = new THREE.Fog(0xf8faf9, 8, 22);
 
   const w0 = container.clientWidth || window.innerWidth;
   const h0 = container.clientHeight || window.innerHeight;
   const camera = new THREE.PerspectiveCamera(45, w0 / h0, 0.1, 1000);
-  camera.position.set(4, 3, 6);
-  camera.lookAt(0, 1, 0);
+  camera.position.set(3.8, 2.85, 5.5);
+  camera.lookAt(0, 1.05, -0.2);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(w0, h0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -154,8 +158,8 @@ export function buildLandingKitchenScene(container: HTMLElement): LandingSceneAp
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  const hemi = new THREE.HemisphereLight(0xffeedd, 0x080820, 0.3);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xe8e8e8, 0.45);
   scene.add(hemi);
 
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -188,7 +192,7 @@ export function buildLandingKitchenScene(container: HTMLElement): LandingSceneAp
   controls.maxDistance = 15;
   controls.minPolarAngle = Math.PI * 0.1;
   controls.maxPolarAngle = Math.PI * 0.55;
-  controls.target.set(0, 1, 0);
+  controls.target.set(0, 1.05, -0.2);
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   const pauseAutoRotate = () => {

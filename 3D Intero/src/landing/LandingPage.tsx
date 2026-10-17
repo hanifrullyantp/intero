@@ -22,7 +22,10 @@ function shouldOpenAuth(): boolean {
 export default function LandingPage({ forceOpenAuth = false }: { forceOpenAuth?: boolean }) {
   useSaasPage('3D Intero — Desain Kitchen Set');
   const { user, loading, configured } = useAuth();
-  const [theme, setThemeState] = useState<ThemeMode>(() => getInitialTheme());
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    const t = getInitialTheme();
+    return t === 'dark' ? t : 'light';
+  });
   const [authOpen, setAuthOpen] = useState(forceOpenAuth || shouldOpenAuth());
   const [authTab] = useState<AuthTab>(initialAuthTab());
   const [oauthToast, setOauthToast] = useState(false);
