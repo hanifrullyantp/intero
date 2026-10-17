@@ -7,6 +7,9 @@
   --brand-active: #0f6b46;
   --brand-light: #4cbe93;
   --brand-soft: #e8f5ef;
+  --brand-primary: #1b9d6b;
+  --brand-primary-soft: #e8f5ef;
+  --brand-primary-active: #0f6b46;
 }
 :root[data-theme='light'] {
   --bg-main: #ffffff;
@@ -33,6 +36,8 @@
   color-scheme: light;
 }
 :root[data-theme='dark'] {
+  --brand-primary-soft: #1f3a2e;
+  --brand-primary-active: #4cbe93;
   --bg-main: #0f1419;
   --bg-secondary: #161b22;
   --bg-canvas: #1c2128;

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import { resolvePostLoginEditorUrl } from '../cloud/launchEditor';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
-import InteroLogo from '../ui/InteroLogo';
-import AuthPopup, { type AuthTab } from '../ui/auth/AuthPopup';
+import { applyTheme, getInitialTheme, type ThemeMode } from '../lib/ui';
 import { useSaasPage } from '../ui/saas/useSaasPage';
-import LandingSceneHost, { type LandingSceneHandle } from './LandingSceneHost';
-import { runCinematicTransition } from './runCinematicTransition';
+import type { AuthTab } from '../ui/auth/AuthPopup';
+import NewLanding from './NewLanding';
 import './landing.css';
 
 function initialAuthTab(): AuthTab {
@@ -22,20 +22,18 @@ function shouldOpenAuth(): boolean {
 export default function LandingPage({ forceOpenAuth = false }: { forceOpenAuth?: boolean }) {
   useSaasPage('3D Intero — Desain Kitchen Set');
   const { user, loading, configured } = useAuth();
-  const sceneRef = useRef<LandingSceneHandle>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const flashRef = useRef<HTMLDivElement>(null);
+  const [theme, setThemeState] = useState<ThemeMode>(() => getInitialTheme());
   const [authOpen, setAuthOpen] = useState(forceOpenAuth || shouldOpenAuth());
-  const [authTab, setAuthTab] = useState<AuthTab>(initialAuthTab());
-  const [transitionBusy, setTransitionBusy] = useState(false);
+  const [authTab] = useState<AuthTab>(initialAuthTab());
   const [oauthToast, setOauthToast] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.saas = '1';
+    applyTheme(theme);
     return () => {
       delete document.documentElement.dataset.saas;
     };
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -47,87 +45,56 @@ export default function LandingPage({ forceOpenAuth = false }: { forceOpenAuth?:
     }
   }, [user, loading]);
 
-  const startTransition = useCallback(async () => {
-    if (transitionBusy) return;
+  const setTheme = (t: ThemeMode) => {
+    setThemeState(t);
+    applyTheme(t);
+  };
+
+  const onStart = useCallback(async () => {
     if (!configured || !isSupabaseConfigured()) {
       window.location.href = '/?local=1';
       return;
     }
     const session = (await getSupabase().auth.getSession()).data.session;
     if (!session && !user) {
-      setAuthTab('login');
       setAuthOpen(true);
       return;
     }
-    const api = sceneRef.current?.getApi();
-    if (!api) return;
-    setTransitionBusy(true);
     try {
-      await runCinematicTransition({
-        camera: api.camera,
-        controls: api.controls,
-        overlayEl: overlayRef.current,
-        flashEl: flashRef.current,
-      });
+      const url = await resolvePostLoginEditorUrl();
+      window.location.replace(url);
     } catch (e) {
-      setTransitionBusy(false);
       console.error(e);
-      window.location.href = '/enter';
+      window.location.replace('/enter');
     }
-  }, [transitionBusy, configured, user]);
-
-  const onAuthSuccess = useCallback(() => {
-    window.setTimeout(() => {
-      void startTransition();
-    }, 400);
-  }, [startTransition]);
+  }, [configured, user]);
 
   const loggedIn = !!user && !loading;
+  const showAuth = configured && isSupabaseConfigured();
 
   return (
-    <div className="landing-root">
-      <LandingSceneHost ref={sceneRef} />
-
-      <div id="landing-overlay" ref={overlayRef}>
-        <div className="landing-gradient" />
-        <div className="landing-brand">
-          <div className="landing-brand-row">
-            <InteroLogo size={48} className="rounded-xl shadow-lg" />
-          </div>
-          <h1 className="brand-name">3D Intero</h1>
-          <p className="brand-tagline">Desain kitchen set impianmu dalam hitungan menit</p>
-        </div>
-        <button
-          type="button"
-          id="btn-mulai"
-          className="cta-button"
-          disabled={transitionBusy || loading}
-          onClick={() => { void startTransition(); }}
-        >
-          <span>{loggedIn ? 'Lanjutkan desain' : 'Mulai Berkreasi'}</span>
-          <span className="cta-arrow">→</span>
-        </button>
-        <p className="landing-hint">Geser & putar untuk melihat kitchen set 3D</p>
-        <a href="/?local=1" className="landing-local-link">Coba tanpa akun (editor lokal)</a>
-      </div>
-
-      <div id="white-flash" ref={flashRef} />
-
+    <>
+      <NewLanding
+        theme={theme}
+        setTheme={setTheme}
+        loggedIn={loggedIn}
+        sessionLoading={loading}
+        authOpen={authOpen}
+        onAuthOpenChange={setAuthOpen}
+        authTab={authTab}
+        showAuth={showAuth}
+        onStart={() => {
+          void onStart();
+        }}
+      />
       {oauthToast && (
         <div className="landing-oauth-toast">
           Login berhasil — klik &quot;Lanjutkan desain&quot; untuk masuk editor.
-          <button type="button" className="auth-link ml-2 text-white" onClick={() => setOauthToast(false)}>OK</button>
+          <button type="button" className="auth-link ml-2 text-white" onClick={() => setOauthToast(false)}>
+            OK
+          </button>
         </div>
       )}
-
-      {configured && (
-        <AuthPopup
-          open={authOpen}
-          initialTab={authTab}
-          onClose={() => setAuthOpen(false)}
-          onSuccess={onAuthSuccess}
-        />
-      )}
-    </div>
+    </>
   );
 }

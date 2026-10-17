@@ -142,11 +142,11 @@ export function buildLandingKitchenScene(container: HTMLElement): LandingSceneAp
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
   Object.assign(renderer.domElement.style, {
-    position: 'fixed',
+    position: 'absolute',
     top: '0',
     left: '0',
-    width: '100vw',
-    height: '100vh',
+    width: '100%',
+    height: '100%',
     zIndex: '0',
     display: 'block',
   });

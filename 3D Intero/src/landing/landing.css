@@ -1,3 +1,49 @@
+.font-heading {
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+}
+
+.landing-glass {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 72%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-md);
+}
+
+.landing-anim-up {
+  animation: landing-fade-up 0.7s ease-out both;
+}
+
+.landing-anim-up:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.landing-anim-up:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.landing-anim-up:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-new-root .landing-scene-host,
+.landing-new-root canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .landing-root {
   position: fixed;
   inset: 0;
