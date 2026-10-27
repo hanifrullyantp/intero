@@ -169,7 +169,7 @@ const initialUI: UIState = {
   frameLabelMode: 'block', frameLabelScale: 1, frameHideBlocks: [], frameHideDoors: false,
   spotlight: null, showSearch: false, showAiChat: false,
   uiMode: storage.get<UiMode>('intero_uiMode', isMobileViewport() ? 'simple' : 'advanced'),
-  theme: storage.get<Theme>('intero_theme', 'dark'),
+  theme: storage.get<Theme>('intero_theme', 'light'),
   showGrid: true, showShadows: true, showLayers: !isMobileViewport(), showLibrary: false, showProps: !isMobileViewport(),
   showWizard: false, showBuilder: false, showShortcuts: false, showAbout: false, showPrefs: false,
   layersDocked: false,
