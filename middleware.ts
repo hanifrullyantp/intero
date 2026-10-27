@@ -1,6 +1,7 @@
 import { next, rewrite } from "@vercel/functions";
 
-const HOST_3D = "3d.intero.id";
+/** Subdomain hosts that serve the 3D Intero SPA from /3d */
+const HOSTS_3D = new Set(["3d.intero.id", "3d.intero.com"]);
 
 function pathFor3dApp(pathname: string): string {
   if (pathname.startsWith("/api/")) return pathname;
@@ -20,10 +21,10 @@ function pathFor3dApp(pathname: string): string {
   return `/3d${pathname}`;
 }
 
-/** Vercel serves root index.html before vercel.json rewrites; route 3d.intero.id here. */
+/** Vercel serves root index.html before vercel.json rewrites; route 3d hosts here. */
 export default function middleware(request: Request) {
   const url = new URL(request.url);
-  if (url.hostname.toLowerCase() !== HOST_3D) {
+  if (!HOSTS_3D.has(url.hostname.toLowerCase())) {
     return next();
   }
   return rewrite(new URL(pathFor3dApp(url.pathname), url));
