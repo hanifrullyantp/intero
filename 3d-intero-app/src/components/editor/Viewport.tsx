@@ -66,13 +66,14 @@ export function Viewport() {
       if (frameCleanup) { frameCleanup(); frameCleanup = null; }
       ctl.setFrameOverlay(null);
       const inRangka = s.appMode === 'production' && s.prodTab === 'rangka' && s.items.length > 0;
-      const clean = inRangka && s.settings.production.frameView === 'frame';
-      // View "Rangka Only": bersihkan dinding, countertop & kabinet solid → hanya rangka.
+      const view = s.settings.production.frameView;
+      const clean = inRangka && (view === 'frame' || view === 'exploded');
+      // View "Rangka Only" / "Exploded View": sembunyikan dinding, countertop & kabinet solid → hanya rangka.
       ctl.setRoomVisible(!clean);
       ctl.setCountertopVisible(!clean);
       ctl.setCabinetVisible(!clean);
       if (!inRangka) { ctl.setSkinOpacity(null); return; }
-      ctl.setSkinOpacity(clean ? null : 0.2);
+      ctl.setSkinOpacity(clean ? null : view === 'solid' ? 0.88 : 0.22);
       const p = s.settings.production;
       const res = buildFrame(s.items, s.walls, s.settings, p.frameMaterial);
       const g = buildFrameGroup(res, {

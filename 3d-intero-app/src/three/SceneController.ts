@@ -271,6 +271,7 @@ export class SceneController {
       if (this.roomGroup) { this.root.remove(this.roomGroup); this.disposeObject(this.roomGroup); }
       const b = roomBounds(walls);
       this.roomGroup = buildRoom(walls, this.sharedCache, b, appearance);
+      this.roomGroup.visible = this.roomVisible;
       this.root.add(this.roomGroup);
       const c = roomCenter(walls);
       this.dirLight.target.position.set(c.x * S, 0, c.z * S);
@@ -401,8 +402,14 @@ export class SceneController {
     this.setPeopleVisible(this.showPeople);
   }
 
+  private cabinetsHidden = false;
   // ─── Visibilitas 2D (base/wall separation) ───
   private applyRowVisibility(mode: RowKind | 'all') {
+    if (this.cabinetsHidden) {
+      for (const e of this.built.values()) e.group.visible = false;
+      this.ctGroup.visible = false;
+      return;
+    }
     for (const e of this.built.values()) {
       const row = rowOf(e.item);
       let vis = e.item.visible;
@@ -413,6 +420,11 @@ export class SceneController {
     this.ctGroup.visible = mode !== 'wall';
   }
   private applyViewVisibility() {
+    if (this.cabinetsHidden) {
+      for (const e of this.built.values()) e.group.visible = false;
+      this.ctGroup.visible = false;
+      return;
+    }
     const top2d = this.viewMode === 'top';
     if (!top2d || this.topSub === 'split') { this.applyRowVisibility('all'); for (const e of this.built.values()) if (!this.xray) setGroupOpacity(e.group, null); return; }
     if (this.topSub === 'all') {
@@ -713,13 +725,16 @@ export class SceneController {
   getBuilt() { return [...this.built.entries()].map(([id, e]) => ({ id, group: e.group, item: e.item })); }
   commitTransform(id: string, pos: V3, rotY: number) { this.cb.onTransformEnd?.(id, pos, rotY); }
   renderOnce() { this.renderer.render(this.scene, this.camera); }
-  setRoomVisible(v: boolean) { if (this.roomGroup) this.roomGroup.visible = v; }
-  setCountertopVisible(v: boolean) { this.ctGroup.visible = v; }
+  private roomVisible = true;
+  setRoomVisible(v: boolean) { this.roomVisible = v; if (this.roomGroup) this.roomGroup.visible = v; }
+  setCountertopVisible(v: boolean) { this.ctGroup.visible = v && !this.cabinetsHidden; }
   setCabinetVisible(v: boolean) {
+    this.cabinetsHidden = !v;
     if (v) {
       this.applyViewVisibility();
     } else {
       for (const e of this.built.values()) e.group.visible = false;
+      this.ctGroup.visible = false;
     }
     this.peopleGroup.visible = v && this.showPeople && (this.viewMode === 'perspective' || this.viewMode === 'iso');
   }
