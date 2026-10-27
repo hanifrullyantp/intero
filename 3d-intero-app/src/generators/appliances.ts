@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { Item, Slot1, Slot2 } from '../types';
 import { type Animatable, type Built, type MatCache, type MatSet, GAP, T, box, boxMin, cyl, handleSpecFrom, makeCarcass, makeDoor, makeLiftDoor, makeToeKick, matsFor, sphere } from './common';
-import { type GenCtx, addLed, rebaseAnims } from './cabinets';
+import { type GenCtx, addCornice, addLed, rebaseAnims } from './cabinets';
 
 export const OVEN = { w: 440, h: 290, d: 320 };
 export const MICROWAVE = { w: 500, h: 300, d: 400 };
@@ -121,13 +121,15 @@ export function genFridge(item: Item, ctx: GenCtx): Built {
   const m = matsFor(ctx.cache, item.materials);
   const g = new THREE.Group();
   const anims: Animatable[] = [];
+  const corniceH = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  const effH = h - corniceH;
   const type = cfg.fridgeType ?? 'sbs';
-  const fW = Math.min(cfg.fridgeW ?? 900, w - 40), fH = Math.min(cfg.fridgeH ?? 1750, h - 60), fD = Math.min(cfg.fridgeD ?? 650, d);
+  const fW = Math.min(cfg.fridgeW ?? 900, w - 40), fH = Math.min(cfg.fridgeH ?? 1750, effH - 60), fD = Math.min(cfg.fridgeD ?? 650, d);
   // Housing: panel samping + atas + belakang
-  g.add(boxMin(T, h, d, m.side, -w / 2, 0, -d / 2));
-  g.add(boxMin(T, h, d, m.side, w / 2 - T, 0, -d / 2));
-  g.add(boxMin(w - 2 * T, T, d, m.body, -w / 2 + T, h - T, -d / 2));
-  g.add(boxMin(w - 2 * T, h, 5, m.body, -w / 2 + T, 0, -d / 2));
+  g.add(boxMin(T, effH, d, m.side, -w / 2, 0, -d / 2));
+  g.add(boxMin(T, effH, d, m.side, w / 2 - T, 0, -d / 2));
+  g.add(boxMin(w - 2 * T, T, d, m.body, -w / 2 + T, effH - T, -d / 2));
+  g.add(boxMin(w - 2 * T, effH, 5, m.body, -w / 2 + T, 0, -d / 2));
   // Body kulkas
   const silver = ctx.cache.get('#C8CCD0', { roughness: 0.35, metalness: 0.6 });
   const dark = ctx.cache.get('#8E9399', { roughness: 0.4, metalness: 0.5 });
@@ -161,8 +163,8 @@ export function genFridge(item: Item, ctx: GenCtx): Built {
     D.pivot.add(box(fW - 4, 6, doorT + 2, dark, -fW / 2, doorH * 0.74, 0)); // garis freezer
   }
   g.add(box(fW * 0.3, 20, 6, m.black, 0, fH - 30, zFront + 3)); // vent atas
-  // Filler cabinet di atas kulkas → tinggi global
-  const fillerY = fH + 40, fillerH = h - fillerY;
+  // Filler cabinet di atas kulkas → tinggi global dikurangi cornice
+  const fillerY = fH + 40, fillerH = effH - fillerY;
   if (fillerH > 60) {
     g.add(boxMin(w - 2 * T, T, d, m.body, -w / 2 + T, fillerY, -d / 2));
     const hsp = handleSpecFrom(item.materials, m.handle);
@@ -173,10 +175,11 @@ export function genFridge(item: Item, ctx: GenCtx): Built {
         const L = makeDoor({ w: dw, h: dh, mat: m.door, hinge: 'left', handle: hsp }); L.pivot.position.set(-w / 2 + GAP, fillerY + GAP, d / 2 + T / 2); g.add(L.pivot); anims.push(L.anim);
         const R = makeDoor({ w: dw, h: dh, mat: m.door, hinge: 'right', handle: hsp }); R.pivot.position.set(w / 2 - GAP, fillerY + GAP, d / 2 + T / 2); g.add(R.pivot); anims.push(R.anim);
       } else {
-        const ld = makeLiftDoor(w - 2 * GAP, dh, m.door, hsp); ld.pivot.position.set(0, h - GAP, d / 2 + T / 2); g.add(ld.pivot); anims.push(ld.anim);
+        const ld = makeLiftDoor(w - 2 * GAP, dh, m.door, hsp); ld.pivot.position.set(0, effH - GAP, d / 2 + T / 2); g.add(ld.pivot); anims.push(ld.anim);
       }
     } else g.add(box(w - 2 * GAP, fillerH - 2 * GAP, T, m.door, 0, fillerY + fillerH / 2, d / 2 + T / 2));
   }
+  addCornice(g, item, ctx, m, w, h, d);
   return { group: g, animatables: anims };
 }
 
@@ -192,6 +195,8 @@ export function genElectronic(item: Item, ctx: GenCtx): Built {
   const anims: Animatable[] = [];
   const hs = handleSpecFrom(item.materials, m.handle);
   const tk = cfg.toeKickHeight ?? ctx.settings.toeKick;
+  const corniceH = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  const effH = h - corniceH;
   const slot1 = cfg.slot1 ?? 'magiccom', slot2 = cfg.slot2 ?? 'oven';
   const base = ctx.settings.baseHeight;
   const s1y = base, s1h = SLOT1_H[slot1];
@@ -201,7 +206,7 @@ export function genElectronic(item: Item, ctx: GenCtx): Built {
   const nicheW = w - 2 * T, nicheD = d - 5;
 
   g.add(makeToeKick(w, d, tk, m.toe));
-  g.add(makeCarcass({ w, h: h - tk, d, body: m.body, side: m.side, y: tk }));
+  g.add(makeCarcass({ w, h: effH - tk, d, body: m.body, side: m.side, y: tk }));
   // Panel horizontal pembatas slot (dispenser lantai: tidak ada sekat di s1y)
   const seps = slot1 === 'dispenser' ? [s1y + s1h, ...(slot2 === 'door' ? [] : [s2y + s2h])] : [s1y, s1y + s1h, ...(slot2 === 'door' ? [] : [s2y + s2h])];
   for (const y of seps) g.add(boxMin(nicheW, T, d, m.body, -nicheW / 2, y, -d / 2));
@@ -219,7 +224,7 @@ export function genElectronic(item: Item, ctx: GenCtx): Built {
     }
   };
   if (slot1 !== 'dispenser') doors(tk, s1y - tk); // pintu bawah (dispenser lantai menutupi area ini)
-  doors(topY, h - topY);             // pintu atas
+  doors(topY, effH - topY);             // pintu atas
 
   const nicheLed = (y: number) => { if (item.led.insideUpper) addLed(g, ctx.cache, item, nicheW - 20, 0, y - 8, zFront - 50, 'down'); };
   // Slot 1 (bawah, sejajar countertop) — dispenser dari lantai
@@ -240,17 +245,21 @@ export function genElectronic(item: Item, ctx: GenCtx): Built {
   else if (slot2 === 'coffee') { const cf = genCoffeeMachine(ctx.cache, m, nicheW, s2h - T); cf.position.set(0, s2Floor + 10, zFront); g.add(cf); }
   if (slot2 !== 'door') nicheLed(s2y + s2h);
   if (item.led.plinth) addLed(g, ctx.cache, item, w - 20, 0, 10, d / 2 - 62, 'down');
+  addCornice(g, item, ctx, m, w, h, d);
   return { group: g, animatables: anims };
 }
 
 // ─── Cooker hood: bottom sejajar bottom wall cabinet, filler otomatis di atas ───
 export function genHood(item: Item, ctx: GenCtx): Built {
   const { w, h, d } = item.dims;
+  const cfg = item.config;
   const m = matsFor(ctx.cache, item.materials);
   const g = new THREE.Group();
   const anims: Animatable[] = [];
+  const corniceH = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  const effH = h - corniceH;
   // Canopy tipis di bawah filler — TANPA leher/cerobong; filler menutup penuh sampai hood
-  const canopyH = Math.min(150, Math.max(40, item.config.hoodHeight ?? 70));
+  const canopyH = Math.min(150, Math.max(40, cfg.hoodHeight ?? 70));
   const canopyD = Math.max(d + 150, 480);
   const canopyZ = canopyD / 2 - d / 2;
   g.add(box(w, canopyH, canopyD, m.steel, 0, canopyH / 2, canopyZ));
@@ -266,8 +275,8 @@ export function genHood(item: Item, ctx: GenCtx): Built {
     g.add(cyl(22, 22, 4, ctx.cache.get('#FFF1D6', { emissive: '#FFE8B0', emissiveIntensity: lampOn ? 2.2 : 0.3 }), lx, -2, lz, 16));
     if (lampOn) { const pl = new THREE.PointLight(0xFFE8B0, 3 * (item.led.intensity / 100), 1.8, 2); pl.position.set(lx, -30, lz); pl.userData.isLed = true; pl.userData.baseIntensity = pl.intensity; g.add(pl); }
   }
-  // Filler penuh: dari atas canopy sampai puncak wall cabinet
-  const fillerY = canopyH, fillerH = h - canopyH;
+  // Filler penuh: dari atas canopy sampai puncak wall cabinet (dikurangi cornice)
+  const fillerY = canopyH, fillerH = effH - canopyH;
   if (fillerH > 40) {
     g.add(makeCarcass({ w, h: fillerH, d, body: m.body, side: m.side, y: fillerY }));
     const hsp = handleSpecFrom(item.materials, m.handle);
@@ -277,8 +286,9 @@ export function genHood(item: Item, ctx: GenCtx): Built {
       const L = makeDoor({ w: dw, h: dh, mat: m.door, hinge: 'left', handle: hsp }); L.pivot.position.set(-w / 2 + GAP, fillerY + GAP, d / 2 + T / 2); g.add(L.pivot); anims.push(L.anim);
       const R = makeDoor({ w: dw, h: dh, mat: m.door, hinge: 'right', handle: hsp }); R.pivot.position.set(w / 2 - GAP, fillerY + GAP, d / 2 + T / 2); g.add(R.pivot); anims.push(R.anim);
     } else {
-      const ld = makeLiftDoor(w - 2 * GAP, dh, m.door, hsp); ld.pivot.position.set(0, h - GAP, d / 2 + T / 2); g.add(ld.pivot); anims.push(ld.anim);
+      const ld = makeLiftDoor(w - 2 * GAP, dh, m.door, hsp); ld.pivot.position.set(0, effH - GAP, d / 2 + T / 2); g.add(ld.pivot); anims.push(ld.anim);
     }
   }
+  addCornice(g, item, ctx, m, w, h, d);
   return { group: g, animatables: anims };
 }

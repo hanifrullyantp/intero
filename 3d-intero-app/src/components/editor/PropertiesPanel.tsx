@@ -198,6 +198,16 @@ function ConfigSection({ item: it, ids, doorCount }: { item: Item; ids: string[]
   const cfg = it.config;
   const p = (c: ItemPatch['config']) => s.patchItems(ids, { config: c });
   const t = it.type;
+  const corniceControls = (
+    <>
+      <Toggle tour="cornice-toggle" label="Cornice / Topi" checked={!!cfg.cornice} onChange={(v) => p({ cornice: v })} />
+      {cfg.cornice && <>
+        <Field label="Tinggi cornice" inline><Num ids={ids} value={cfg.corniceHeight ?? 50} min={30} max={150} patch={(v) => ({ config: { corniceHeight: v } })} /></Field>
+        <Field label="Lebar overhang topi" inline><Num ids={ids} value={cfg.corniceWidth ?? 40} min={10} max={120} patch={(v) => ({ config: { corniceWidth: v } })} /></Field>
+        <Toggle label="Lampu di bawah topi" checked={!!cfg.corniceLight} onChange={(v) => p({ corniceLight: v })} />
+      </>}
+    </>
+  );
   const content = () => {
     if (BASE_TYPES.has(t)) return (<>
       <Field label="Jumlah pintu" inline tour="door-count"><Select value={String(doorCount)} onChange={(v) => p({ doorCount: +v as 0 | 1 | 2 })} options={[{ value: '0', label: 'Tanpa pintu (laci)' }, { value: '1', label: '1 pintu' }, { value: '2', label: '2 pintu' }]} /></Field>
@@ -212,17 +222,16 @@ function ConfigSection({ item: it, ids, doorCount }: { item: Item; ids: string[]
       <Field label="Jenis pintu" inline><Select value={cfg.doorType ?? (cfg.liftUp ? 'liftup' : 'swing')} onChange={(v) => p({ doorType: v as 'swing' | 'liftup', liftUp: v === 'liftup' })} options={[{ value: 'swing', label: 'Swing (buka samping)' }, { value: 'liftup', label: 'Pull-up (buka ke atas)' }]} /></Field>
       <Toggle tour="double-stack-toggle" label="Double stack (2 tier)" checked={!!cfg.doubleStack} onChange={(v) => p({ doubleStack: v })} />
       {cfg.doubleStack && <Field label="Tinggi tier atas" inline><Num ids={ids} value={cfg.upperTierHeight ?? 350} min={200} max={600} patch={(v) => ({ config: { upperTierHeight: v } })} /></Field>}
-      <Toggle tour="cornice-toggle" label="Cornice / Topi" checked={!!cfg.cornice} onChange={(v) => p({ cornice: v })} />
-      {cfg.cornice && <>
-        <Field label="Tinggi cornice" inline><Num ids={ids} value={cfg.corniceHeight ?? 50} min={30} max={150} patch={(v) => ({ config: { corniceHeight: v } })} /></Field>
-        <Field label="Lebar overhang topi" inline><Num ids={ids} value={cfg.corniceWidth ?? 40} min={10} max={120} patch={(v) => ({ config: { corniceWidth: v } })} /></Field>
-        <Toggle label="Lampu di bawah topi" checked={!!cfg.corniceLight} onChange={(v) => p({ corniceLight: v })} />
-      </>}
+      {corniceControls}
     </>);
-    if (t === 'tall') return <Field label="Jumlah pintu" inline><Select value={String(cfg.doorCount ?? (it.dims.w > 600 ? 2 : 1))} onChange={(v) => p({ doorCount: +v as 1 | 2 })} options={[{ value: '1', label: '1 pintu' }, { value: '2', label: '2 pintu' }]} /></Field>;
+    if (t === 'tall') return (<>
+      <Field label="Jumlah pintu" inline><Select value={String(cfg.doorCount ?? (it.dims.w > 600 ? 2 : 1))} onChange={(v) => p({ doorCount: +v as 1 | 2 })} options={[{ value: '1', label: '1 pintu' }, { value: '2', label: '2 pintu' }]} /></Field>
+      {corniceControls}
+    </>);
     if (t === 'corner_base' || t === 'corner_wall') return (<>
       <Field label="Jenis pintu" inline><Select value={cfg.cornerDoorStyle ?? 'bifold'} onChange={(v) => p({ cornerDoorStyle: v as 'bifold' | 'two' | 'one' })} options={[{ value: 'bifold', label: 'Bi-fold 168°' }, { value: 'two', label: '2 pintu' }, { value: 'one', label: '1 pintu + panel' }]} /></Field>
       <Field label="Orientasi" inline><Select value={cfg.cornerOrientation ?? 'auto'} onChange={(v) => p({ cornerOrientation: v as 'auto' | 'left' | 'right' })} options={[{ value: 'auto', label: 'Auto-detect tetangga' }, { value: 'left', label: 'Buka ke kanan (sudut kiri)' }, { value: 'right', label: 'Buka ke kiri (sudut kanan)' }]} /></Field>
+      {t === 'corner_wall' && corniceControls}
       <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Lebar pintu kiri/kanan = Leg A/B − kedalaman. Handle dibuat pada kedua sub-pintu.</p>
     </>);
     if (t === 'fridge') return (<>
@@ -230,15 +239,20 @@ function ConfigSection({ item: it, ids, doorCount }: { item: Item; ids: string[]
       <Field label="Lebar kulkas" inline><Num ids={ids} value={cfg.fridgeW ?? 900} min={500} max={1100} patch={(v) => ({ config: { fridgeW: v }, dims: { w: Math.max(it.dims.w, v + 40) } })} /></Field>
       <Field label="Tinggi kulkas" inline><Num ids={ids} value={cfg.fridgeH ?? 1750} min={1200} max={2000} patch={(v) => ({ config: { fridgeH: v } })} /></Field>
       <Field label="Dalam kulkas" inline><Num ids={ids} value={cfg.fridgeD ?? 650} min={500} max={800} patch={(v) => ({ config: { fridgeD: v } })} /></Field>
+      {corniceControls}
       <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Kulkas fisik tetap; filler cabinet di atasnya otomatis = tinggi total − tinggi kulkas − gap.</p>
     </>);
     if (t === 'electronic') return (<>
       <Field label="Preset" inline><Select value={cfg.electronicPreset ?? 'custom'} onChange={(v) => { const pr = ELECTRONIC_PRESETS.find((x) => x.id === v)!; p(v === 'custom' ? { electronicPreset: v } : { electronicPreset: v, slot1: pr.slot1, slot2: pr.slot2 }); }} options={ELECTRONIC_PRESETS.map((x) => ({ value: x.id, label: x.name }))} /></Field>
       <Field label="Slot 1 (bawah)" inline tour="slot1"><Select value={cfg.slot1 ?? 'magiccom'} onChange={(v) => p({ slot1: v as Slot1, electronicPreset: 'custom' })} options={(Object.keys(SLOT1_OPTIONS) as Slot1[]).map((k) => ({ value: k, label: SLOT1_OPTIONS[k] }))} /></Field>
       <Field label="Slot 2 (atas)" inline tour="slot2"><Select value={cfg.slot2 ?? 'oven'} onChange={(v) => p({ slot2: v as Slot2, electronicPreset: 'custom' })} options={(Object.keys(SLOT2_OPTIONS) as Slot2[]).map((k) => ({ value: k, label: SLOT2_OPTIONS[k] }))} /></Field>
+      {corniceControls}
       <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Slot 1 sejajar countertop (850 mm); Magic Com pada tray rel teleskopik keluar 350 mm saat Open Mode.</p>
     </>);
-    if (t === 'hood') return <Field label="Tinggi canopy (bawah filler)" inline tour="hood-height"><Num ids={ids} value={cfg.hoodHeight ?? 70} min={40} max={150} patch={(v) => ({ config: { hoodHeight: v } })} /></Field>;
+    if (t === 'hood') return (<>
+      <Field label="Tinggi canopy (bawah filler)" inline tour="hood-height"><Num ids={ids} value={cfg.hoodHeight ?? 70} min={40} max={150} patch={(v) => ({ config: { hoodHeight: v } })} /></Field>
+      {corniceControls}
+    </>);
     if (t === 'island') return (<>
       <Field label="Pintu per sisi" inline><Select value={String(cfg.islandDoorsPerSide ?? 2)} onChange={(v) => p({ islandDoorsPerSide: +v })} options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: `${n} pintu` }))} /></Field>
       <Field label="Stools" inline tour="island-stools"><Select value={String(cfg.stools ?? 0)} onChange={(v) => p({ stools: +v })} options={[0, 1, 2, 3, 4].map((n) => ({ value: String(n), label: n ? `${n} stool` : 'Tanpa stool' }))} /></Field>

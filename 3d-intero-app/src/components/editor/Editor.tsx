@@ -25,6 +25,7 @@ import { ArDialog, PinPickBanner } from '../xr/ArDialog';
 import { PhotoOverlay } from '../xr/PhotoOverlay';
 import { launchVR } from '../xr/launch';
 import { teamSession } from '../../lib/team-session';
+import { AiAssistant } from './AiAssistant';
 
 export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   const s = useStore();
@@ -193,6 +194,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       {!isMobile && <StatusBar />}
       {isMobile && <MobileChrome />}
       {s.showWizard && <Wizard onClose={() => s.ui({ showWizard: false })} />}
+      <AiAssistant open={s.showAiChat} onClose={() => s.ui({ showAiChat: false })} />
       <ArDialog /><PinPickBanner /><PhotoOverlay /><PriceListDialog />
       {s.showBuilder && <ComponentBuilder onClose={() => s.ui({ showBuilder: false })} />}
       {s.dialog?.kind === 'confirm' && (

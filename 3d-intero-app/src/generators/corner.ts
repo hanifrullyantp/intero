@@ -36,12 +36,20 @@ export function genCorner(item: Item, ctx: GenCtx): Built {
   g.add(c);
 
   const tk = isWall ? 0 : (cfg.toeKickHeight ?? ctx.settings.toeKick);
-  const y0 = tk, bodyH = H - tk;
+  const corniceH = isWall && cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  const y0 = tk, bodyH = H - corniceH - tk;
   // Toe kick L tertutup
   if (tk > 0) c.add(lPlate(lShape(legA, legB, D, 50), tk, 0, m.toe));
   // Pelat bawah & atas L
   c.add(lPlate(lShape(legA, legB, D), T, y0, m.body));
   c.add(lPlate(lShape(legA, legB, D), T, y0 + bodyH - T, m.body));
+  // Cornice / Topi L-shape untuk corner_wall
+  if (corniceH > 0) {
+    const cornW = cfg.corniceWidth ?? 40;
+    c.add(lPlate(lShape(legA, legB, D + cornW), corniceH * 0.6, H - corniceH, m.door));
+    c.add(lPlate(lShape(legA, legB, D + cornW + 18), corniceH * 0.4, H - corniceH * 0.4, m.door));
+    if (cfg.corniceLight) addLed(g, ctx.cache, item, legA - 60, 0, H - corniceH - 6, -legB / 2 + D - 30, 'down');
+  }
   // Panel belakang
   c.add(boxMin(legA, bodyH, BACK_T, m.body, 0, y0, 0));
   c.add(boxMin(BACK_T, bodyH, legB, m.body, 0, y0, 0));

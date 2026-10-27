@@ -28,6 +28,20 @@ export function addLed(g: THREE.Group, cache: MatCache, item: Item, len: number,
   return s;
 }
 
+/** Tambahkan profil Cornice / Topi menerus di puncak kabinet (h - corniceH .. h). Overhang terutama ke arah depan (+z) agar tidak bertabrakan antar modul samping. */
+export function addCornice(g: THREE.Group, item: Item, ctx: GenCtx, m: MatSet, w: number, h: number, d: number) {
+  const cfg = item.config;
+  const corniceH = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  if (corniceH <= 0) return 0;
+  const cornW = cfg.corniceWidth ?? 40;
+  // Overhang ke arah depan (z+) penuh, samping pas selebar modul + 2mm overlap halus agar tampak menyatu kontinu
+  const sideExtend = 2;
+  g.add(box(w + sideExtend, corniceH * 0.6, d + cornW, m.door, 0, h - corniceH + corniceH * 0.3, cornW / 2));
+  g.add(box(w + sideExtend + 4, corniceH * 0.4, d + cornW + 18, m.door, 0, h - corniceH * 0.2, (cornW + 18) / 2));
+  if (cfg.corniceLight) addLed(g, ctx.cache, item, w - 40, 0, h - corniceH - 6, d / 2 - 30, 'down');
+  return corniceH;
+}
+
 function buildAccessory(kind: Accessory, o: { w: number; h: number; d: number; mats: MatSet; cache: MatCache; handle: HandleSpec | null; item: Item }): AccBuilt | null {
   const base = { w: o.w, h: o.h, d: o.d, mats: o.mats, cache: o.cache, handle: o.handle, gasType: o.item.config.gasType, spiceWidth: o.item.config.spiceWidth };
   switch (kind) {
@@ -206,11 +220,7 @@ export function genWall(item: Item, ctx: GenCtx): Built {
   };
   tier(0, mainH, mainLift);
   if (upperH > 0) tier(mainH, upperH, true);
-  if (corniceH > 0) {
-    g.add(box(w + cornW, corniceH * 0.6, d + cornW, m.door, 0, h - corniceH + corniceH * 0.3, cornW * 0.25));
-    g.add(box(w + cornW + 20, corniceH * 0.4, d + cornW + 20, m.door, 0, h - corniceH * 0.2, cornW * 0.45));
-    if (cfg.corniceLight) addLed(g, ctx.cache, item, w - 40, 0, h - corniceH - 6, d / 2 - 40, 'down');
-  }
+  addCornice(g, item, ctx, m, w, h, d);
   if (item.led.underCabinet) addLed(g, ctx.cache, item, w - 40, 0, -6, d / 2 - 50, 'down');
   if (item.led.insideUpper) addLed(g, ctx.cache, item, w - 2 * T - 20, 0, mainH - T - 8, d / 2 - 50, 'down');
   return { group: g, animatables: anims };
@@ -224,8 +234,9 @@ export function genTall(item: Item, ctx: GenCtx): Built {
   const anims: Animatable[] = [];
   const hs = handleSpecFrom(item.materials, m.handle);
   const tk = cfg.toeKickHeight ?? ctx.settings.toeKick;
+  const corniceH = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
   g.add(makeToeKick(w, d, tk, m.toe));
-  const bodyH = h - tk;
+  const bodyH = h - corniceH - tk;
   const shelves: number[] = [];
   for (let y = 350; y < bodyH - 200; y += 350) shelves.push(y);
   g.add(makeCarcass({ w, h: bodyH, d, body: m.body, side: m.side, y: tk, shelves }));
@@ -245,7 +256,8 @@ export function genTall(item: Item, ctx: GenCtx): Built {
   };
   section(tk, split);
   section(tk + split, bodyH - split);
-  if (item.led.insideUpper) addLed(g, ctx.cache, item, w - 2 * T - 20, 0, h - T - 8, d / 2 - 60, 'down');
+  addCornice(g, item, ctx, m, w, h, d);
+  if (item.led.insideUpper) addLed(g, ctx.cache, item, w - 2 * T - 20, 0, h - corniceH - T - 8, d / 2 - 60, 'down');
   if (item.led.plinth) addLed(g, ctx.cache, item, w - 20, 0, 10, d / 2 - 62, 'down');
   return { group: g, animatables: anims };
 }

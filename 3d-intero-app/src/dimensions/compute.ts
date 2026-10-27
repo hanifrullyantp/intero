@@ -109,10 +109,11 @@ export function computeDimLines(items: Item[], walls: Wall[], s: ProjectSettings
       out.push({ id: `cd-${it.id}`, kind: 'cabinet', a: toWorld(it, P(-w / 2, h, -d / 2)), b: toWorld(it, P(-w / 2, h, d / 2)), off: rotY(P(-170, 120, 0), r), label: f(d) });
     }
     if (!targets.length) {
-      for (const it of vis.filter((i) => rowOf(i) === 'base' || rowOf(i) === 'tall')) {
+      vis.filter((i) => rowOf(i) === 'base' || rowOf(i) === 'tall').forEach((it, idx) => {
         const { w, d } = it.dims;
-        out.push({ id: `cw-${it.id}`, kind: 'cabinet', a: toWorld(it, P(-w / 2, 0, d / 2)), b: toWorld(it, P(w / 2, 0, d / 2)), off: rotY(P(0, 0, 160), it.rotationY), label: f(w) });
-      }
+        const yStagger = idx % 2 === 1 ? 55 : 0;
+        out.push({ id: `cw-${it.id}`, kind: 'cabinet', a: toWorld(it, P(-w / 2, yStagger, d / 2)), b: toWorld(it, P(w / 2, yStagger, d / 2)), off: rotY(P(0, 0, 170 + (idx % 2) * 45), it.rotationY), label: f(w) });
+      });
     }
   }
   if (layers.doors) {

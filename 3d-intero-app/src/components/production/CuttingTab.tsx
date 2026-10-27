@@ -36,7 +36,7 @@ function PanelTable({ panels, items, onlyId }: { panels: Panel[]; items: Item[];
         <div className="flex-1" /><span className="mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>{list.length} panel · {totalArea.toFixed(2)} m²</span>
         <button className="btn btn-secondary btn-sm" onClick={csv}><Download size={13} />CSV</button>
       </div>
-      <div className="overflow-auto rounded-xl" style={{ border: '1px solid var(--border)', maxHeight: 'calc(100vh - 330px)' }}>
+      <div className="overflow-auto rounded-xl" style={{ border: '1px solid var(--border)', maxHeight: 'calc(100vh - 190px)' }}>
         <table className="hpp-table">
           <thead><tr>{['ID', 'Kabinet', 'Panel', 'P (cm)', 'L (cm)', 'Tebal', 'Material', 'Qty', 'Serat', 'HPL', 'Tepi (m)'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>{list.map((p) => {

@@ -124,12 +124,17 @@ export function Viewport() {
         if (s.appMode !== 'production') { ctl.setPaused(false); ctl.resize(); }
       }
       if (s.appMode !== p.appMode || s.prodTab !== p.prodTab) {
+        syncFrame();
         if (s.appMode === 'production') {
           ctl.setPaused(s.prodTab !== 'rangka');
           if (s.prodTab === 'rangka') { ctl.resize(); if (!fitted) { fitted = true; const b = ctl.frameOverlayBounds(); ctl.fitCameraToObject(b.center, b.size * 1.05); } }
-        } else ctl.setPaused(false);
+        } else {
+          ctl.setPaused(false);
+          refreshDims();
+        }
+      } else if (s.appMode === 'production' && s.prodTab === 'rangka' && (s.items !== p.items || s.walls !== p.walls || s.settings !== p.settings || s.selectedIds !== p.selectedIds || s.frameLabelMode !== p.frameLabelMode || s.frameLabelScale !== p.frameLabelScale || s.frameHideBlocks !== p.frameHideBlocks || s.frameHideDoors !== p.frameHideDoors)) {
+        syncFrame();
       }
-      if (s.appMode === 'production' && s.prodTab === 'rangka' && (s.items !== p.items || s.walls !== p.walls || s.settings !== p.settings || s.selectedIds !== p.selectedIds || s.frameLabelMode !== p.frameLabelMode || s.frameLabelScale !== p.frameLabelScale || s.frameHideBlocks !== p.frameHideBlocks || s.frameHideDoors !== p.frameHideDoors)) syncFrame();
     });
     const ro = new ResizeObserver(() => ctl.resize());
     ro.observe(hostRef.current!);

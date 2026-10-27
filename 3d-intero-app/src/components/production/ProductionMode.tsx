@@ -13,12 +13,11 @@ import { CuttingTab } from './CuttingTab';
 import { FramePanel } from './FramePanel';
 import { HppTab } from './HppTab';
 
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'ok' | 'warn' }) {
+function KpiChip({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'ok' | 'warn' }) {
   return (
-    <div className="kpi">
-      <span className="kpi-l">{label}</span>
-      <b className="kpi-v mono" style={tone === 'warn' ? { color: 'var(--warning)' } : tone === 'ok' ? { color: 'var(--brand-primary)' } : undefined}>{value}</b>
-      {sub && <span className="kpi-s">{sub}</span>}
+    <div className="kpi-chip" title={sub ? `${label}: ${value} (${sub})` : `${label}: ${value}`}>
+      <span className="kpi-chip-l">{label}</span>
+      <b className="kpi-chip-v mono" style={tone === 'warn' ? { color: 'var(--warning)' } : tone === 'ok' ? { color: 'var(--brand-primary)' } : undefined}>{value}</b>
     </div>
   );
 }
@@ -40,26 +39,25 @@ export function ProductionMode() {
   const progress = overallProgress(s.items.map((i) => i.config.prodStatus));
   const methodLabel = scenario.method === 'papan_hpl' ? 'Papan + HPL' : 'Rangka + ACP';
 
-  const tabs: [ProdTab, string, React.ReactNode][] = [['rangka', 'Rangka 3D', <Box size={14} key="a" />], ['cutting', 'Cutting List', <Scissors size={14} key="b" />], ['hpp', 'HPP', <Receipt size={14} key="c" />]];
+  const tabs: [ProdTab, string, React.ReactNode][] = [['rangka', 'Rangka 3D', <Box size={13} key="a" />], ['cutting', 'Cutting List', <Scissors size={13} key="b" />], ['hpp', 'HPP', <Receipt size={13} key="c" />]];
   const rangka = tab === 'rangka';
   return (
     <div className="absolute inset-0 z-40 flex flex-col" style={{ pointerEvents: rangka ? 'none' : 'auto', background: rangka ? 'transparent' : 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <div className="shrink-0" style={{ pointerEvents: 'auto', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)', boxShadow: rangka ? 'var(--shadow-sm)' : undefined }}>
-        <div className="prod-tabbar">
-          <span className="badge badge-ok shrink-0"><Factory size={12} />PRODUKSI</span>
-          <div className="seg shrink-0">{tabs.map(([id, label, icon]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => s.setProdTab(id)}>{icon}{label}</button>)}</div>
+        <div className="prod-tabbar" style={{ minHeight: 42, padding: '4px 10px' }}>
+          <span className="badge badge-ok shrink-0" style={{ padding: '2px 7px', fontSize: 10.5 }}><Factory size={11} />PRODUKSI</span>
+          <div className="seg shrink-0">{tabs.map(([id, label, icon]) => <button key={id} className={tab === id ? 'active' : ''} style={{ height: 28, fontSize: 12, padding: '0 10px' }} onClick={() => s.setProdTab(id)}>{icon}{label}</button>)}</div>
+          <div className="kpi-inline-strip">
+            <KpiChip label="Kabinet" value={String(bundle.items.length)} sub={`${frame.blocks.length} blok rangka`} />
+            <KpiChip label="Rangka" value={`${totalBuy(plans)} btg`} sub={`${frame.totalLengthM.toFixed(1)} m hollow`} />
+            <KpiChip label="Panel" value={`${sheetCount} lbr`} sub={`${bundle.panels.length} panel · waste ${worstWaste.toFixed(0)}%`} tone={worstWaste > 15 ? 'warn' : undefined} />
+            <KpiChip label="Est. HPP" value={rows.length ? fmtRp(totals.estTotal) : '—'} sub={rows.length ? `${rows.length} item` : 'buka tab HPP'} />
+            <KpiChip label="Harga Jual" value={rows.length ? fmtRp(totals.sellFinal) : '—'} sub={`margin ${scenario.margin}%${scenario.ppnOn ? ' + PPN' : ''}`} tone="ok" />
+            <KpiChip label="Progres" value={`${progress}%`} sub="status produksi" />
+          </div>
           <span className="flex-1" />
-          <span className="badge shrink-0" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{methodLabel} · {scenario.name}</span>
-          <button className="btn btn-sm btn-secondary shrink-0" onClick={() => s.setAppMode('design')}><ChevronLeft size={14} />Desain</button>
-        </div>
-        <div className="kpi-strip">
-          <Kpi label="Kabinet" value={String(bundle.items.length)} sub={`${frame.blocks.length} blok rangka`} />
-          <Kpi label="Rangka" value={`${totalBuy(plans)} btg`} sub={`${frame.totalLengthM.toFixed(1)} m hollow`} />
-          <Kpi label="Panel" value={`${sheetCount} lbr`} sub={`${bundle.panels.length} panel · waste ${worstWaste.toFixed(0)}%`} tone={worstWaste > 15 ? 'warn' : undefined} />
-          <Kpi label="Est. HPP" value={rows.length ? fmtRp(totals.estTotal) : '—'} sub={rows.length ? `${rows.length} item` : 'buka tab HPP'} />
-          <Kpi label="Harga jual" value={rows.length ? fmtRp(totals.sellFinal) : '—'} sub={`margin ${scenario.margin}%${scenario.ppnOn ? ' + PPN' : ''}`} tone="ok" />
-          <Kpi label="Realisasi" value={totals.hasReal ? `${totals.diff >= 0 ? '+' : '-'}${fmtRp(Math.abs(totals.diff))}` : '—'} sub={totals.hasReal ? `${totals.diffPct.toFixed(1)}% vs estimasi` : 'belum diisi'} tone={totals.hasReal ? (totals.diff > 0 ? 'warn' : 'ok') : undefined} />
-          <Kpi label="Progres" value={`${progress}%`} sub="status produksi" />
+          <span className="badge shrink-0 hidden sm:inline-flex" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11 }}>{methodLabel}</span>
+          <button className="btn btn-sm btn-secondary shrink-0" style={{ height: 28, padding: '0 10px' }} onClick={() => s.setAppMode('design')}><ChevronLeft size={14} />Desain</button>
         </div>
       </div>
 

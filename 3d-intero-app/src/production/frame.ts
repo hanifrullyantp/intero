@@ -57,8 +57,9 @@ export interface FrameBlock {
   trimmedStart: number; trimmedEnd: number; corner: boolean;
   hood?: boolean;
 }
+export interface FrameJoint extends V3 { blockId: string }
 export interface FrameResult {
-  blocks: FrameBlock[]; members: FrameMember[]; joints: V3[];
+  blocks: FrameBlock[]; members: FrameMember[]; joints: FrameJoint[];
   lengthMm: Record<ProfileKey, number>;
   bars: Record<ProfileKey, number>; barPrice: Record<ProfileKey, number>;
   barCount: number; totalLengthM: number; cornerBrackets: number; material: FrameMaterialId;
@@ -68,7 +69,7 @@ const rowsOf = (items: Item[], wall: Wall, row: 'base' | 'wall') =>
   items.filter((i) => i.wallId === wall.id && rowOf(i) === row && (row !== 'wall' || i.type !== 'hood'))
     .map((i) => ({ i, s: offset(wall, i) - i.dims.w / 2, e: offset(wall, i) + i.dims.w / 2 }))
     .sort((a, b) => a.s - b.s);
-const rowOf = (i: Item) => (i.type === 'wall' || i.type === 'corner_wall' || i.type === 'hood' ? 'wall' : i.type === 'island' || i.type === 'bar' || i.type === 'fridge' || i.type === 'electronic' ? 'free' : 'base');
+const rowOf = (i: Item) => (i.type === 'wall' || i.type === 'corner_wall' || i.type === 'hood' ? 'wall' : i.type === 'island' || i.type === 'bar' || i.type === 'fridge' || i.type === 'electronic' || i.type === 'tall' ? 'free' : 'base');
 const offset = (w: Wall, i: Item) => { const v = wallVec(w); return (i.position.x - w.start.x) * v.dir.x + (i.position.z - w.start.z) * v.dir.z; };
 const rot = (v: V3, deg: number): V3 => { const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a); return { x: v.x * c + v.z * s, y: v.y, z: -v.x * s + v.z * c }; };
 const toWorld = (it: Item, p: V3): V3 => { const r = rot(p, it.rotationY); return { x: r.x + it.position.x, y: r.y + it.position.y, z: r.z + it.position.z }; };
@@ -88,7 +89,7 @@ function rowDepth(items: Item[], wall: Wall, row: 'base' | 'wall', settings: Pro
 
 function doorsOf(it: Item, s: ProjectSettings): FrameDoor[] {
   const { w, h, d } = it.dims; const cfg = it.config; const out: FrameDoor[] = [];
-  const push = (x: number, y: number, dw: number, dh: number) => { if (dw > 120 && dh > 120) out.push({ x, y, w: dw - 6, h: dh - 6, itemId: it.id }); };
+  const push = (x: number, y: number, dw: number, dh: number) => { if (dw > 90 && dh > 90) out.push({ x, y, w: dw - 6, h: dh - 6, itemId: it.id }); };
   if (it.type === 'island') {
     const n = Math.max(1, Math.min(4, cfg.islandDoorsPerSide ?? 2)); const dw = (w - (n + 1) * 2) / n; const dh = h - (cfg.toeKickHeight ?? s.toeKick) - 4; const yb = 2;
     for (let i = 0; i < n; i++) push(-w / 2 + 2 + dw / 2 + i * (dw + 2), yb + dh / 2, dw, dh);
@@ -97,8 +98,28 @@ function doorsOf(it: Item, s: ProjectSettings): FrameDoor[] {
   }
   if (it.type === 'bar' || it.type === 'custom') return out;
   const tk = cfg.toeKickHeight ?? s.toeKick;
-  if (it.type === 'wall' || it.type === 'corner_wall' || it.type === 'hood') {
-    const cornice = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  const cornice = cfg.cornice ? (cfg.corniceHeight ?? 50) : 0;
+  if (it.type === 'hood') {
+    const canopyH = Math.min(150, Math.max(40, cfg.hoodHeight ?? 70));
+    const fillerH = h - cornice - canopyH;
+    if (fillerH > 90) {
+      const n = w > 700 && fillerH > 120 ? 2 : 1;
+      const dw = n === 2 ? (w - 6) / 2 : w - 4;
+      for (let i = 0; i < n; i++) {
+        const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0;
+        push(x, canopyH + 2 + (fillerH - 4) / 2, dw, fillerH - 4);
+      }
+    }
+    return out;
+  }
+  if (it.type === 'corner_wall') {
+    const wallD = s.wallDepth;
+    const mainH = h - cornice;
+    const dw = Math.max(160, w - wallD - 4);
+    push(-w / 2 + wallD + 2 + dw / 2, 2 + (mainH - 4) / 2, dw, mainH - 4);
+    return out;
+  }
+  if (it.type === 'wall') {
     const upper = cfg.doubleStack ? Math.min(cfg.upperTierHeight ?? 350, h - cornice - 300) : 0;
     const mainH = h - cornice - upper;
     const n = cfg.doorCount ?? (w > 600 ? 2 : 1); const dw = n === 2 ? (w - 6) / 2 : w - 4;
@@ -107,9 +128,11 @@ function doorsOf(it: Item, s: ProjectSettings): FrameDoor[] {
     return out;
   }
   if (it.type === 'fridge') {
-    const fH = Math.min(cfg.fridgeH ?? 1750, h - 60); const fy = fH + 40; const fh = h - fy;
-    const n = fh > 150 && w > 650 ? 2 : 1; const dw = n === 2 ? (w - 6) / 2 : w - 4;
-    for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, (fy - tk) + 2 + (fh - 4) / 2, dw, fh - 4); }
+    const fH = Math.min(cfg.fridgeH ?? 1750, h - cornice - 60); const fy = fH + 40; const fh = h - cornice - fy;
+    if (fh > 90) {
+      const n = fh > 150 && w > 650 ? 2 : 1; const dw = n === 2 ? (w - 6) / 2 : w - 4;
+      for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, fy + 2 + (fh - 4) / 2, dw, fh - 4); }
+    }
     return out;
   }
   if (it.type === 'electronic') {
@@ -117,32 +140,63 @@ function doorsOf(it: Item, s: ProjectSettings): FrameDoor[] {
     const S1 = { magiccom: 330, dispenser: 580, oven: 340, shelf: 350 }[s1];
     const S2 = { oven: 340, microwave: 350, coffee: 480, shelf: 350, door: 0 }[s2];
     const topY = s.baseHeight + S1 + 18 + (s2 === 'door' ? 0 : S2 + 18);
+    const effH = h - cornice;
     const n = w > 650 ? 2 : 1; const dw = n === 2 ? (w - 6) / 2 : w - 4;
     if (s1 !== 'dispenser') for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, 2 + (s.baseHeight - tk - 4) / 2, dw, s.baseHeight - tk - 4); }
-    for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, (topY - tk) + 2 + (h - topY - 4) / 2, dw, h - topY - 4); }
+    if (effH - topY > 90) for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, (topY - tk) + 2 + (effH - topY - 4) / 2, dw, effH - topY - 4); }
     return out;
   }
   if (it.type === 'tall') {
-    const bodyH = h - tk; const split = Math.min(1250, bodyH * 0.55);
+    const bodyH = h - cornice - tk; const split = Math.min(1250, bodyH * 0.55);
     const n = cfg.doorCount ?? (w > 600 ? 2 : 1); const dw = n === 2 ? (w - 6) / 2 : w - 4;
     for (const [y0, th] of [[tk, split], [tk + split, bodyH - split]] as [number, number][]) {
-      if (th < 200) continue;
+      if (th < 150) continue;
       for (let i = 0; i < n; i++) { const x = n === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, (y0 - tk) + 2 + (th - 4) / 2, dw, th - 4); }
     }
     return out;
   }
   // base family + corner
   const bodyH = h - tk;
-  if (it.type === 'dishwasher') { push(0, 30 + (bodyH - 64) / 2, w - 4, bodyH - 64); return out; }
-  if (it.type === 'corner_base') { const dw = w - d - 4; push(-(d / 2) + 2 + dw / 2, 2 + (bodyH - 4) / 2, dw, bodyH - 4); return out; }
+  if (it.type === 'dishwasher') { push(0, 2 + (bodyH - 60) / 2, w - 4, bodyH - 60); return out; }
+  if (it.type === 'corner_base') {
+    const baseD = 600;
+    const dw = Math.max(160, w - baseD - 4);
+    push(-w / 2 + baseD + 2 + dw / 2, 2 + (bodyH - 4) / 2, dw, bodyH - 4);
+    return out;
+  }
   const open = !!cfg.openShelf;
-  const doors = open ? 0 : (cfg.doorCount ?? (it.type === 'drawer_base' ? 0 : w > 500 ? 2 : 1));
-  const drawers = it.type === 'sink_base' ? 0 : (cfg.drawerCount ?? (it.type === 'drawer_base' ? 3 : it.type === 'cooktop_base' ? 1 : 0));
-  let frontH = bodyH;
-  if (drawers > 0 && doors === 0) return out; // stack laci penuh: tanpa rangka pintu
-  if (drawers > 0 && doors > 0) frontH = bodyH - Math.min(170 * drawers, bodyH * 0.5);
-  const dw = doors === 2 ? (w - 6) / 2 : w - 4;
-  for (let i = 0; i < doors; i++) { const x = doors === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0; push(x, bodyH - frontH + 2 + (frontH - 4) / 2, dw, frontH - 4); }
+  if (open) return out;
+  const doors = cfg.doorCount ?? (it.type === 'drawer_base' ? 0 : w > 500 ? 2 : 1);
+  let drawers = it.type === 'sink_base' ? 0 : (cfg.drawerCount ?? (it.type === 'drawer_base' ? 3 : it.type === 'cooktop_base' ? 1 : 0));
+  if (doors === 0 && drawers === 0) drawers = 3;
+  let top = bodyH;
+  if (drawers > 0) {
+    const heights: number[] = [];
+    if (doors === 0) {
+      if (drawers >= 3) {
+        const first = Math.round(bodyH * 0.22);
+        heights.push(first);
+        const rest = (bodyH - first) / (drawers - 1);
+        for (let i = 1; i < drawers; i++) heights.push(rest);
+      } else {
+        for (let i = 0; i < drawers; i++) heights.push(bodyH / drawers);
+      }
+    } else {
+      for (let i = 0; i < drawers; i++) heights.push(Math.min(170, bodyH / (drawers + 1)));
+    }
+    for (const dh of heights) {
+      push(0, top - dh / 2, w - 4, dh - 2);
+      top -= dh;
+    }
+  }
+  const doorH = top - 2;
+  if (doors > 0 && doorH >= 90) {
+    const dw = doors === 2 ? (w - 6) / 2 : w - 4;
+    for (let i = 0; i < doors; i++) {
+      const x = doors === 2 ? (i === 0 ? -w / 2 + 2 + dw / 2 : w / 2 - 2 - dw / 2) : 0;
+      push(x, 2 + doorH / 2, dw, doorH - 2);
+    }
+  }
   return out;
 }
 
@@ -161,21 +215,24 @@ export function groupBlocks(items: Item[], walls: Wall[], s: ProjectSettings): F
   const len = (w: Wall) => wallVec(w).length;
   for (const wall of walls) {
     const v = wallVec(wall);
+    const angleDeg = (v.angle * 180) / Math.PI;
     const j = wallJunctions(walls, wall);
     const wallLen = len(wall);
     for (const row of ['base', 'wall'] as const) {
       const rows = rowsOf(items, wall, row);
       if (!rows.length) continue;
-      // Rangka berjalan sepanjang dinding penuh (termasuk sudut) — bukan hanya rentang kabinet.
-      let x0 = 0, x1 = wallLen;
+      // Rangka mengikuti rentang aktual kabinet pada dinding (dengan trim sudut L jika berbenturan dengan dinding lain)
+      const minCabS = Math.max(0, Math.min(...rows.map((r) => r.s)));
+      const maxCabE = Math.min(wallLen, Math.max(...rows.map((r) => r.e)));
+      let x0 = minCabS, x1 = maxCabE;
       let trimS = 0, trimE = 0, corner = false;
-      if (j.atStart) {
+      if (j.atStart && minCabS < 50) {
         const o = otherWallAt(walls, wall, 'start');
-        if (o && wallLen > len(o) + 1) { trimS = rowDepth(items, o, row, s); x0 = trimS; corner = true; }
+        if (o && wallLen > len(o) + 1) { trimS = rowDepth(items, o, row, s); x0 = Math.max(x0, trimS); corner = true; }
       }
-      if (j.atEnd) {
+      if (j.atEnd && wallLen - maxCabE < 50) {
         const o = otherWallAt(walls, wall, 'end');
-        if (o && wallLen > len(o) + 1) { trimE = rowDepth(items, o, row, s); x1 = wallLen - trimE; corner = true; }
+        if (o && wallLen > len(o) + 1) { trimE = rowDepth(items, o, row, s); x1 = Math.min(x1, wallLen - trimE); corner = true; }
       }
       // Hood dipotong dari segmen wall (jadi blok reses terpisah) agar tidak rangkap.
       const hoods = row === 'wall' ? items.filter((i) => i.wallId === wall.id && i.type === 'hood') : [];
@@ -206,15 +263,19 @@ export function groupBlocks(items: Item[], walls: Wall[], s: ProjectSettings): F
           const cx0 = offset(wall, r.i) - sx0;
           for (const dd of doorsOf(r.i, s)) {
             const cx = cx0 + dd.x;
-            if (cx > 40 && cx < sx1 - sx0 - 40) doors.push({ ...dd, x: cx });
+            if (cx > 20 && cx < sx1 - sx0 - 20) doors.push({ ...dd, x: cx });
           }
           for (const y of shelfLevelsOf(r.i, s)) if (!shelfLevels.includes(y)) shelfLevels.push(y);
         });
-        // Kedalaman blok = kedalaman mayoritas (kabinet lurus), bukan max.
+        // Kedalaman blok = kedalaman mayoritas (kabinet lurus), bukan max dari corner_base/corner_wall.
         const depth = (() => {
           const tally = new Map<number, number>();
-          for (const r of inBlock) tally.set(r.i.dims.d, (tally.get(r.i.dims.d) ?? 0) + r.i.dims.w);
-          let best = inBlock[0].i.dims.d, bestW = -1;
+          for (const r of inBlock) {
+            const dVal = r.i.type === 'corner_base' ? 600 : r.i.type === 'corner_wall' ? s.wallDepth : r.i.dims.d;
+            tally.set(dVal, (tally.get(dVal) ?? 0) + r.i.dims.w);
+          }
+          let best = inBlock[0].i.type === 'corner_base' ? 600 : inBlock[0].i.type === 'corner_wall' ? s.wallDepth : inBlock[0].i.dims.d;
+          let bestW = -1;
           for (const [d, w] of tally) if (w > bestW || (w === bestW && d > best)) { best = d; bestW = w; }
           return best;
         })();
@@ -225,19 +286,20 @@ export function groupBlocks(items: Item[], walls: Wall[], s: ProjectSettings): F
         blocks.push({
           id: `${wall.id}-${row}${segs.length > 1 ? `-${segN}` : ''}`, kind: row, label,
           wallId: wall.id, cabinetIds: inBlock.map((r) => r.i.id), L: Math.round(sx1 - sx0), depth, y0, height,
-          angle: v.angle, origin, partitions, doors, shelfLevels, trimmedStart: trimS, trimmedEnd: trimE, corner,
+          angle: angleDeg, origin, partitions, doors, shelfLevels, trimmedStart: trimS, trimmedEnd: trimE, corner,
         });
       }
       // Blok hood: reses (kedalamannya sendiri), terpisah dari segmen wall.
       if (row === 'wall') {
         for (const h of hoods) {
           const hc = offset(wall, h); const hx0 = hc - h.dims.w / 2;
+          const hDoors = doorsOf(h, s).map((dd) => ({ ...dd, x: dd.x + h.dims.w / 2 }));
           blocks.push({
             id: `hood-${h.id}`, kind: 'wall', hood: true, label: `${wall.name} · Cooker Hood`,
             wallId: wall.id, cabinetIds: [h.id], L: Math.round(h.dims.w), depth: h.dims.d,
-            y0: s.baseHeight + s.wallGap, height: Math.round(h.dims.h), angle: v.angle,
+            y0: s.baseHeight + s.wallGap, height: Math.round(h.dims.h), angle: angleDeg,
             origin: { x: wall.start.x + v.dir.x * hx0, y: 0, z: wall.start.z + v.dir.z * hx0 },
-            partitions: [], doors: [], shelfLevels: [], trimmedStart: 0, trimmedEnd: 0, corner: false,
+            partitions: [], doors: hDoors, shelfLevels: [], trimmedStart: 0, trimmedEnd: 0, corner: false,
           });
         }
       }
@@ -245,12 +307,12 @@ export function groupBlocks(items: Item[], walls: Wall[], s: ProjectSettings): F
   }
   for (const it of items) {
     if (rowOf(it) !== 'free') continue;
-    const { w, d, h } = it.dims; const tk = it.config.toeKickHeight ?? s.toeKick;
+    const { w, d, h } = it.dims; const tk = it.type === 'fridge' ? 0 : (it.config.toeKickHeight ?? s.toeKick);
     const partitions = it.type === 'island' || it.type === 'bar' ? [Math.round(w / 2)] : [];
     const doors = doorsOf(it, s).map((dd) => ({ ...dd, x: dd.x + w / 2 }));
     const origin = toWorld(it, { x: -w / 2, y: 0, z: -d / 2 });
     blocks.push({
-      id: `sa-${it.id}`, kind: 'standalone', label: it.name, wallId: null, cabinetIds: [it.id],
+      id: `sa-${it.id}`, kind: 'standalone', label: it.name, wallId: it.wallId, cabinetIds: [it.id],
       L: Math.round(w), depth: d, y0: tk, height: h - tk, angle: it.rotationY, origin,
       partitions, doors, shelfLevels: shelfLevelsOf(it, s), trimmedStart: 0, trimmedEnd: 0, corner: false,
     });
@@ -262,7 +324,7 @@ const SIDES = 2;
 /** Generate member rangka untuk semua blok + rekap panjang per profil & jumlah batang. */
 export function buildFrame(items: Item[], walls: Wall[], s: ProjectSettings, material: FrameMaterialId): FrameResult {
   const blocks = groupBlocks(items, walls, s);
-  const members: FrameMember[] = []; const joints: V3[] = [];
+  const members: FrameMember[] = []; const joints: FrameJoint[] = [];
   const alu = FRAME_MATERIALS[material].alu;
   const pz = alu ? 38 : 15;            // setengah-tebal profil utama (z)
   const px = alu ? 25 : 15;
@@ -279,12 +341,12 @@ export function buildFrame(items: Item[], walls: Wall[], s: ProjectSettings, mat
     // ── Tiang sudut (1.5×3) 4 titik
     for (const x of [half('post').x, b.L - half('post').x]) for (const z of zs) {
       add(b, midItem, 'post', { x, y: b.y0 + b.height / 2, z }, { x: profileOf(material, 'post').x, y: b.height, z: profileOf(material, 'post').z });
-      for (const y of [b.y0, b.y0 + b.height]) joints.push({ x, y, z });
+      for (const y of [b.y0, b.y0 + b.height]) joints.push({ blockId: b.id, x, y, z });
     }
     // ── Tiang sekat tengah (1.5×1.5) di tiap batas kabinet
     for (const px2 of b.partitions) for (const z of zs) {
       add(b, midItem, 'midpost', { x: px2, y: b.y0 + b.height / 2, z }, { x: profileOf(material, 'midpost').x, y: b.height, z: profileOf(material, 'midpost').z });
-      for (const y of [b.y0, b.y0 + b.height]) joints.push({ x: px2, y, z });
+      for (const y of [b.y0, b.y0 + b.height]) joints.push({ blockId: b.id, x: px2, y, z });
     }
     // ── Rangka atas & bawah: 2 rel panjang (1.5×3) + rel melintang tiap sekat (1.5×1.5)
     for (const [role, y] of [['railTop', b.y0 + b.height - half('railTop').y], ['railBottom', b.y0 + half('railBottom').y]] as [FrameRole, number][]) {
@@ -294,7 +356,7 @@ export function buildFrame(items: Item[], walls: Wall[], s: ProjectSettings, mat
       // Tiang melintang di SETIAP tepi (dekat & jauh) + tiap sekat → kotak sempurna.
       for (const px2 of [px, ...b.partitions, b.L - px]) {
         add(b, midItem, crossRole, { x: px2, y, z: b.depth / 2 }, { x: profileOf(material, crossRole).x, y: p.y, z: b.depth - 2 * pz });
-        joints.push({ x: px2, y, z: b.depth / 2 });
+        joints.push({ blockId: b.id, x: px2, y, z: b.depth / 2 });
       }
     }
     // ── Support rak (melintang di ketinggian rak)

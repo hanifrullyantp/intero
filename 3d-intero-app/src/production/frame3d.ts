@@ -78,10 +78,10 @@ export function buildFrameGroup(res: FrameResult, opts: FrameViewOpts, skins: { 
   const edgeGeos: THREE.EdgesGeometry[] = [];
   const labelMats: THREE.SpriteMaterial[] = [];
   const skinMats: THREE.Material[] = [];
-  const labelColor = fm.alu ? '#0F6B46' : '#1F2937';
+  const labelColor = fm.alu ? '#0F6B46' : '#0F172A';
   const addLabel = (bg: THREE.Group, text: string, pos: THREE.Vector3) => {
     const sp = makeLabel(text, labelColor);
-    sp.scale.set(170 * opts.labelScale, 44 * opts.labelScale, 1);
+    sp.scale.set(220 * opts.labelScale, 55 * opts.labelScale, 1);
     sp.position.copy(pos);
     labelMats.push(sp.material as THREE.SpriteMaterial);
     bg.add(sp);
@@ -124,16 +124,18 @@ export function buildFrameGroup(res: FrameResult, opts: FrameViewOpts, skins: { 
     }
     if (opts.labels && !dim) {
       if (opts.labelMode === 'block') {
-        addLabel(bg, `${cm(b.L)} × ${cm(b.depth)} × ${cm(b.height)}`, new THREE.Vector3(cx, cy + b.height / 2 + 120, cz));
+        addLabel(bg, `${cm(b.L)} × ${cm(b.depth)} × ${cm(b.height)}`, new THREE.Vector3(cx, cy + b.height / 2 + 135, cz));
       } else if (opts.labelMode === 'doors') {
-        for (const dr of b.doors) addLabel(bg, `${cm(dr.w)} × ${cm(dr.h)}`, new THREE.Vector3(dr.x, b.y0 + dr.y + 60, b.depth + 60));
+        b.doors.forEach((dr, di) => {
+          const staggerY = (di % 2 === 1 && b.doors.length > 1) ? 38 : 0;
+          addLabel(bg, `${cm(dr.w)} × ${cm(dr.h)}`, new THREE.Vector3(dr.x, b.y0 + dr.y + staggerY, b.depth + 70));
+        });
       }
     }
     if (opts.welds && !fm.alu && !dim) {
       for (const j of res.joints) {
-        const inBlock = res.members.some((m) => m.blockId === b.id && (Math.abs(m.c.x - j.x) < m.d.x / 2 + 1 || Math.abs(m.c.z - j.z) < m.d.z / 2 + 1));
-        if (!inBlock) continue;
-        const s = new THREE.Mesh(new THREE.SphereGeometry(16, 8, 8), weldMat);
+        if (j.blockId !== b.id) continue;
+        const s = new THREE.Mesh(new THREE.SphereGeometry(14, 8, 8), weldMat);
         s.position.set(j.x, j.y, j.z);
         bg.add(s);
       }

@@ -42,6 +42,7 @@ interface UIState {
   frameHideDoors: boolean;
   spotlight: { target: string; title: string; hint: string } | null;
   showSearch: boolean;
+  showAiChat: boolean;
   uiMode: UiMode; theme: Theme;
   showGrid: boolean; showShadows: boolean; showLayers: boolean; showLibrary: boolean; showProps: boolean;
   showWizard: boolean; showBuilder: boolean; showShortcuts: boolean; showAbout: boolean; showPrefs: boolean;
@@ -118,7 +119,7 @@ export function wallBottomOf(s: ProjectSettings) { return s.baseHeight + s.wallG
 export function backsplashHeightOf(s: ProjectSettings) { return s.countertop.backsplashAuto ? Math.max(100, wallBottomOf(s) - s.baseHeight - s.countertop.thickness) : s.countertop.backsplashHeight; }
 
 const SCOPE_BY_TYPE: Partial<Record<ItemType, ItemScope>> = {
-  wall: 'wall', corner_wall: 'wall', hood: 'wall',
+  wall: 'wall', corner_wall: 'wall', hood: 'wall', fridge: 'wall', tall: 'wall', electronic: 'wall',
   base: 'base', sink_base: 'base', cooktop_base: 'base', drawer_base: 'base', dishwasher: 'base', corner_base: 'base',
 };
 export function scopeOfType(type: ItemType): ItemScope | null { return SCOPE_BY_TYPE[type] ?? null; }
@@ -166,7 +167,7 @@ const initialUI: UIState = {
   arPins: { a: null, b: null }, pickingPin: null,
   showAr: false, showPhoto: false, showPriceList: false, xrMode: 'none', pinTools: false, showArFallback: false, showCameraAr: false,
   frameLabelMode: 'block', frameLabelScale: 1, frameHideBlocks: [], frameHideDoors: false,
-  spotlight: null, showSearch: false,
+  spotlight: null, showSearch: false, showAiChat: false,
   uiMode: storage.get<UiMode>('intero_uiMode', isMobileViewport() ? 'simple' : 'advanced'),
   theme: storage.get<Theme>('intero_theme', 'dark'),
   showGrid: true, showShadows: true, showLayers: !isMobileViewport(), showLibrary: false, showProps: !isMobileViewport(),

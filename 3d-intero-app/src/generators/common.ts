@@ -281,16 +281,26 @@ export function makeLedStrip(cache: MatCache, len: number, temp: LedTemp, intens
   return { group: g, light, mesh: m };
 }
 
-// ─── Label sprite (untuk ukur/dimensi) ───
-export function makeLabel(text: string, bg = '#1B9D6B', fg = '#ffffff'): THREE.Sprite {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+// ─── Label sprite (untuk ukur/dimensi & rangka) ───
+export function makeLabel(text: string, bg = '#0F172A', fg = '#FFFFFF'): THREE.Sprite {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(4, 4, 248, 56, 14); ctx.fill();
-  ctx.fillStyle = fg; ctx.font = 'bold 28px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 128, 34);
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  ctx.font = '800 50px "JetBrains Mono", "Inter", monospace';
+  const tw = Math.min(476, Math.max(180, ctx.measureText(text).width + 64));
+  const x0 = (512 - tw) / 2;
+  ctx.fillStyle = bg;
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(x0, 12, tw, 104, 24); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 66, 460);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  sp.scale.set(320, 80, 1); sp.renderOrder = 999;
+  sp.scale.set(280, 70, 1); sp.renderOrder = 999;
   return sp;
 }
 
@@ -327,18 +337,26 @@ export function setGroupOpacity(root: THREE.Object3D, opacity: number | null, on
   });
 }
 
-/** Label dimensi (monospace) — kontras mengikuti tema; kuning bila peringatan. */
+/** Label dimensi (monospace) — kontras tinggi mengikuti tema; kuning bila peringatan. */
 export function makeDimLabel(text: string, dark: boolean, warn = false): THREE.Sprite {
-  const c = document.createElement('canvas'); c.width = 320; c.height = 72;
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = warn ? 'rgba(245,158,11,0.95)' : dark ? 'rgba(15,20,25,0.88)' : 'rgba(255,255,255,0.94)';
-  ctx.strokeStyle = warn ? '#B45309' : dark ? 'rgba(229,231,235,0.55)' : 'rgba(17,24,39,0.45)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(3, 3, 314, 66, 14); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = warn ? '#1F1300' : dark ? '#F9FAFB' : '#111827';
-  ctx.font = 'bold 30px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 160, 38, 296);
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  ctx.font = '800 50px "JetBrains Mono", "Inter", monospace';
+  const tw = Math.min(484, Math.max(190, ctx.measureText(text).width + 64));
+  const x0 = (512 - tw) / 2;
+  ctx.fillStyle = warn ? 'rgba(245,158,11,0.98)' : dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.98)';
+  ctx.strokeStyle = warn ? '#B45309' : dark ? 'rgba(56,189,248,0.65)' : 'rgba(15,23,42,0.55)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(x0, 14, tw, 100, 22); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = warn ? '#1F1300' : dark ? '#F8FAFC' : '#0F172A';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 66, 464);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  sp.scale.set(300, 68, 1); sp.renderOrder = 997;
+  sp.scale.set(270, 68, 1); sp.renderOrder = 997;
   return sp;
 }

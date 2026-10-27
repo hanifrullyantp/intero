@@ -667,7 +667,17 @@ export class SceneController {
   // ─── Util publik (dimensi, pin AR, foto, XR) ───
   setPaused(v: boolean) { this.paused = v; }
   /** Panel/door/side kabinet dibuat transparan otomatis saat Mode Produksi (rangka terlihat). */
-  setSkinOpacity(v: number | null) { for (const e of this.built.values()) setGroupOpacity(e.group, v, false); }
+  setSkinOpacity(v: number | null) {
+    if (v === null) {
+      for (const e of this.built.values()) {
+        setGroupOpacity(e.group, null, false);
+        if (this.xray) setGroupOpacity(e.group, 0.28, true);
+      }
+      this.applyViewVisibility();
+    } else {
+      for (const e of this.built.values()) setGroupOpacity(e.group, v, false);
+    }
+  }
   /** Overlay rangka hollow (mm, mengikuti root ber-skala 0.001). */
   setFrameOverlay(group: THREE.Group | null) {
     if (this.frameGroup) { this.root.remove(this.frameGroup); }
@@ -705,7 +715,14 @@ export class SceneController {
   renderOnce() { this.renderer.render(this.scene, this.camera); }
   setRoomVisible(v: boolean) { if (this.roomGroup) this.roomGroup.visible = v; }
   setCountertopVisible(v: boolean) { this.ctGroup.visible = v; }
-  setCabinetVisible(v: boolean) { for (const e of this.built.values()) e.group.visible = v; this.peopleGroup.visible = v && this.showPeople; }
+  setCabinetVisible(v: boolean) {
+    if (v) {
+      this.applyViewVisibility();
+    } else {
+      for (const e of this.built.values()) e.group.visible = false;
+    }
+    this.peopleGroup.visible = v && this.showPeople && (this.viewMode === 'perspective' || this.viewMode === 'iso');
+  }
   setPeopleHidden(h: boolean) { this.peopleGroup.visible = !h && this.showPeople; }
   setManualCamera(pos: THREE.Vector3, quat: THREE.Quaternion, fovDeg: number) {
     this.manualCamera = true; this.camera = this.camP;

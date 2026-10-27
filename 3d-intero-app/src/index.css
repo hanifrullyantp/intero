@@ -383,13 +383,18 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 .hpp-margin { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
 .hpp-scroll { max-width: 100vw; }
 
-/* ═══ Mode Produksi — KPI strip & penyempurnaan tampilan ═══ */
-.kpi-strip { display: flex; gap: 8px; padding: 6px 10px 8px; overflow-x: auto; scrollbar-width: none; max-width: 100vw; }
+/* ═══ Mode Produksi — KPI inline strip compact ═══ */
+.kpi-inline-strip { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 4px; }
+.kpi-inline-strip::-webkit-scrollbar { display: none; }
+.kpi-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); white-space: nowrap; flex-shrink: 0; }
+.kpi-chip-l { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--text-tertiary); }
+.kpi-chip-v { font-size: 12px; font-weight: 800; color: var(--text-primary); }
+.kpi-strip { display: flex; gap: 8px; padding: 4px 10px; overflow-x: auto; scrollbar-width: none; max-width: 100vw; }
 .kpi-strip::-webkit-scrollbar { display: none; }
-.kpi { flex: 1 0 auto; min-width: 104px; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border); }
-.kpi-l { font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--text-tertiary); }
-.kpi-v { font-size: 13.5px; font-weight: 800; color: var(--text-primary); white-space: nowrap; }
-.kpi-s { font-size: 10.5px; color: var(--text-secondary); white-space: nowrap; }
+.kpi { flex: 1 0 auto; min-width: 96px; display: flex; flex-direction: column; gap: 1px; padding: 4px 8px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); }
+.kpi-l { font-size: 9px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--text-tertiary); }
+.kpi-v { font-size: 12.5px; font-weight: 800; color: var(--text-primary); white-space: nowrap; }
+.kpi-s { font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
 .hpp-table td.over-row { background: rgba(239,68,68,.05); }
 .hpp-cat-bar { display: flex; height: 8px; border-radius: 6px; overflow: hidden; background: var(--border); }
 .hpp-cat-bar > div { height: 100%; transition: width 250ms var(--ease-out-quad); }
