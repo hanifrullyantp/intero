@@ -50,7 +50,7 @@ Di **Vercel** → Project → **Settings** → **Environment Variables**:
 |------|--------|
 | `VITE_SUPABASE_URL` | `https://xxxxx.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | anon key |
-| `VITE_3D_PUBLIC_ORIGIN` | (opsional) `https://3d.intero.com` — URL share link (canonical) |
+| `VITE_3D_PUBLIC_ORIGIN` | (opsional) `https://3d.intero.id` — URL share link |
 | `SUPABASE_URL` | sama dengan Project URL (untuk API share di Vercel, opsional) |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role (opsional, fallback API serverless) |
 

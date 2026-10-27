@@ -73,31 +73,19 @@ Frontend saja di **Vercel**, data di **Supabase** (Postgres + Storage + Auth). T
 
 Tanpa Supabase, hosting statis murni **tidak** bisa form lead/CMS (lihat paragraf di bawah).
 
-## 3D Intero di `3d.intero.com` / `3d.intero.id`
+## 3D Intero di `3d.intero.id`
 
-Aplikasi **3D Intero** (`3D Intero/`) ikut ter-build ke folder `dist/3d` dan dilayani lewat proyek Vercel yang sama dengan landing (`vercel.json` + `middleware.ts` untuk host `3d.intero.com` dan `3d.intero.id`).
+Aplikasi **3D Intero** (`3D Intero/`) ikut ter-build ke folder `dist/3d` dan dilayani lewat proyek Vercel yang sama dengan landing (`vercel.json` mengarahkan host `3d.intero.id`).
 
 Setelah push ke `main`, Vercel redeploy otomatis. Agar subdomain hidup:
 
-### Domain utama: `3d.intero.com`
+1. **Vercel** → project **intero** → **Settings → Domains** → tambahkan `3d.intero.id`.
+2. **DNS** (Rumahweb / panel domain `intero.id`): buat record **CNAME**  
+   - **Host:** `3d`  
+   - **Value:** sesuai petunjuk Vercel (biasanya `cname.vercel-dns.com` atau target khusus project).  
+3. Tunggu propagasi DNS (beberapa menit–24 jam), lalu buka `https://3d.intero.id`.
 
-1. **Vercel** → project **intero** (atau **3d-intero-app**) → **Settings → Domains** → **Add** `3d.intero.com`.
-2. **DNS** (panel domain `intero.com`): record **CNAME**  
-   - **Host / name:** `3d`  
-   - **Value:** target yang ditampilkan Vercel (mis. `cname.vercel-dns.com`).  
-3. **Vercel → Environment Variables** (Production):  
-   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`  
-   - `VITE_3D_PUBLIC_ORIGIN=https://3d.intero.com`  
-4. **Supabase** → Authentication → URL Configuration:  
-   - Site URL: `https://3d.intero.com`  
-   - Redirect URLs: `https://3d.intero.com/?oauth=1` (+ `.id` jika masih dipakai).  
-5. Tunggu propagasi DNS, lalu buka `https://3d.intero.com`.
-
-### Opsional: tetap pakai `3d.intero.id`
-
-Ulangi langkah 1–2 di panel DNS domain **`intero.id`** (CNAME `3d` → Vercel). Tambahkan domain yang sama di Vercel Domains.
-
-Tanpa langkah DNS, deploy sudah jalan tetapi subdomain tidak akan resolve.
+Tanpa langkah DNS di atas, deploy sudah jalan tetapi subdomain tidak akan resolve.
 
 ## Hosting statis saja (tanpa Supabase & tanpa Node)
 

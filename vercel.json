@@ -22,211 +22,55 @@
   "rewrites": [
     {
       "source": "/assets/(.*)",
-      "destination": "/3d/assets/$1",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/assets/$1"
     },
     {
       "source": "/icons/(.*)",
-      "destination": "/3d/icons/$1",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/icons/$1"
     },
     {
       "source": "/manifest.json",
-      "destination": "/3d/manifest.json",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/manifest.json"
     },
     {
       "source": "/sw.js",
-      "destination": "/3d/sw.js",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/sw.js"
     },
     {
       "source": "/",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
     },
     {
       "source": "/v/:id",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
     },
     {
       "source": "/app",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
     },
     {
       "source": "/p/:id",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/index.html"
     },
     {
       "source": "/api/:path*",
-      "destination": "/api/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/api/:path*"
     },
     {
       "source": "/:path*",
-      "destination": "/3d/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.id"
-        }
-      ]
+      "has": [{ "type": "host", "value": "3d.intero.id" }],
+      "destination": "/3d/:path*"
     },
-    {
-      "source": "/assets/(.*)",
-      "destination": "/3d/assets/$1",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/icons/(.*)",
-      "destination": "/3d/icons/$1",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/manifest.json",
-      "destination": "/3d/manifest.json",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/sw.js",
-      "destination": "/3d/sw.js",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/v/:id",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/app",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/p/:id",
-      "destination": "/3d/index.html",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/:path*",
-      "destination": "/3d/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "3d.intero.com"
-        }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
