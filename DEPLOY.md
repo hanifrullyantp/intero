@@ -75,7 +75,7 @@ Tanpa Supabase, hosting statis murni **tidak** bisa form lead/CMS (lihat paragra
 
 ## 3D Intero di `3d.intero.id`
 
-Aplikasi **3D Intero** (`3D Intero/`) ikut ter-build ke folder `dist/3d` dan dilayani lewat proyek Vercel yang sama dengan landing (`vercel.json` mengarahkan host `3d.intero.id`).
+Aplikasi **3D Intero** (`3d-intero-app/`) di-build ke folder `dist/3d` dan dilayani lewat proyek Vercel yang sama dengan landing (`vercel.json` + `middleware.ts` untuk host `3d.intero.id`). Versi cloud Supabase lama ada di `3D Intero/` — build manual: `npm run build:3d-cloud`.
 
 Setelah push ke `main`, Vercel redeploy otomatis. Agar subdomain hidup:
 

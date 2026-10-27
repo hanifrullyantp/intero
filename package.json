@@ -8,7 +8,8 @@
     "dev:client": "vite",
     "dev:api": "tsx watch server/index.ts",
     "build": "vite build && npm run build:3d",
-    "build:3d": "npm ci --prefix \"3D Intero\" && npm run build --prefix \"3D Intero\" && rm -rf dist/3d && cp -R \"3D Intero/dist\" dist/3d",
+    "build:3d": "npm ci --prefix \"3d-intero-app\" && npm run build --prefix \"3d-intero-app\" && rm -rf dist/3d && mkdir -p dist/3d && cp \"3d-intero-app/dist/index.html\" dist/3d/index.html && cp -R \"3d-intero-app/public/\"* dist/3d/",
+    "build:3d-cloud": "npm ci --prefix \"3D Intero\" && npm run build --prefix \"3D Intero\" && rm -rf dist/3d && cp -R \"3D Intero/dist\" dist/3d",
     "generate:supabase-seed": "tsx scripts/generate-supabase-seed.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
     "preview": "vite preview"
