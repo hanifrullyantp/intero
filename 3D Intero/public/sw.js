@@ -1,6 +1,6 @@
 /* 3D Intero service worker: offline app shell + runtime cache (network-first).
  * Project data lives in localStorage / exported .i3d.json files, so it works offline. */
-const CACHE = 'instant3d-intero-brand-v8';
+const CACHE = 'instant3d-intero-brand-v9';
 const SHELL = ['/', '/manifest.json', '/icons/icon.svg'];
 
 self.addEventListener('install', (event) => {

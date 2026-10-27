@@ -20,7 +20,7 @@ function shouldOpenAuth(): boolean {
 }
 
 export default function LandingPage({ forceOpenAuth = false }: { forceOpenAuth?: boolean }) {
-  useSaasPage('3D Intero — Desain Kitchen Set');
+  useSaasPage('3D Intero — Desain Kitchen Set Impianmu');
   const { user, loading, configured } = useAuth();
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     const t = getInitialTheme();
