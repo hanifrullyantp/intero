@@ -10,7 +10,8 @@ import { buildItem, buildRoom, type GenCtx } from '../generators';
 import { computeCountertopRuns, genCountertopRun } from '../generators/countertop';
 import { AnimationController, setExplode } from '../engine/animation';
 import { animateStir, animateWash, animateWalk, buildPerson, type PersonStyle } from '../generators/people';
-import { detectCornerOrientation, roomBounds, roomCenter, rowOf } from '../engine/walls';
+import { roomBounds, roomCenter, rowOf } from '../engine/walls';
+import { cabinetSig } from '../projectdoc/reconcile';
 import { degToRad, radToDeg } from '../lib/utils';
 
 export interface SceneCallbacks {
@@ -279,14 +280,8 @@ export class SceneController {
     }
     const ids = new Set(items.map((i) => i.id));
     for (const [id, e] of this.built) if (!ids.has(id)) this.disposeEntry(id, e);
-    // Properti non-geometri (produksi, default scope, tampilan ruangan) tidak memicu rebuild kabinet
-    const { production: _pr, scopeDefaults: _sd, appearance: _ap, ...geomSettings } = settings as ProjectSettings & Record<string, unknown>;
-    void _pr; void _sd; void _ap;
-    const settingsKey = JSON.stringify(geomSettings);
     for (const item of items) {
-      const orient = item.type === 'corner_base' || item.type === 'corner_wall' ? detectCornerOrientation(item, items, walls) : '';
-      const { note: _nt, method: _mt, prodStatus: _ps, ...cfgGeom } = item.config; void _nt; void _mt; void _ps;
-      const sig = JSON.stringify([item.type, item.dims, item.materials, cfgGeom, item.led, settingsKey, orient]);
+      const sig = cabinetSig(item, items, walls, settings);
       const e = this.built.get(item.id);
       if (!e || e.sig !== sig) this.rebuild(item, sig);
       else {

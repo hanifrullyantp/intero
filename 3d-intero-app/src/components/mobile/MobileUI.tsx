@@ -4,9 +4,11 @@ import {
   Image as ImageIcon, Keyboard, Layers, LayoutGrid, Lightbulb, LightbulbOff, LogOut, Menu, Moon, MousePointer2, Move, Move3D, MoreVertical, Orbit, Package, PaintBucket, PencilRuler, Pipette, Redo2,
   RotateCw, Ruler, Save, Scaling, Settings, Settings2, Share2, Smartphone, Sun, Trash2, Undo2, UsersRound, Wand2, Wrench, X, Camera, Factory, Hammer, Tag, ZoomIn,
 } from 'lucide-react';
+import { canRedo, canUndo } from '../../projectdoc/session';
 import { useStore } from '../../store';
 import type { ToolId, TopSubMode, ViewMode } from '../../types';
 import { fileActions } from '../editor/TopToolbar';
+import { clearSession, getSession } from '../../lib/account';
 import { ComponentLibrary } from '../editor/ComponentLibrary';
 import { PropertiesPanel } from '../editor/PropertiesPanel';
 import { LayersPanel } from '../editor/LayersPanel';
@@ -26,7 +28,12 @@ function openToggle() {
 export function MobileTopbar() {
   const s = useStore();
   const [userMenu, setUserMenu] = useState(false);
-  const user = (() => { try { return JSON.parse(localStorage.getItem('intero_user') || 'null') as { name: string; email: string } | null; } catch { return null; } })();
+  const [user, setUser] = useState(() => getSession()?.user ?? null);
+  useEffect(() => {
+    const sync = () => setUser(getSession()?.user ?? null);
+    window.addEventListener('intero:session', sync);
+    return () => window.removeEventListener('intero:session', sync);
+  }, []);
   const initials = (user?.name || 'P').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const readOnly = s.shareMode === 'view';
   const pill = (icon: ReactNode, label: string, onClick: () => void, active = false) => <button key={label} className={`m-pill ${active ? 'active' : ''}`} onClick={onClick}>{icon}<span>{label}</span></button>;
@@ -44,7 +51,7 @@ export function MobileTopbar() {
             <div className="menu" style={{ position: 'fixed', top: 54, right: 8, left: 'auto', zIndex: 800 }}>
               <div className="px-3 py-2"><div className="text-[13px] font-semibold">{user?.name ?? 'Pengguna 3D Intero'}</div><div className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{user?.email ?? '-'}</div></div>
               <div className="menu-sep" />
-              <button className="menu-item danger" onClick={() => { setUserMenu(false); localStorage.removeItem('intero_isLoggedIn'); localStorage.removeItem('intero_user'); window.dispatchEvent(new Event('intero:logout')); }}><LogOut size={15} />Logout</button>
+              <button className="menu-item danger" onClick={() => { setUserMenu(false); clearSession(); window.dispatchEvent(new Event('intero:logout')); }}><LogOut size={15} />Logout</button>
             </div>
           </>)}
         </div>
@@ -86,14 +93,15 @@ function Drawers() {
     <Drawer side="left" open={s.mobileDrawer === 'left'} onClose={close} title={APP_NAME}>
       <Sec>File</Sec>
       <DItem icon={<FilePlus2 size={17} />} label="Baru (Magic Generator)" disabled={readOnly} onClick={go(() => fileActions.newProject())} />
-      <DItem icon={<FolderOpen size={17} />} label="Buka .intero" disabled={readOnly} onClick={go(() => void fileActions.open())} />
-      <DItem icon={<Save size={17} />} label="Simpan .intero" onClick={go(() => fileActions.save())} />
-      <DItem icon={<Save size={17} />} label="Simpan Sebagai…" onClick={go(() => fileActions.save(true))} />
+      <DItem icon={<FolderOpen size={17} />} label="Buka proyek…" disabled={readOnly} onClick={go(() => fileActions.browse())} />
+      <DItem icon={<Save size={17} />} label="Simpan ke akun & perangkat" disabled={readOnly} onClick={go(() => fileActions.save())} />
+      <DItem icon={<Save size={17} />} label="Simpan sebagai…" disabled={readOnly} onClick={go(() => fileActions.save(true))} />
+      <DItem icon={<Download size={17} />} label="Unduh file .intero" onClick={go(() => fileActions.download())} />
       <DItem icon={<ImageIcon size={17} />} label="Export PNG / JPG" onClick={go(() => fileActions.export('png'))} />
       <DItem icon={<Download size={17} />} label="Export OBJ / SketchUp" onClick={go(() => fileActions.export('obj'))} />
       <Sec>Edit</Sec>
-      <DItem icon={<Undo2 size={17} />} label="Undo" disabled={readOnly || !s.past.length} onClick={() => s.undo()} />
-      <DItem icon={<Redo2 size={17} />} label="Redo" disabled={readOnly || !s.future.length} onClick={() => s.redo()} />
+      <DItem icon={<Undo2 size={17} />} label="Undo" disabled={readOnly || !canUndo(s)} onClick={() => s.undo()} />
+      <DItem icon={<Redo2 size={17} />} label="Redo" disabled={readOnly || !canRedo(s)} onClick={() => s.redo()} />
       <DItem icon={<Settings size={17} />} label="Preferences" onClick={go(() => s.ui({ showPrefs: true }))} />
       <Sec>Lihat</Sec>
       <DItem icon={<Box size={17} />} label="Mode 3D (Perspective)" onClick={go(() => s.setViewMode('perspective'))} right={s.viewMode === 'perspective' ? <Check size={15} /> : undefined} />
@@ -118,7 +126,8 @@ function Drawers() {
     </Drawer>
     <Drawer side="right" open={s.mobileDrawer === 'right'} onClose={close} title="Aksi cepat">
       <div className="px-4 py-2 text-[12px] flex items-center gap-1.5" style={{ color: s.dirty ? 'var(--text-tertiary)' : 'var(--brand-primary)' }}>{!s.dirty && <Check size={13} />}{s.dirty ? 'Menyimpan…' : s.lastSavedAt ? `Tersimpan ${timeAgo(s.lastSavedAt)}` : 'Belum tersimpan'}</div>
-      <DItem icon={<Save size={17} />} label="Simpan .intero" onClick={go(() => fileActions.save())} />
+      <DItem icon={<Save size={17} />} label="Simpan ke akun & perangkat" disabled={readOnly} onClick={go(() => fileActions.save())} />
+      <DItem icon={<Download size={17} />} label="Unduh file .intero" onClick={go(() => fileActions.download())} />
       <Sec>Export</Sec>
       <DItem icon={<ImageIcon size={17} />} label="Gambar PNG" onClick={go(() => fileActions.export('png'))} />
       <DItem icon={<Download size={17} />} label="OBJ" onClick={go(() => fileActions.export('obj'))} />

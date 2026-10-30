@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Box, Check, ChevronDown, ClipboardPaste, Copy, DoorOpen, Download, Eye, FilePlus2, FolderOpen, Grid3X3, HelpCircle, Image as ImageIcon, Keyboard, Layers, Lightbulb, LightbulbOff, Link2, LogOut, Maximize, Moon, Redo2, Save, Scissors, Search, Settings, Share2, Sparkles, SquareCheckBig, Sun, Sunset, Trash2, Undo2, User, Users, UsersRound, Wand2, BookOpen, Info, Ruler, Smartphone, Glasses, Camera, Factory, Hammer } from 'lucide-react';
-import { compressToEncodedURIComponent } from 'lz-string';
+import { canRedo, canUndo } from '../../projectdoc/session';
 import { useStore, wallHeightOf, backsplashHeightOf } from '../../store';
+import { createProjectShare } from '../../lib/share-link';
+import { clearSession, getSession } from '../../lib/account';
 import { SearchPalette } from '../Spotlight';
-import { sceneRef } from './Viewport';
-import { exportImage, exportObj, exportSketchUpFallback, openInteroFile, saveInteroFile } from '../../lib/persistence';
+import { fileActions } from './file-actions';
+import { ProjectsDialog } from './ProjectsDialog';
 import { toast, Modal, Field, DragNumber, Kbd, Select, Toggle, ColorPicker } from '../ui';
 import { APP_NAME, COUNTERTOP_TYPES, SHORTCUTS } from '../../lib/constants';
 import type { CountertopType } from '../../types';
@@ -31,45 +33,13 @@ function MI({ icon, label, kbd, onClick, danger, disabled }: { icon?: ReactNode;
   return <button type="button" className={`menu-item ${danger ? 'danger' : ''}`} onClick={onClick} disabled={disabled} style={disabled ? { opacity: 0.4 } : undefined}>{icon ?? <span style={{ width: 15 }} />}<span>{label}</span>{kbd && <span className="kbd">{kbd}</span>}</button>;
 }
 
-export const fileActions = {
-  save(as = false) {
-    const s = useStore.getState();
-    let name = s.projectName;
-    if (as) { const n = window.prompt('Nama file proyek (.intero):', s.projectName); if (!n) return; name = n; s.setProjectName(n); }
-    saveInteroFile(useStore.getState().toProjectData(), name);
-    s.markSaved();
-    toast(`Proyek "${name}.intero" diunduh ke komputer Anda`, 'success');
-  },
-  async open() {
-    try {
-      const data = await openInteroFile();
-      if (!data) return;
-      const st = useStore.getState();
-      st.loadProject(data);
-      st.ui({ resetViewRequest: st.resetViewRequest + 1 });
-      toast(`Proyek "${data.projectName}" dibuka (${data.cabinets.length} komponen)`, 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
-  },
-  newProject() {
-    const s = useStore.getState();
-    const go = () => { s.newProject(); s.ui({ showWizard: true }); };
-    if (s.items.length && s.dirty) s.ui({ dialog: { kind: 'confirm', title: 'Buat proyek baru?', message: 'Perubahan yang belum disimpan sebagai .intero akan hilang (draft otomatis tetap ada di browser).', onConfirm: go } });
-    else go();
-  },
-  export(kind: 'png' | 'jpg' | 'obj' | 'skp') {
-    const ctl = sceneRef.current; const s = useStore.getState();
-    if (!ctl) return;
-    if (kind === 'png' || kind === 'jpg') { exportImage(ctl.screenshot(kind), s.projectName, kind); toast(`Gambar ${kind.toUpperCase()} diunduh`, 'success'); return; }
-    const obj = ctl.exportOBJ();
-    if (kind === 'obj') { exportObj(obj, s.projectName); toast('File OBJ diunduh (unit meter)', 'success'); }
-    else { exportSketchUpFallback(obj, s.projectName); toast('Format .skp proprietary — diunduh sebagai OBJ untuk diimpor ke SketchUp (File > Import).', 'info'); }
-  },
-};
+export { fileActions } from './file-actions';
 
 export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () => void; headless?: boolean }) {
   const s = useStore();
   const [editingName, setEditingName] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const readOnly = s.shareMode === 'view';
   const openToggle = () => {
@@ -86,11 +56,16 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
   };
   const [nameDraft, setNameDraft] = useState(s.projectName);
   const [userMenu, setUserMenu] = useState(false);
-  const user = (() => { try { return JSON.parse(localStorage.getItem('intero_user') || 'null') as { name: string; email: string } | null; } catch { return null; } })();
+  const [user, setUser] = useState(() => getSession()?.user ?? null);
+  useEffect(() => {
+    const sync = () => setUser(getSession()?.user ?? null);
+    window.addEventListener('intero:session', sync);
+    return () => window.removeEventListener('intero:session', sync);
+  }, []);
   const initials = (user?.name || 'P').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
   const logout = () => {
-    localStorage.removeItem('intero_isLoggedIn'); localStorage.removeItem('intero_user');
+    clearSession();
     toast('Anda telah keluar', 'info'); onBackToLanding();
   };
   const fullscreen = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); };
@@ -98,24 +73,26 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
   const caps = useXRCaps();
 
   useEffect(() => {
-    const open = () => setTeamOpen(true); const share = () => setShareOpen(true);
-    window.addEventListener('intero:openTeam', open); window.addEventListener('intero:openShare', share);
-    return () => { window.removeEventListener('intero:openTeam', open); window.removeEventListener('intero:openShare', share); };
+    const open = () => setTeamOpen(true); const share = () => setShareOpen(true); const projects = () => setProjectsOpen(true);
+    window.addEventListener('intero:openTeam', open); window.addEventListener('intero:openShare', share); window.addEventListener('intero:openProjects', projects);
+    return () => { window.removeEventListener('intero:openTeam', open); window.removeEventListener('intero:openShare', share); window.removeEventListener('intero:openProjects', projects); };
   }, []);
 
   return (
     <>
     {!headless && <header className="flex items-center gap-1 px-2 shrink-0 theme-transition" style={{ height: 'var(--toolbar-h)', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}>
-      <button type="button" className="flex items-center gap-2 px-2 h-9 rounded-lg hover:bg-[var(--bg-hover)]" onClick={() => s.ui({ dialog: { kind: 'confirm', title: 'Kembali ke halaman utama?', message: 'Proyek tetap tersimpan otomatis di browser (IndexedDB).', onConfirm: onBackToLanding } })} title="Kembali ke landing">
+      <button type="button" className="flex items-center gap-2 px-2 h-9 rounded-lg hover:bg-[var(--bg-hover)]" onClick={() => s.ui({ dialog: { kind: 'confirm', title: 'Kembali ke halaman utama?', message: 'Simpan dulu ke akun jika ingin membukanya di perangkat lain. Draft terakhir tetap ada di browser ini.', onConfirm: onBackToLanding } })} title="Kembali ke landing">
         <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--brand-primary)', color: '#fff' }}><Box size={16} /></span>
         <span className="font-bold text-[14px] hidden sm:inline" style={{ fontFamily: 'var(--font-heading)' }}>{APP_NAME}</span>
       </button>
       <div className="hidden md:flex items-center">
         <Menu label="File">{(close) => (<>
           <MI icon={<FilePlus2 size={15} />} label="Baru (Magic Generator)" kbd="Ctrl+N" disabled={readOnly} onClick={() => { close(); fileActions.newProject(); }} />
-          <MI icon={<FolderOpen size={15} />} label="Buka .intero" kbd="Ctrl+O" disabled={readOnly} onClick={() => { close(); fileActions.open(); }} />
-          <MI icon={<Save size={15} />} label="Simpan .intero" kbd="Ctrl+S" onClick={() => { close(); fileActions.save(); }} />
-          <MI icon={<Save size={15} />} label="Simpan Sebagai…" kbd="Ctrl+Shift+S" onClick={() => { close(); fileActions.save(true); }} />
+          <MI icon={<FolderOpen size={15} />} label="Buka proyek…" kbd="Ctrl+O" disabled={readOnly} onClick={() => { close(); fileActions.browse(); }} />
+          <MI icon={<Save size={15} />} label="Simpan ke akun & perangkat" kbd="Ctrl+S" disabled={readOnly} onClick={() => { close(); fileActions.save(); }} />
+          <MI icon={<Save size={15} />} label="Simpan sebagai…" kbd="Ctrl+Shift+S" disabled={readOnly} onClick={() => { close(); fileActions.save(true); }} />
+          <MI icon={<Download size={15} />} label="Unduh file .intero" onClick={() => { close(); fileActions.download(); }} />
+          <MI icon={<Share2 size={15} />} label="Bagikan tautan" onClick={() => { close(); setShareOpen(true); }} />
           <div className="menu-sep" />
           <MI icon={<ImageIcon size={15} />} label="Export PNG" onClick={() => { close(); fileActions.export('png'); }} />
           <MI icon={<ImageIcon size={15} />} label="Export JPG" onClick={() => { close(); fileActions.export('jpg'); }} />
@@ -123,8 +100,8 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
           <MI icon={<Download size={15} />} label="Export ke SketchUp (OBJ)" onClick={() => { close(); fileActions.export('skp'); }} />
         </>)}</Menu>
         <Menu label="Edit">{(close) => (<>
-          <MI icon={<Undo2 size={15} />} label="Undo" kbd="Ctrl+Z" onClick={() => { close(); s.undo(); }} disabled={readOnly || !s.past.length} />
-          <MI icon={<Redo2 size={15} />} label="Redo" kbd="Ctrl+Y" onClick={() => { close(); s.redo(); }} disabled={readOnly || !s.future.length} />
+          <MI icon={<Undo2 size={15} />} label="Undo" kbd="Ctrl+Z" onClick={() => { close(); s.undo(); }} disabled={readOnly || !canUndo(s)} />
+          <MI icon={<Redo2 size={15} />} label="Redo" kbd="Ctrl+Y" onClick={() => { close(); s.redo(); }} disabled={readOnly || !canRedo(s)} />
           <div className="menu-sep" />
           <MI icon={<Scissors size={15} />} label="Cut" kbd="Ctrl+X" onClick={() => { close(); s.cut(); }} disabled={readOnly || !hasSel} />
           <MI icon={<Copy size={15} />} label="Copy" kbd="Ctrl+C" onClick={() => { close(); s.copy(); toast('Disalin', 'info'); }} disabled={readOnly || !hasSel} />
@@ -172,8 +149,8 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
       </div>
       <div className="flex-1" />
       <div className="flex items-center gap-1">
-        <button type="button" className="icon-btn" data-tip="Undo (Ctrl+Z)" onClick={s.undo} disabled={!s.past.length}><Undo2 size={17} /></button>
-        <button type="button" className="icon-btn" data-tip="Redo (Ctrl+Y)" onClick={s.redo} disabled={!s.future.length}><Redo2 size={17} /></button>
+        <button type="button" className="icon-btn" data-tip="Undo (Ctrl+Z)" onClick={s.undo} disabled={!canUndo(s)}><Undo2 size={17} /></button>
+        <button type="button" className="icon-btn" data-tip="Redo (Ctrl+Y)" onClick={s.redo} disabled={!canRedo(s)}><Redo2 size={17} /></button>
         <div className="divider-v" />
         <button type="button" className={`btn btn-sm ${s.openIds.length ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} data-tour="open-btn" onClick={openToggle} data-tip={s.selectedIds.length ? `Buka/tutup ${s.selectedIds.length} kabinet terpilih` : 'Buka/tutup semua pintu, laci & aksesoris'}><DoorOpen size={15} />{s.openIds.length ? 'Tutup' : 'Open'}</button>
         <button type="button" className={`btn btn-sm ${s.lightsOn ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} onClick={() => s.toggleLights()} data-tip={s.lightsOn ? 'Matikan lampu LED' : 'Nyalakan lampu LED'}>{s.lightsOn ? <Lightbulb size={15} /> : <LightbulbOff size={15} />}{s.lightsOn ? 'Lampu On' : 'Lampu Off'}</button>
@@ -197,7 +174,7 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
             <div className="menu" style={{ left: 'auto', right: 0 }}>
               <div className="px-3 py-2"><div className="text-[13px] font-semibold">{user?.name ?? 'Pengguna 3D Intero'}</div><div className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{user?.email ?? '-'}</div></div>
               <div className="menu-sep" />
-              <MI icon={<User size={15} />} label="Profil (mockup)" onClick={() => { setUserMenu(false); toast('Profil hanya tampilan — tidak ada backend.', 'info'); }} />
+              <MI icon={<User size={15} />} label="Proyek akun" onClick={() => { setUserMenu(false); setProjectsOpen(true); }} />
               <MI icon={<HelpCircle size={15} />} label="Bantuan" onClick={() => { setUserMenu(false); s.ui({ showShortcuts: true }); }} />
               <div className="menu-sep" />
               <MI icon={<LogOut size={15} />} label="Logout" danger onClick={() => { setUserMenu(false); logout(); }} />
@@ -208,6 +185,7 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
     </header>}
       {s.showSearch && <SearchPalette onClose={() => s.ui({ showSearch: false })} />}
       {shareOpen && <ShareDialog onClose={() => setShareOpen(false)} onTeam={() => { setShareOpen(false); setTeamOpen(true); }} />}
+      {projectsOpen && <ProjectsDialog onClose={() => setProjectsOpen(false)} />}
       {teamOpen && <TeamCollaborationDialog onClose={() => setTeamOpen(false)} />}
       {s.showPrefs && <PrefsModal onClose={() => s.ui({ showPrefs: false })} />}
       {s.showShortcuts && <ShortcutsModal onClose={() => s.ui({ showShortcuts: false })} />}
@@ -287,26 +265,28 @@ function AboutModal({ onClose }: { onClose: () => void }) {
 }
 
 function ShareDialog({ onClose, onTeam }: { onClose: () => void; onTeam: () => void }) {
-  const s = useStore();
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [link, setLink] = useState('');
-  useEffect(() => {
-    try {
-      const pd = s.toProjectData(); pd.settings = { ...pd.settings, production: { ...pd.settings.production, logo: null } }; // logo tidak ikut tautan
-      const json = JSON.stringify(pd);
-      const payload = compressToEncodedURIComponent(json);
-      setLink(`${location.origin}${location.pathname}#s=${mode}.${payload}`);
-    } catch { setLink(''); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    let cancel = false;
+    setBusy(true); setErr(''); setLink(''); setCopied(false);
+    createProjectShare(useStore.getState().toProjectData(), mode)
+      .then((url) => { if (!cancel) setLink(url); })
+      .catch((e: Error) => { if (!cancel) setErr(e.message || 'Gagal membuat tautan'); })
+      .finally(() => { if (!cancel) setBusy(false); });
+    return () => { cancel = true; };
+  }, [mode]);
   const copy = async () => {
+    if (!link) return;
     try { await navigator.clipboard.writeText(link); }
     catch {
       const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); document.body.removeChild(ta);
     }
-    setCopied(true); toast('Tautan dibagikan — disalin ke clipboard', 'success');
+    setCopied(true); toast('Tautan disalin', 'success');
   };
   return (
     <Modal onClose={onClose} width={560} tour="share-dialog">
@@ -324,11 +304,11 @@ function ShareDialog({ onClose, onTeam }: { onClose: () => void; onTeam: () => v
         </div>
         <Field label="Tautan berbagi">
           <div className="flex gap-2">
-            <input readOnly className="input mono" style={{ fontSize: 11 }} value={link} onFocus={(e) => e.target.select()} />
-            <button className="btn btn-primary btn-sm shrink-0" style={{ height: 32 }} onClick={copy}>{copied ? <Check size={14} /> : null}{copied ? 'Disalin' : 'Salin Link'}</button>
+            <input readOnly className="input mono" style={{ fontSize: 13 }} value={busy ? 'Membuat tautan…' : link} placeholder={err ? '' : ''} onFocus={(e) => e.target.select()} />
+            <button className="btn btn-primary btn-sm shrink-0" style={{ height: 32 }} disabled={!link || busy} onClick={copy}>{copied ? <Check size={14} /> : null}{copied ? 'Disalin' : 'Salin Link'}</button>
           </div>
         </Field>
-        <p className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Tanpa server: seluruh data proyek dikompresi ke dalam tautan ({(link.length / 1024).toFixed(1)} KB). Kirim via WhatsApp/email. Perubahan penerima tidak mengubah proyek Anda.</p>
+        {err ? <p className="text-[12px]" style={{ color: 'var(--danger)' }}>{err}</p> : <p className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Tautan pendek (sekitar 40 karakter). Desain tersimpan di server, jadi bisa dibuka dari WhatsApp atau email. Perubahan penerima tidak mengubah proyek Anda.</p>}
         <div className="flex items-center gap-2"><button className="btn btn-secondary" onClick={onTeam}><UsersRound size={14} />Kolaborasi tim langsung</button><div className="flex-1" /><button className="btn btn-secondary" onClick={onClose}>Tutup</button></div>
       </div>
     </Modal>

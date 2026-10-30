@@ -1,15 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { Box, Eye, EyeOff, Mail, X, Check } from 'lucide-react';
+import { Box, Eye, EyeOff, X, Check } from 'lucide-react';
 import { Modal, toast } from './ui';
 import { APP_NAME } from '../lib/constants';
+import { setSession } from '../lib/account';
+import { loginAccount, registerAccount } from '../lib/cloud-projects';
 
 type Tab = 'login' | 'register' | 'forgot';
-
-/** MOCK AUTH — UI saja. Tidak ada server, JWT, atau hashing. Submit → localStorage flag → editor. */
-function mockLogin(name: string, email: string) {
-  localStorage.setItem('intero_isLoggedIn', 'true');
-  localStorage.setItem('intero_user', JSON.stringify({ name: name || 'Pengguna 3D Intero', email, loginAt: new Date().toISOString() }));
-}
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('login');
@@ -21,14 +17,15 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
   const [pw2, setPw2] = useState('');
   const [agree, setAgree] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [busy, setBusy] = useState(false);
 
-  const finish = (n: string, e: string) => {
-    mockLogin(n, e);
+  const finish = (token: string, user: { id: string; email: string; name: string }) => {
+    setSession(token, user, remember);
     onClose();
     toast(`Berhasil masuk! Selamat datang di ${APP_NAME}`, 'success');
     setTimeout(() => window.dispatchEvent(new Event('intero:startEditor')), 400);
   };
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.includes('@') || !email.includes('.')) { toast('Format email salah', 'error'); return; }
     if (tab === 'forgot') { setSent(true); return; }
@@ -38,7 +35,14 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
       if (pw !== pw2) { toast('Konfirmasi password tidak sama', 'error'); return; }
       if (!agree) { toast('Setujui Syarat & Ketentuan terlebih dahulu', 'error'); return; }
     }
-    finish(tab === 'register' ? name : email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), email);
+    setBusy(true);
+    try {
+      const result = tab === 'register'
+        ? await registerAccount({ name: name.trim(), email, password: pw })
+        : await loginAccount({ email, password: pw });
+      finish(result.token, result.user);
+    } catch (err) { toast((err as Error).message, 'error'); }
+    finally { setBusy(false); }
   };
   const input = 'input input-lg';
   return (
@@ -46,7 +50,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
       <div className="p-7 flex flex-col gap-5">
         <div className="flex items-center gap-3">
           <span className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'var(--brand-primary)', color: '#fff' }}><Box size={22} /></span>
-          <div className="flex-1"><h3 className="text-[20px] font-extrabold tracking-tight">{APP_NAME}</h3><p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>Masuk untuk mulai mendesain — semua data tersimpan di perangkat Anda.</p></div>
+          <div className="flex-1"><h3 className="text-[20px] font-extrabold tracking-tight">{APP_NAME}</h3><p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>Masuk untuk menyimpan proyek ke akun Anda, lalu buka lagi dari perangkat mana pun.</p></div>
           <button className="icon-btn" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
         </div>
         <div className="seg w-full">
@@ -70,21 +74,12 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
           )}
           {tab === 'register' && <label className="flex items-center gap-2 text-[12.5px] cursor-pointer"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="accent-[var(--brand-primary)]" />Saya setuju dengan Syarat & Ketentuan</label>}
           {tab === 'forgot' && sent ? (
-            <div className="rounded-xl p-3 flex gap-2 text-[12.5px]" style={{ background: 'var(--brand-primary-soft)', color: 'var(--brand-primary)' }}><Check size={16} className="shrink-0" />Email reset password telah dikirim (mockup — tidak ada email beneran dikirim karena belum ada backend).</div>
+            <div className="rounded-xl p-3 flex gap-2 text-[12.5px]" style={{ background: 'var(--brand-primary-soft)', color: 'var(--brand-primary)' }}><Check size={16} className="shrink-0" />Reset password lewat email belum tersedia. Masuk dengan password akun Anda, atau daftar email baru.</div>
           ) : (
-            <button type="submit" className="btn btn-primary btn-lg w-full">{tab === 'login' ? 'Masuk' : tab === 'register' ? 'Daftar' : 'Kirim Link Reset'}</button>
+            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={busy}>{busy ? 'Memproses…' : tab === 'login' ? 'Masuk' : tab === 'register' ? 'Daftar' : 'Kirim Link Reset'}</button>
           )}
         </form>
-        {tab === 'login' && (<>
-          <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-tertiary)' }}><span className="flex-1 h-px" style={{ background: 'var(--border)' }} />atau<span className="flex-1 h-px" style={{ background: 'var(--border)' }} /></div>
-          <div className="flex flex-col gap-2">
-            <button type="button" className="btn btn-secondary w-full" onClick={() => finish('Pengguna Google', 'pengguna@gmail.com')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.9-5.5 3.9-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.2 14.7 2.2 12 2.2 6.6 2.2 2.3 6.6 2.3 12S6.6 21.8 12 21.8c5.6 0 9.3-3.9 9.3-9.5 0-.6-.1-1.1-.2-1.6H12z" /></svg>
-              Masuk dengan Google
-            </button>
-            <button type="button" className="btn btn-secondary w-full" onClick={() => { if (!email.includes('@')) { toast('Isi email terlebih dahulu untuk magic link', 'warning'); return; } finish('', email); }}><Mail size={16} />Masuk dengan Email Magic Link</button>
-          </div>
-        </>)}
+        {tab === 'login' && <p className="text-[11.5px] text-center" style={{ color: 'var(--text-tertiary)' }}>Proyek di akun ini terpisah dari pengguna lain. File .intero tetap bisa dibuka tanpa masuk.</p>}
         <p className="text-center text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>
           {tab === 'login' ? <>Belum punya akun? <button type="button" className="font-semibold" style={{ color: 'var(--brand-primary)' }} onClick={() => setTab('register')}>Daftar sekarang</button></> : <>Sudah punya akun? <button type="button" className="font-semibold" style={{ color: 'var(--brand-primary)' }} onClick={() => setTab('login')}>Masuk</button></>}
         </p>

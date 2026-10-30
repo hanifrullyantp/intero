@@ -1,5 +1,7 @@
 // 3D Intero — AI Design Assistant Engine
-// Mendukung eksekusi perintah bahasa Indonesia instan (lokal) & opsional LLM API (OpenRouter/OpenAI/Gemini) untuk mengubah state proyek secara parametrik.
+// Parser lokal mengubah proyek langsung. Perintah yang tidak dikenali dikirim ke gateway server; kunci model tidak pernah ada di browser.
+import { requestAiGateway } from '../ai/client';
+import type { AiGatewayResult } from '../ai/gateway';
 import { useStore } from '../store';
 import type { CountertopType, DoorMaterial, FrameMaterialId, HandleType, ItemScope, ItemType } from '../types';
 import { COLOR_PRESETS, TYPE_LABELS } from '../lib/constants';
@@ -8,6 +10,7 @@ export interface AiActionResult {
   reply: string;
   changed: boolean;
   actionsTaken: string[];
+  gateway?: AiGatewayResult;
 }
 
 const COLOR_MAP: { keys: string[]; hex: string; name: string }[] = [
@@ -353,39 +356,13 @@ export function executeLocalAiCommand(prompt: string): AiActionResult {
   };
 }
 
-/** Opsional: panggil OpenRouter / OpenAI kompatibel API jika user memasukkan API Key. */
-export async function executeAiWithLlmFallback(prompt: string, apiKey?: string): Promise<AiActionResult> {
-  // Jalankan parser deterministik lokal terlebih dahulu karena sangat cepat & akurat untuk operasi parametrik
+export async function executeAiWithLlmFallback(prompt: string): Promise<AiActionResult> {
   const local = executeLocalAiCommand(prompt);
-  if (local.changed || !apiKey?.trim()) return local;
-
+  if (local.changed) return local;
   try {
-    const st = useStore.getState();
-    const sysPrompt = `Kamu adalah asisten AI arsitek interior untuk aplikasi 3D Intero Kitchen Set Designer.
-Saat ini proyek memiliki ${st.items.length} kabinet dengan tinggi global ${st.settings.globalCabinetHeight}mm.
-Terjemahkan permintaan user menjadi satu kalimat perintah sederhana dalam Bahasa Indonesia yang bisa dieksekusi oleh parser lokal (contoh: "aktifkan cornice", "ubah warna kabinet atas putih dan kabinet bawah walnut", "ubah tinggi total 250 cm", "ganti handle gola", "tambahkan island 160 cm"), ATAU jawab dengan ramah dan singkat dalam Bahasa Indonesia.`;
-
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey.trim()}` },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-    if (!res.ok) return local;
-    const data = await res.json();
-    const content: string = data?.choices?.[0]?.message?.content ?? '';
-    if (content) {
-      const retryLocal = executeLocalAiCommand(content);
-      if (retryLocal.changed) return retryLocal;
-      return { changed: false, actionsTaken: [], reply: content };
-    }
+    const gateway = await requestAiGateway(prompt);
+    return { changed: false, actionsTaken: [], reply: gateway.message, gateway };
   } catch {
-    // Fallback ke hasil lokal
+    return local;
   }
-  return local;
 }

@@ -19,8 +19,8 @@ import type { SiteSettings } from "../src/types/site-settings.ts";
 import { notifyLeadCreated } from "./notify.ts";
 import { createShare, getShare } from "./instant3dShares.ts";
 import { createShareSupabase, getShareSupabase, supabaseSharesEnabled } from "./supabaseShares.ts";
-import { createShare, getShare } from "./instant3dShares.ts";
-import { createShareSupabase, getShareSupabase, supabaseSharesEnabled } from "./supabaseShares.ts";
+import { registerKitchenRoutes } from "./kitchenRoutes.ts";
+import { registerAiRoute } from "./aiRoute.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -71,14 +71,19 @@ app.post("/api/instant3d/shares", async (req, res) => {
     res.status(400).json({ error: "Missing project" });
     return;
   }
-  const name = String(project.name || req.body?.name || "Shared project");
+  const rec = project as { name?: string; projectName?: string };
+  const name = String(req.body?.name || rec.projectName || rec.name || "Shared project");
+  const meta = {
+    app: req.body?.app === "3d-intero" ? "3d-intero" as const : undefined,
+    mode: req.body?.mode === "edit" ? "edit" as const : "view" as const,
+  };
   try {
     if (supabaseSharesEnabled()) {
-      const { id } = await createShareSupabase(name, project);
+      const { id } = await createShareSupabase(name, project, meta);
       res.json({ id });
       return;
     }
-    const { id } = createShare(name, project);
+    const { id } = createShare(name, project, meta);
     res.json({ id });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message || "Failed to create share" });
@@ -109,6 +114,9 @@ app.get("/api/instant3d/shares/:id", async (req, res) => {
     res.status(500).json({ error: (e as Error).message || "Failed to load share" });
   }
 });
+
+registerKitchenRoutes(app);
+registerAiRoute(app);
 
 app.post("/api/auth/login", async (req, res) => {
   const username = String(req.body?.username || "");

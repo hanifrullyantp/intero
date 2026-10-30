@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Settings2, Trash2 } from 'lucide-react';
+import { sceneSource } from '../../projectdoc/session';
 import { SceneController } from '../../three/SceneController';
 import { useStore } from '../../store';
 import type { V3 } from '../../types';
@@ -40,7 +41,8 @@ export function Viewport() {
     sceneRef.current = ctl;
     const s0 = st();
     ctl.setBackground(s0.theme, s0.settings.appearance?.canvasColor); ctl.setGrid(s0.showGrid); ctl.setShadows(s0.showShadows);
-    ctl.sync(s0.items, s0.walls, s0.settings);
+    const g0 = sceneSource(s0);
+    ctl.sync(g0.items, g0.walls, g0.settings);
     ctl.setViewMode(s0.viewMode, s0.topSubMode);
     ctl.setTool(s0.tool);
     ctl.syncDimensions(s0.dimensions);
@@ -95,7 +97,11 @@ export function Viewport() {
     };
     syncFrame();
     const unsub = useStore.subscribe((s, p) => {
-      if (s.items !== p.items || s.walls !== p.walls || s.settings !== p.settings) { ctl.sync(s.items, s.walls, s.settings); if (!s.lightsOn) ctl.setLightsOn(false); }
+      if (s.items !== p.items || s.walls !== p.walls || s.settings !== p.settings || s.projectDoc !== p.projectDoc || s.docPending !== p.docPending) {
+        const g = sceneSource(s);
+        ctl.sync(g.items, g.walls, g.settings);
+        if (!s.lightsOn) ctl.setLightsOn(false);
+      }
       if (s.selectedIds !== p.selectedIds) ctl.setSelection(s.selectedIds);
       if (s.tool !== p.tool) { ctl.setTool(s.tool); if (s.tool !== 'tape' && s.tool !== 'dimension' && s.tool !== 'protractor') { measurePts.current = []; ctl.clearPreview(); } }
       if (s.viewMode !== p.viewMode) ctl.setViewMode(s.viewMode, s.topSubMode);

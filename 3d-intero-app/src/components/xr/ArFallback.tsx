@@ -11,7 +11,6 @@ export function ArFallbackModal({ onRetry, reason }: { onRetry: () => void; reas
   const s = useStore();
   if (!s.showArFallback) return null;
   const close = () => s.ui({ showArFallback: false });
-  const link = (() => { try { return `${location.origin}${location.pathname}#s=view.${(window as any).__interoSharePayload ?? ''}`; } catch { return ''; } })();
   return (
     <Modal onClose={close} width={460}>
       <div className="p-5 flex flex-col gap-3">
@@ -22,8 +21,7 @@ export function ArFallbackModal({ onRetry, reason }: { onRetry: () => void; reas
           <button className="btn btn-secondary justify-start" onClick={() => { close(); s.ui({ showCameraAr: true }); }}><Camera size={15} />Mode Kamera Dasar (tanpa tracking)</button>
           <button className="btn btn-secondary justify-start" onClick={() => { close(); s.ui({ showAr: true }); }}><Smartphone size={15} />Buka di HP Flagship (QR)</button>
         </div>
-        {link && link.includes('#s=') && <p className="text-[11px] mono break-all" style={{ color: 'var(--text-tertiary)' }}>Tautan view-only untuk HP: {link.slice(0, 96)}…</p>}
-        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Tip: AR terbaik di Pixel 6+, Samsung S21+, atau iPhone 12 Pro+ dengan Chrome/Safari terbaru, via HTTPS.</p>
+        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Tip: AR terbaik di Pixel 6+, Samsung S21+, atau iPhone 12 Pro+ dengan Chrome/Safari terbaru, via HTTPS. Untuk membuka desain di HP, salin tautan pendek dari menu Bagikan.</p>
       </div>
     </Modal>
   );

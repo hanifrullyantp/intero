@@ -1,7 +1,7 @@
 /* 3D Intero — Service Worker offline-first.
  * Strategi: cache-first untuk aset same-origin & font, network-first untuk navigasi.
  * Tidak ada request ke server bisnis: hanya CDN font/library yang di-cache. */
-const CACHE = '3d-intero-v2';
+const CACHE = '3d-intero-v3';
 const PRECACHE = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

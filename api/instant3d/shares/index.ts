@@ -23,14 +23,17 @@ export async function POST(request: Request) {
     return json({ error: "Share API not configured (Supabase env missing)" }, 503);
   }
   try {
-    const body = (await request.json()) as { project?: unknown; name?: string };
+    const body = (await request.json()) as { project?: unknown; name?: string; app?: string; mode?: string };
     const project = body?.project;
     if (!project || typeof project !== "object") {
       return json({ error: "Missing project" }, 400);
     }
-    const name = String((project as { name?: string }).name || body.name || "Shared project");
+    const rec = project as { name?: string; projectName?: string };
+    const name = String(body.name || rec.projectName || rec.name || "Shared project");
     const id = newShareId();
-    const payload = { app: "Instant 3D", version: 1, project };
+    const payload = body.app === "3d-intero"
+      ? { app: "3d-intero", version: 1, mode: body.mode === "edit" ? "edit" : "view", project }
+      : { app: "Instant 3D", version: 1, project };
     const { error } = await sb.from("instant3d_shares").insert({ id, name: name.slice(0, 200), payload });
     if (error) throw new Error(error.message);
     return json({ id });

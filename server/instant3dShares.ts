@@ -10,9 +10,12 @@ db.exec(`
   );
 `);
 
-export function createShare(name: string, payload: unknown): { id: string } {
+export function createShare(name: string, project: unknown, meta?: { app?: string; mode?: "view" | "edit" }): { id: string } {
   const id = newShareId();
-  const body = JSON.stringify({ app: "Instant 3D", version: 1, project: payload });
+  const envelope = meta?.app === "3d-intero"
+    ? { app: "3d-intero", version: 1, mode: meta.mode === "edit" ? "edit" : "view", project }
+    : { app: "Instant 3D", version: 1, project };
+  const body = JSON.stringify(envelope);
   db.prepare(
     `INSERT INTO instant3d_shares (id, name, payload) VALUES (?, ?, ?)`,
   ).run(id, name.slice(0, 200), body);

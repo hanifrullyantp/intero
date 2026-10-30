@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bot, Check, KeyRound, RotateCcw, Send, Sparkles, Wand2, X } from 'lucide-react';
-import { useStore } from '../../store';
+import { Bot, Check, RotateCcw, Send, Sparkles, Wand2, X } from 'lucide-react';
+import { applyGatewayCommands } from '../../ai/client';
 import { executeAiWithLlmFallback } from '../../engine/ai-assistant';
+import type { Command } from '../../projectdoc/commands';
+import { canUndo } from '../../projectdoc/session';
+import { useStore } from '../../store';
 import { toast } from '../ui';
 
 interface ChatMsg {
@@ -9,6 +12,10 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   text: string;
   actions?: string[];
+  tier?: string;
+  lines?: string[];
+  violations?: string[];
+  commands?: Command[];
 }
 
 const QUICK_PROMPTS = [
@@ -24,13 +31,12 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
   const s = useStore();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [showKey, setShowKey] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('intero_ai_key') || '');
+  const [applied, setApplied] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Halo! Saya **Asisten AI Desain 3D Intero**. Ketik perubahan yang Anda inginkan pada kitchen set (warna, tinggi plafon, cornice/topi, handle, LED, atau tambah unit) — saya akan langsung mengubah model 3D Anda secara otomatis!',
+      text: 'Halo! Saya Asisten AI Desain 3D Intero. Perintah yang sudah dikenal (warna, tinggi, cornice, handle, LED) langsung mengubah model. Perintah lain menampilkan pratinjau; tekan Terapkan untuk memasukkannya ke desain.',
     },
   ]);
   const listRef = useRef<HTMLDivElement>(null);
@@ -49,12 +55,16 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
     setInput('');
     setBusy(true);
     try {
-      const res = await executeAiWithLlmFallback(q, apiKey);
+      const res = await executeAiWithLlmFallback(q);
       const botMsg: ChatMsg = {
         id: `a-${Date.now()}`,
         role: 'assistant',
         text: res.reply,
         actions: res.actionsTaken,
+        tier: res.gateway?.tier,
+        lines: res.gateway?.preview.lines,
+        violations: res.gateway?.preview.violations,
+        commands: res.gateway?.commands,
       };
       setMessages((prev) => [...prev, botMsg]);
       if (res.changed) {
@@ -65,10 +75,11 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
     }
   };
 
-  const saveKey = () => {
-    localStorage.setItem('intero_ai_key', apiKey.trim());
-    setShowKey(false);
-    toast(apiKey.trim() ? 'API Key AI disimpan di browser' : 'Menggunakan Engine Parametrik Lokal (Tanpa API Key)', 'info');
+  const applyPreview = (msg: ChatMsg) => {
+    if (!msg.commands?.length || s.shareMode === 'view' || applied.includes(msg.id)) return;
+    if (!applyGatewayCommands(msg.commands)) return;
+    setApplied((prev) => [...prev, msg.id]);
+    toast('Pratinjau AI diterapkan', 'success');
   };
 
   return (
@@ -104,7 +115,7 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
             Edit desain 3D & material lewat perintah chat
           </div>
         </div>
-        {s.past.length > 0 && (
+        {canUndo(s) && (
           <button
             type="button"
             className="icon-btn"
@@ -115,39 +126,10 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
             <RotateCcw size={14} />
           </button>
         )}
-        <button
-          type="button"
-          className={`icon-btn ${showKey ? 'active' : ''}`}
-          style={{ width: 28, height: 28 }}
-          data-tip="Pengaturan API Key OpenRouter (Opsional)"
-          onClick={() => setShowKey(!showKey)}
-        >
-          <KeyRound size={14} />
-        </button>
         <button type="button" className="icon-btn" style={{ width: 28, height: 28 }} onClick={onClose} aria-label="Tutup AI">
           <X size={16} />
         </button>
       </div>
-
-      {/* Opsional API Key Bar */}
-      {showKey && (
-        <div className="p-3 flex flex-col gap-2 shrink-0 text-[12px]" style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
-          <div className="font-semibold flex items-center justify-between">
-            <span>OpenRouter API Key (Opsional)</span>
-            <span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>Tanpa key tetap jalan 100% lokal</span>
-          </div>
-          <div className="flex gap-1.5">
-            <input
-              type="password"
-              className="input flex-1 mono text-[11.5px]"
-              placeholder="sk-or-v1-..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <button type="button" className="btn btn-primary btn-sm" onClick={saveKey}>Simpan</button>
-          </div>
-        </div>
-      )}
 
       {/* Quick Chips */}
       <div className="px-3 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0" style={{ borderBottom: '1px solid var(--border)', scrollbarWidth: 'none' }}>
@@ -189,6 +171,29 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
                       <span>{act}</span>
                     </div>
                   ))}
+                </div>
+              )}
+              {!!m.commands?.length && (
+                <div className="mt-2 pt-2 flex flex-col gap-1.5" style={{ borderTop: '1px solid var(--border)' }}>
+                  <div className="text-[10.5px] font-bold" style={{ color: 'var(--text-secondary)' }}>Pratinjau {m.tier}</div>
+                  {m.lines?.map((line) => (
+                    <div key={line} className="text-[11px]">{line}</div>
+                  ))}
+                  {m.violations?.map((line) => (
+                    <div key={line} className="text-[11px]" style={{ color: 'var(--danger, #b42318)' }}>{line}</div>
+                  ))}
+                  {s.shareMode === 'view' ? (
+                    <div className="text-[11px]">Mode lihat tidak menerapkan perubahan.</div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm self-start"
+                      disabled={applied.includes(m.id)}
+                      onClick={() => applyPreview(m)}
+                    >
+                      {applied.includes(m.id) ? 'Diterapkan' : 'Terapkan'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { compressToEncodedURIComponent } from 'lz-string';
 import qrcode from 'qrcode-generator';
 import { Camera, Copy, Glasses, MapPin, Smartphone, Wand2, X } from 'lucide-react';
 import { useStore } from '../../store';
@@ -8,6 +7,7 @@ import { useXRCaps } from '../../xr/xr-manager';
 import { arBadge, detectARCapability, type ArCapability } from '../../xr/ar-session';
 import { Modal, toast } from '../ui';
 import { launchAR, launchVR } from './launch';
+import { createProjectShare } from '../../lib/share-link';
 
 function Card({ icon, title, desc, action, disabled, onClick, children }: { icon: React.ReactNode; title: string; desc: string; action: string; disabled?: boolean; onClick: () => void; children?: React.ReactNode }) {
   return (
@@ -25,11 +25,15 @@ export function ArDialog() {
   useEffect(() => { let ok = true; if (s.showAr) detectARCapability().then((c) => { if (ok) setCap(c); }); return () => { ok = false; }; }, [s.showAr]);
   const badge = cap ? arBadge(cap) : caps.ar ? 'full' : 'none';
   const badgeUi = { full: { c: 'var(--brand-primary)', t: 'AR Full Support' }, limited: { c: 'var(--warning)', t: 'AR Terbatas (hit-test)' }, none: { c: 'var(--danger)', t: 'AR Tidak Didukung' } }[badge];
-  const link = useMemo(() => {
-    if (!s.showAr || caps.ar) return '';
-    try { const pd = s.toProjectData(); pd.settings = { ...pd.settings, production: { ...pd.settings.production, logo: null } }; return `${location.origin}${location.pathname}#s=view.${compressToEncodedURIComponent(JSON.stringify(pd))}`; } catch { return ''; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.showAr, caps.ar]);
+  const [link, setLink] = useState('');
+  useEffect(() => {
+    if (!s.showAr || !caps.checked || caps.ar) { setLink(''); return; }
+    let cancel = false;
+    createProjectShare(useStore.getState().toProjectData(), 'view')
+      .then((url) => { if (!cancel) setLink(url); })
+      .catch(() => { if (!cancel) setLink(''); });
+    return () => { cancel = true; };
+  }, [s.showAr, caps.ar, caps.checked]);
   const qr = useMemo(() => {
     if (!link || link.length > 2300) return '';
     try { const q = qrcode(0, 'L'); q.addData(link); q.make(); return q.createSvgTag({ cellSize: 3, margin: 2, scalable: true }); } catch { return ''; }

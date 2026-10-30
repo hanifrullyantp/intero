@@ -8,6 +8,12 @@ import { APP_VERSION, DEFAULT_LED, DEFAULT_MATERIALS, DEFAULT_SETTINGS, FORMAT_V
 import { isMobileViewport, storage, uid } from './lib/utils';
 import { DEFAULT_PRICES } from './production/prices';
 import { applyWallOrder, distanceToWall, nearestWall, offsetOnWall, repackAll, resortWallByPosition, roomCenter, rowOf, wallVec } from './engine/walls';
+import { fromProjectData, toProjectData } from './projectdoc/adapter';
+import { isProjectDocV1Enabled } from './projectdoc/flag';
+import type { HistoryEntry } from './projectdoc/history';
+import { beginDocPreview, endDocPreview } from './projectdoc/preview';
+import type { ProjectDoc } from './projectdoc/schema';
+import { armDocHistory, cancelDocArm, redoDocHistory, undoDocHistory } from './projectdoc/session';
 
 export interface Snapshot { items: Item[]; walls: Wall[]; settings: ProjectSettings; dimensions: DimensionLine[]; projectName: string }
 
@@ -62,6 +68,10 @@ export interface EditorStore extends Snapshot, UIState {
   createdAt: string;
   customComponents: CustomComponent[];
   past: Snapshot[]; future: Snapshot[];
+  projectDoc: ProjectDoc | null;
+  docPast: HistoryEntry[];
+  docFuture: HistoryEntry[];
+  docPending: boolean;
 
   ui: (patch: Partial<UIState>) => void;
   pushHistory: () => void; undo: () => void; redo: () => void;
@@ -188,31 +198,79 @@ export const useStore = create<EditorStore>()((set, get) => ({
   dimensions: [],
   customComponents: [],
   past: [], future: [],
+  projectDoc: null,
+  docPast: [],
+  docFuture: [],
+  docPending: false,
   ...initialUI,
 
   ui: (patch) => set(patch),
 
-  pushHistory: () => set((s) => ({ past: [...s.past.slice(-49), snapshotOf(s)], future: [], dirty: true })),
-  undo: () => set((s) => {
-    const prev = s.past[s.past.length - 1];
-    if (!prev) return {};
-    return { ...prev, past: s.past.slice(0, -1), future: [snapshotOf(s), ...s.future].slice(0, 50), dirty: true, selectedIds: s.selectedIds.filter((id) => prev.items.some((i) => i.id === id)) };
-  }),
-  redo: () => set((s) => {
-    const next = s.future[0];
-    if (!next) return {};
-    return { ...next, future: s.future.slice(1), past: [...s.past, snapshotOf(s)], dirty: true };
-  }),
+  pushHistory: () => {
+    if (isProjectDocV1Enabled()) { armDocHistory(); return; }
+    set((s) => ({ past: [...s.past.slice(-49), snapshotOf(s)], future: [], dirty: true }));
+  },
+  undo: () => {
+    if (isProjectDocV1Enabled()) { undoDocHistory(); return; }
+    set((s) => {
+      const prev = s.past[s.past.length - 1];
+      if (!prev) return {};
+      return { ...prev, past: s.past.slice(0, -1), future: [snapshotOf(s), ...s.future].slice(0, 50), dirty: true, selectedIds: s.selectedIds.filter((id) => prev.items.some((i) => i.id === id)) };
+    });
+  },
+  redo: () => {
+    if (isProjectDocV1Enabled()) { redoDocHistory(); return; }
+    set((s) => {
+      const next = s.future[0];
+      if (!next) return {};
+      return { ...next, future: s.future.slice(1), past: [...s.past, snapshotOf(s)], dirty: true };
+    });
+  },
 
   setProjectName: (n) => set({ projectName: n, dirty: true }),
-  newProject: (name = 'Proyek Dapur Baru') => set({ projectName: name, createdAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, walls: [], items: [], dimensions: [], past: [], future: [], selectedIds: [], dirty: false, openIds: [] }),
-  loadProject: (data) => set({
-    projectName: data.projectName || 'Proyek', createdAt: data.createdAt || new Date().toISOString(),
-    settings: { ...DEFAULT_SETTINGS, ...data.settings, countertop: { ...DEFAULT_SETTINGS.countertop, ...(data.settings?.countertop ?? {}) }, appearance: { ...DEFAULT_SETTINGS.appearance, ...(data.settings?.appearance ?? {}) }, production: { ...DEFAULT_SETTINGS.production, ...(data.settings?.production ?? {}) } },
-    walls: data.walls ?? [], items: (data.cabinets ?? []).map((i) => ({ ...i, materials: { ...DEFAULT_MATERIALS, ...i.materials }, led: { ...DEFAULT_LED, ...i.led }, config: i.config ?? {} })),
-    dimensions: data.dimensions ?? [], customComponents: data.customComponents?.length ? data.customComponents : get().customComponents,
-    past: [], future: [], selectedIds: [], dirty: false, openIds: [],
-  }),
+  newProject: (name = 'Proyek Dapur Baru') => {
+    cancelDocArm();
+    set({
+      projectName: name, createdAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, walls: [], items: [], dimensions: [],
+      past: [], future: [], selectedIds: [], dirty: false, openIds: [],
+      projectDoc: null, docPast: [], docFuture: [], docPending: false,
+    });
+    if (isProjectDocV1Enabled()) {
+      const snapGizmoCm = Math.max(0.1, get().snapSize / 10);
+      set({ projectDoc: fromProjectData(get().toProjectData(), { snapGizmoCm }) });
+    }
+  },
+  loadProject: (data) => {
+    cancelDocArm();
+    const settings = { ...DEFAULT_SETTINGS, ...data.settings, countertop: { ...DEFAULT_SETTINGS.countertop, ...(data.settings?.countertop ?? {}) }, appearance: { ...DEFAULT_SETTINGS.appearance, ...(data.settings?.appearance ?? {}) }, production: { ...DEFAULT_SETTINGS.production, ...(data.settings?.production ?? {}) } };
+    const items = (data.cabinets ?? []).map((i) => ({ ...i, materials: { ...DEFAULT_MATERIALS, ...i.materials }, led: { ...DEFAULT_LED, ...i.led }, config: i.config ?? {} }));
+    const walls = data.walls ?? [];
+    const dimensions = data.dimensions ?? [];
+    const customComponents = data.customComponents?.length ? data.customComponents : get().customComponents;
+    const projectName = data.projectName || 'Proyek';
+    const createdAt = data.createdAt || new Date().toISOString();
+    const cleared = { past: [] as Snapshot[], future: [] as Snapshot[], selectedIds: [] as string[], dirty: false, openIds: [] as string[], docPast: [] as HistoryEntry[], docFuture: [] as HistoryEntry[], docPending: false };
+    if (!isProjectDocV1Enabled()) {
+      set({ projectName, createdAt, settings, walls, items, dimensions, customComponents, projectDoc: null, ...cleared });
+      return;
+    }
+    const doc = fromProjectData({
+      formatVersion: data.formatVersion, appVersion: data.appVersion, projectName, createdAt, modifiedAt: data.modifiedAt || createdAt,
+      settings, walls, cabinets: items, dimensions, customComponents,
+    }, { snapGizmoCm: Math.max(0.1, get().snapSize / 10) });
+    const projected = toProjectData(doc);
+    set({
+      projectName: projected.projectName,
+      createdAt: projected.createdAt,
+      settings: projected.settings,
+      walls: projected.walls,
+      items: projected.cabinets,
+      dimensions: Array.isArray(projected.dimensions) ? projected.dimensions : [],
+      customComponents: projected.customComponents?.length ? projected.customComponents : customComponents,
+      projectDoc: doc,
+      ...cleared,
+    });
+  },
   toProjectData: () => {
     const s = get();
     return {
@@ -330,7 +388,14 @@ export const useStore = create<EditorStore>()((set, get) => ({
     set({ selectedIds: newIds });
   },
 
-  liveTransform: (id, pos, rotY) => set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, position: pos, rotationY: rotY } : i)) })),
+  liveTransform: (id, pos, rotY) => {
+    beginDocPreview();
+    try {
+      set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, position: pos, rotationY: rotY } : i)) }));
+    } finally {
+      endDocPreview();
+    }
+  },
 
   commitTransform: (id, pos, rotY, scale) => {
     const s = get();

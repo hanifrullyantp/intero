@@ -5,6 +5,7 @@ import type { Item, LayerGrouping } from '../../types';
 import { LABEL_COLORS, WALL_NAMES } from '../../lib/constants';
 import { rowOf } from '../../engine/walls';
 import { thumbnailFor } from './ComponentLibrary';
+import { ProjectStructure } from './ProjectStructure';
 import { toast } from '../ui';
 
 function iconFor(it: Item) {
@@ -138,6 +139,7 @@ export function LayersPanel({ embedded }: { embedded?: boolean }) {
       <div className="px-2 py-1.5"><div className="relative"><Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} /><input className="input pl-7" style={{ height: 28, fontSize: 12 }} placeholder="Filter layer…" value={q} onChange={(e) => setQ(e.target.value)} /></div></div>
       <div className="flex-1 overflow-y-auto px-1.5 pb-2" onDragOver={(e) => { if (drag) e.preventDefault(); }}>
         {groups.length === 0 && <p className="text-[12px] p-3" style={{ color: 'var(--text-tertiary)' }}>Belum ada layer. Tambahkan komponen terlebih dahulu.</p>}
+        <ProjectStructure />
         {groups.map((g) => (
           <div key={g.id} className="mb-1">
             <button type="button" className="flex items-center gap-1.5 w-full px-1.5 h-7 rounded-md text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }} onClick={() => setCollapsed({ ...collapsed, [g.id]: !collapsed[g.id] })}>

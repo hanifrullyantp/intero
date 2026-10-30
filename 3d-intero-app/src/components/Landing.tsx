@@ -7,6 +7,7 @@ import { repackAll } from '../engine/walls';
 import { DEFAULT_LED, DEFAULT_MATERIALS, DEFAULT_SETTINGS, APP_NAME } from '../lib/constants';
 import type { Item, WizardInput } from '../types';
 import { useStore, wallBottomOf, wallHeightOf } from '../store';
+import { getSession } from '../lib/account';
 import { useIsMobile } from './ui';
 
 export const landingApi: { cinematic: ((onSwap: () => void) => void) | null } = { cinematic: null };
@@ -86,7 +87,7 @@ export function Landing() {
   useEffect(() => { ctlRef.current?.resize(); }, [mobile]);
 
   const onCta = () => {
-    if (localStorage.getItem('intero_isLoggedIn') === 'true') window.dispatchEvent(new Event('intero:startEditor'));
+    if (getSession()) window.dispatchEvent(new Event('intero:startEditor'));
     else window.dispatchEvent(new Event('intero:openAuth'));
   };
   const features = [

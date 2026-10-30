@@ -17,9 +17,15 @@ function client(): SupabaseClient {
   return admin;
 }
 
-export async function createShareSupabase(name: string, project: unknown): Promise<{ id: string }> {
+export async function createShareSupabase(
+  name: string,
+  project: unknown,
+  meta?: { app?: string; mode?: "view" | "edit" },
+): Promise<{ id: string }> {
   const id = newShareId();
-  const payload = { app: "Instant 3D", version: 1, project };
+  const payload = meta?.app === "3d-intero"
+    ? { app: "3d-intero", version: 1, mode: meta.mode === "edit" ? "edit" : "view", project }
+    : { app: "Instant 3D", version: 1, project };
   const { error } = await client().from("instant3d_shares").insert({ id, name: name.slice(0, 200), payload });
   if (error) throw new Error(error.message);
   return { id };

@@ -12,7 +12,12 @@ import { ViewControls, StatusBar } from './ViewControls';
 import { Wizard } from './Wizard';
 import { ComponentBuilder } from './ComponentBuilder';
 import { DragNumber, Field, Modal, Select, toast, useIsMobile } from '../ui';
-import { listMyComponents, loadDraft, loadPrices, saveDraft } from '../../lib/persistence';
+import { listMyComponents, loadDraft, loadPrices, loadProjectDocDraft, saveDraft, saveLocalProject, saveProjectDocDraft } from '../../lib/persistence';
+import { toProjectData } from '../../projectdoc/adapter';
+import { isProjectDocV1Enabled } from '../../projectdoc/flag';
+import { docForAutosave } from '../../projectdoc/session';
+import { getActiveProject, getSession } from '../../lib/account';
+import { saveCloudProject } from '../../lib/cloud-projects';
 import { loadCatalog, saveCatalog, PRESET_CATALOG } from '../../lib/catalog';
 import { COLOR_PRESETS } from '../../lib/constants';
 import type { DoorMaterial } from '../../types';
@@ -25,6 +30,7 @@ import { ArDialog, PinPickBanner } from '../xr/ArDialog';
 import { PhotoOverlay } from '../xr/PhotoOverlay';
 import { launchVR } from '../xr/launch';
 import { teamSession } from '../../lib/team-session';
+import { forgetShareUrl } from '../../lib/share-link';
 import { AiAssistant } from './AiAssistant';
 
 export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
@@ -41,10 +47,16 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
     loadPrices().then((p) => { if (p) useStore.getState().ui({ prices: p }); });
     loadCatalog().then((c) => { useStore.getState().ui({ catalog: c }); if (!c.some((x) => x.id === PRESET_CATALOG[0].id)) void saveCatalog(PRESET_CATALOG); });
     if (useStore.getState().shareMode) return;
-    loadDraft().then((d) => {
+    const offerLegacy = () => loadDraft().then((d) => {
       if (d && d.data.cabinets.length) setDraft({ savedAt: d.savedAt, name: d.data.projectName, count: d.data.cabinets.length });
       else if (!useStore.getState().items.length) useStore.getState().ui({ showWizard: true });
     });
+    if (isProjectDocV1Enabled()) {
+      loadProjectDocDraft().then((bundle) => {
+        if (bundle && bundle.doc.items.length) setDraft({ savedAt: bundle.savedAt, name: bundle.doc.meta.nama, count: bundle.doc.items.length });
+        else void offerLegacy();
+      });
+    } else offerLegacy();
   }, []);
   // Peer-to-peer live sync: snapshots stay between browsers on their direct WebRTC data channel.
   useEffect(() => {
@@ -79,7 +91,24 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   // Autosave: debounce 2s on-change + interval 10s
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
-    const save = async () => { const st = useStore.getState(); if (st.shareMode) return; if (!st.items.length && !st.walls.length) return; await saveDraft(st.toProjectData()); st.markSaved(); };
+    const save = async () => {
+      const st = useStore.getState();
+      if (st.shareMode) return;
+      if (!st.items.length && !st.walls.length) return;
+      if (isProjectDocV1Enabled()) {
+        const bundle = docForAutosave();
+        if (bundle) await saveProjectDocDraft(bundle);
+      }
+      const data = useStore.getState().toProjectData();
+      await saveDraft(data);
+      const active = getActiveProject();
+      if (active.localId) { try { await saveLocalProject(active.localId, data); } catch { /* salinan lokal opsional */ } }
+      if (active.cloudId && getSession()) {
+        try { await saveCloudProject({ id: active.cloudId, name: data.projectName, project: data }); }
+        catch { return; }
+      }
+      st.markSaved();
+    };
     const unsub = useStore.subscribe((st, p) => { if (st.items !== p.items || st.walls !== p.walls || st.settings !== p.settings || st.projectName !== p.projectName || st.dimensions !== p.dimensions || st.customComponents !== p.customComponents) { if (t) clearTimeout(t); t = setTimeout(save, 2000); } });
     const iv = setInterval(() => { if (useStore.getState().dirty) save(); }, 10000);
     return () => { unsub(); clearInterval(iv); if (t) clearTimeout(t); };
@@ -148,7 +177,23 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
     window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
   }, []);
 
-  const restoreDraft = async () => { const d = await loadDraft(); if (d) { const st = useStore.getState(); st.loadProject(d.data); st.ui({ resetViewRequest: st.resetViewRequest + 1 }); toast(`Proyek "${d.data.projectName}" dilanjutkan`, 'success'); } setDraft(null); };
+  const restoreDraft = async () => {
+    const st = useStore.getState();
+    if (isProjectDocV1Enabled()) {
+      const bundle = await loadProjectDocDraft();
+      if (bundle) {
+        st.loadProject(toProjectData(bundle.doc));
+        useStore.setState({ projectDoc: bundle.doc, docPast: bundle.past, docFuture: bundle.future, docPending: false });
+        useStore.getState().ui({ resetViewRequest: useStore.getState().resetViewRequest + 1 });
+        toast(`Proyek "${bundle.doc.meta.nama}" dilanjutkan`, 'success');
+        setDraft(null);
+        return;
+      }
+    }
+    const d = await loadDraft();
+    if (d) { st.loadProject(d.data); st.ui({ resetViewRequest: useStore.getState().resetViewRequest + 1 }); toast(`Proyek "${d.data.projectName}" dilanjutkan`, 'success'); }
+    setDraft(null);
+  };
   const inProd = s.appMode === 'production';
   const showLayersFloating = s.showLayers && !s.layersDocked && !isMobile && s.uiMode === 'advanced' && !inProd;
   const showSidebar = !isMobile && s.showProps && !inProd;
@@ -210,12 +255,12 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
 }
 
 function ShareBanner({ mode }: { mode: 'view' | 'edit' }) {
-  const close = () => { history.replaceState(null, '', location.pathname); useStore.getState().ui({ shareMode: null }); toast('Tautan ditutup — proyek menjadi lokal & autosave aktif', 'info'); };
+  const close = () => { forgetShareUrl(); useStore.getState().ui({ shareMode: null }); toast('Tautan ditutup — proyek menjadi lokal & autosave aktif', 'info'); };
   return (
     <div className="share-banner shrink-0" style={{ minHeight: 34, background: mode === 'view' ? 'var(--brand-primary-soft)' : '#FFF7E6', color: mode === 'view' ? 'var(--brand-primary)' : '#92600A', borderBottom: '1px solid var(--border)' }}>
       {mode === 'view' ? <Eye size={14} /> : <Link2 size={14} />}
       <span className="flex-1 truncate">{mode === 'view' ? 'Mode Lihat Saja — Anda membuka tautan bersama. Pengeditan dinonaktifkan.' : 'Dibuka dari tautan bersama (bisa edit). Perubahan tersimpan lokal & tidak mengubah tautan.'}</span>
-      <button className="btn btn-sm btn-secondary" style={{ height: 24, fontSize: 11 }} onClick={() => fileActions.save()}>Simpan .intero</button>
+      <button className="btn btn-sm btn-secondary" style={{ height: 24, fontSize: 11 }} onClick={() => fileActions.download()}>Unduh .intero</button>
       <button className="icon-btn" style={{ width: 24, height: 24 }} onClick={close} data-tip="Tutup tautan"><X size={13} /></button>
     </div>
   );
