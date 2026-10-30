@@ -1,11 +1,6 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/**/*.ts": {
-      "excludeFiles": "{server/**,node_modules/better-sqlite3/**,node_modules/bcrypt/**}"
-    }
-  },
   "headers": [
     {
       "source": "/assets/(.*)",
