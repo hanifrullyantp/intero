@@ -3,7 +3,6 @@
   "outputDirectory": "dist",
   "functions": {
     "api/**/*.ts": {
-      "runtime": "nodejs22.x",
       "excludeFiles": "{server/**,node_modules/better-sqlite3/**,node_modules/bcrypt/**}"
     }
   },
