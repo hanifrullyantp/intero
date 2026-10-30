@@ -1,5 +1,5 @@
-import type { KitchenProjectMeta, KitchenStore } from "./kitchenStore.ts";
-import { SupabaseRestError, supabaseRest, supabaseRestEnabled } from "./supabaseRest.ts";
+import type { KitchenProjectMeta, KitchenStore } from "./kitchenStore.js";
+import { SupabaseRestError, supabaseRest, supabaseRestEnabled } from "./supabaseRest.js";
 
 export function kitchenSupabaseEnabled(): boolean {
   return supabaseRestEnabled();

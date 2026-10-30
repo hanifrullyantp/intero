@@ -1,4 +1,4 @@
-import { supabaseRest, supabaseRestEnabled } from "../../_lib/supabaseRest.ts";
+import { supabaseRest, supabaseRestEnabled } from "../../_lib/supabaseRest.js";
 
 export const config = { maxDuration: 15 };
 

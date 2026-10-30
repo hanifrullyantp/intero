@@ -1,5 +1,5 @@
-import { checkPassword, hashPassword, signKitchenToken } from "./kitchenAuth.ts";
-import { friendlyDbError, type KitchenStore } from "./kitchenStore.ts";
+import { checkPassword, hashPassword, signKitchenToken } from "./kitchenAuth.js";
+import { friendlyDbError, type KitchenStore } from "./kitchenStore.js";
 
 export type ServiceResult = { status: number; body: Record<string, unknown> };
 

@@ -1,5 +1,5 @@
-import { newShareId } from "../../_lib/shareId.ts";
-import { SupabaseRestError, supabaseRest, supabaseRestEnabled } from "../../_lib/supabaseRest.ts";
+import { newShareId } from "../../_lib/shareId.js";
+import { SupabaseRestError, supabaseRest, supabaseRestEnabled } from "../../_lib/supabaseRest.js";
 
 export const config = { maxDuration: 30 };
 

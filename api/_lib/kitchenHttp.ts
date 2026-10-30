@@ -1,7 +1,7 @@
-import { readKitchenToken } from "./kitchenAuth.ts";
-import { kitchenSupabaseEnabled, supabaseKitchenStore } from "./kitchenSupabase.ts";
-import { listAccountProjects, loginAccount, readAccountProject, registerAccount, removeAccountProject, saveAccountProject, type ServiceResult } from "./kitchenService.ts";
-import type { KitchenStore } from "./kitchenStore.ts";
+import { readKitchenToken } from "./kitchenAuth.js";
+import { kitchenSupabaseEnabled, supabaseKitchenStore } from "./kitchenSupabase.js";
+import { listAccountProjects, loginAccount, readAccountProject, registerAccount, removeAccountProject, saveAccountProject, type ServiceResult } from "./kitchenService.js";
+import type { KitchenStore } from "./kitchenStore.js";
 
 export function kitchenResult(result: ServiceResult): Response {
   return Response.json(result.body, { status: result.status });

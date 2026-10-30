@@ -1,4 +1,4 @@
-import { handleAiBody, modelsFromEnv } from "../../3d-intero-app/src/ai/gateway.ts";
+import { handleAiBody, modelsFromEnv } from "../../3d-intero-app/src/ai/gateway.js";
 
 export const config = { maxDuration: 30 };
 

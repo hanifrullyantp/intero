@@ -2,7 +2,7 @@ export const config = { maxDuration: 20 };
 
 export async function POST(request: Request) {
   try {
-    const mod = await import("../../_lib/kitchenHttp.ts");
+    const mod = await import("../../_lib/kitchenHttp.js");
     const store = mod.kitchenStoreOrNull();
     if (!store) return Response.json({ error: "Database akun belum dikonfigurasi" }, { status: 503 });
     return mod.kitchenResult(await mod.handleLogin(store, request));

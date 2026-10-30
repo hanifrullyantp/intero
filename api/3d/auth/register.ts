@@ -1,4 +1,4 @@
-import { handleRegister, kitchenResult, kitchenStoreOrNull } from "../../_lib/kitchenHttp.ts";
+import { handleRegister, kitchenResult, kitchenStoreOrNull } from "../../_lib/kitchenHttp.js";
 
 export const config = { maxDuration: 20 };
 

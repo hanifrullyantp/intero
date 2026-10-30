@@ -1,4 +1,4 @@
-import { handleDelete, handleRead, kitchenResult, kitchenStoreOrNull, kitchenUserId } from "../../_lib/kitchenHttp.ts";
+import { handleDelete, handleRead, kitchenResult, kitchenStoreOrNull, kitchenUserId } from "../../_lib/kitchenHttp.js";
 
 export const config = { maxDuration: 30 };
 
