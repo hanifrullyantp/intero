@@ -22,16 +22,23 @@ async function readError(res: Response): Promise<string> {
   return body.error || 'Permintaan gagal';
 }
 
+async function authBody(res: Response): Promise<{ token?: string; user?: SessionUser; error?: string }> {
+  const text = await res.text();
+  if (!text) return {};
+  try { return JSON.parse(text) as { token?: string; user?: SessionUser; error?: string }; }
+  catch { return { error: text.replace(/\s+/g, ' ').slice(0, 180) }; }
+}
+
 export async function registerAccount(input: { name: string; email: string; password: string }): Promise<{ token: string; user: SessionUser }> {
   const res = await api('/api/3d/auth/register', { method: 'POST', body: JSON.stringify(input) });
-  const body = (await res.json().catch(() => ({}))) as { token?: string; user?: SessionUser; error?: string };
+  const body = await authBody(res);
   if (!res.ok || !body.token || !body.user) throw new Error(body.error || 'Gagal daftar');
   return { token: body.token, user: body.user };
 }
 
 export async function loginAccount(input: { email: string; password: string }): Promise<{ token: string; user: SessionUser }> {
   const res = await api('/api/3d/auth/login', { method: 'POST', body: JSON.stringify(input) });
-  const body = (await res.json().catch(() => ({}))) as { token?: string; user?: SessionUser; error?: string };
+  const body = await authBody(res);
   if (!res.ok || !body.token || !body.user) throw new Error(body.error || 'Gagal masuk');
   return { token: body.token, user: body.user };
 }

@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import { newShareId } from "../../_lib/shareId.ts";
+import { SupabaseRestError, supabaseRest, supabaseRestEnabled } from "../../_lib/supabaseRest.ts";
 
 export const config = { maxDuration: 30 };
 
@@ -10,16 +10,8 @@ function json(data: unknown, status = 200) {
   });
 }
 
-function supabaseAdmin() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
 export async function POST(request: Request) {
-  const sb = supabaseAdmin();
-  if (!sb) {
+  if (!supabaseRestEnabled()) {
     return json({ error: "Share API not configured (Supabase env missing)" }, 503);
   }
   try {
@@ -34,10 +26,14 @@ export async function POST(request: Request) {
     const payload = body.app === "3d-intero"
       ? { app: "3d-intero", version: 1, mode: body.mode === "edit" ? "edit" : "view", project }
       : { app: "Instant 3D", version: 1, project };
-    const { error } = await sb.from("instant3d_shares").insert({ id, name: name.slice(0, 200), payload });
-    if (error) throw new Error(error.message);
+    await supabaseRest("instant3d_shares", {
+      method: "POST",
+      prefer: "return=minimal",
+      body: JSON.stringify({ id, name: name.slice(0, 200), payload }),
+    });
     return json({ id });
-  } catch (e) {
-    return json({ error: (e as Error).message || "Failed to create share" }, 500);
+  } catch (error) {
+    const message = error instanceof SupabaseRestError ? error.message : (error as Error).message;
+    return json({ error: message || "Failed to create share" }, 500);
   }
 }
