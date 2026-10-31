@@ -1,6 +1,8 @@
 # Spesifikasi UX mobile v2 — 3D Intero
 
-Dokumen saja. Tidak mengubah kode sampai ada perintah `setuju`.
+Dokumen desain. Implementasi berjalan di belakang flag `mobile_ux_v2` (default mati).
+
+Sub-tahap 3a (kerangka) sudah masuk kode: bar atas, kontrol kanvas, bar AI, dock, dan panel Ukuran yang belum menulis data. Sheet, Command, dan drawer baru belum.
 
 Dasar: `docs/MOBILE_AUDIT.md`. Editor yang hidup: `3d-intero-app/`. `agents.md` tidak berisi aturan tambahan; pratinjau AI di bawah mengikuti permintaan produk (Terapkan / Batal, kanvas tetap terlihat).
 

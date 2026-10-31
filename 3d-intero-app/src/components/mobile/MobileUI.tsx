@@ -16,7 +16,7 @@ import { launchVR } from '../xr/launch';
 import { useXRCaps } from '../../xr/xr-manager';
 import { DragNumber, Field, Toggle, toast } from '../ui';
 import { timeAgo } from '../../lib/utils';
-import { APP_NAME } from '../../lib/constants';
+import { isMobileUxV2Enabled, setMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
 
 function openToggle() {
   const st = useStore.getState();
@@ -84,7 +84,7 @@ function DItem({ icon, label, onClick, danger, disabled, right }: { icon: ReactN
   return <button className="m-ditem" style={{ color: danger ? 'var(--danger)' : undefined, opacity: disabled ? 0.4 : 1 }} disabled={disabled} onClick={onClick}>{icon}<span className="flex-1 text-left">{label}</span>{right}</button>;
 }
 
-function Drawers() {
+function Drawers({ legacyActions = true }: { legacyActions?: boolean }) {
   const s = useStore(); const caps = useXRCaps();
   const readOnly = s.shareMode === 'view';
   const close = () => s.ui({ mobileDrawer: null });
@@ -123,8 +123,9 @@ function Drawers() {
       <DItem icon={s.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />} label={s.theme === 'dark' ? 'Tema terang' : 'Tema gelap'} onClick={() => s.setTheme(s.theme === 'dark' ? 'light' : 'dark')} />
       <DItem icon={<Keyboard size={17} />} label="Shortcuts & bantuan" onClick={go(() => s.ui({ showShortcuts: true }))} />
       <DItem icon={<HelpCircle size={17} />} label="Tentang & tutorial" onClick={go(() => s.ui({ showAbout: true }))} />
+      <DItem icon={<Smartphone size={17} />} label={isMobileUxV2Enabled() ? 'Kembali ke tampilan lama' : 'Coba tampilan mobile baru'} onClick={go(() => { setMobileUxV2Enabled(!isMobileUxV2Enabled()); window.location.reload(); })} />
     </Drawer>
-    <Drawer side="right" open={s.mobileDrawer === 'right'} onClose={close} title="Aksi cepat">
+    {legacyActions && <Drawer side="right" open={s.mobileDrawer === 'right'} onClose={close} title="Aksi cepat">
       <div className="px-4 py-2 text-[12px] flex items-center gap-1.5" style={{ color: s.dirty ? 'var(--text-tertiary)' : 'var(--brand-primary)' }}>{!s.dirty && <Check size={13} />}{s.dirty ? 'Menyimpan…' : s.lastSavedAt ? `Tersimpan ${timeAgo(s.lastSavedAt)}` : 'Belum tersimpan'}</div>
       <DItem icon={<Save size={17} />} label="Simpan ke akun & perangkat" disabled={readOnly} onClick={go(() => fileActions.save())} />
       <DItem icon={<Download size={17} />} label="Unduh file .intero" onClick={go(() => fileActions.download())} />
@@ -143,9 +144,11 @@ function Drawers() {
         <Toggle label="Lampu LED" checked={s.lightsOn} onChange={() => s.toggleLights()} />
         <Toggle label="Orang beranimasi" checked={s.showPeople} onChange={(v) => s.setShowPeople(v)} />
       </div>
-    </Drawer>
+    </Drawer>}
   </>);
 }
+
+export { Drawers as MobileDrawers };
 
 const VIEWS: { id: ViewMode; label: string }[] = [{ id: 'perspective', label: 'Perspective' }, { id: 'top', label: 'Top (2D)' }, { id: 'front', label: 'Front' }, { id: 'back', label: 'Back' }, { id: 'left', label: 'Left' }, { id: 'right', label: 'Right' }, { id: 'iso', label: 'Isometric' }];
 const SUBS: { id: TopSubMode; label: string }[] = [{ id: 'all', label: 'Semua' }, { id: 'base', label: 'Base Only' }, { id: 'wall', label: 'Wall Only' }, { id: 'split', label: 'Split Stacked' }];

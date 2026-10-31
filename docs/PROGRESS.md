@@ -17,7 +17,7 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 | 10 | Rencana render realistis AI | belum |
 | 11 | Mobile UX redesign | sedang |
 
-Catatan langkah 11: Tahap 1 selesai di `docs/MOBILE_AUDIT.md` (18 temuan, tanpa ubah kode). Tahap 2 spesifikasi di `docs/MOBILE_SPEC.md`, menunggu `setuju` sebelum implementasi. UI lama tetap sampai flag `mobile_ux_v2`.
+Catatan langkah 11: Tahap 1 di `docs/MOBILE_AUDIT.md`. Tahap 2 di `docs/MOBILE_SPEC.md`. Sub-tahap 3a kerangka sudah di kode, flag `mobile_ux_v2` default mati. Nyalakan dengan `localStorage.setItem('mobile_ux_v2','1')` lalu muat ulang, atau lewat menu mobile "Coba tampilan mobile baru". 3b–3d belum.
 
 Catatan langkah 1: aplikasi yang cocok dengan screenshot adalah `3d-intero-app/` (deploy default `3d.intero.id`). Ada pohon kedua `3D Intero/` yang tidak ikut `npm run build`. Detail di `docs/CODEMAP.md`.
 

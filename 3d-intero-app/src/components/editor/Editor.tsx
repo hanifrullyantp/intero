@@ -22,7 +22,9 @@ import { loadCatalog, saveCatalog, PRESET_CATALOG } from '../../lib/catalog';
 import { COLOR_PRESETS } from '../../lib/constants';
 import type { DoorMaterial } from '../../types';
 import { timeAgo } from '../../lib/utils';
-import { MobileChrome, MobileTopbar } from '../mobile/MobileUI';
+import { isMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
+import { MobileChrome, MobileDrawers, MobileTopbar } from '../mobile/MobileUI';
+import { MobileV2Bottom, MobileV2CanvasHud, MobileV2TopBar } from '../mobile/MobileShell';
 import { ProductionMode } from '../production/ProductionMode';
 import { PriceListDialog } from '../production/PriceListDialog';
 import { DimensionPanel } from '../dimensions/DimensionPanel';
@@ -195,6 +197,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
     setDraft(null);
   };
   const inProd = s.appMode === 'production';
+  const mobileV2 = isMobile && isMobileUxV2Enabled();
   const showLayersFloating = s.showLayers && !s.layersDocked && !isMobile && s.uiMode === 'advanced' && !inProd;
   const showSidebar = !isMobile && s.showProps && !inProd;
   const [sidebarW, setSidebarW] = useState(() => { try { return Math.max(260, Math.min(480, JSON.parse(localStorage.getItem('intero_sidebarW') || '320'))); } catch { return 320; } });
@@ -209,19 +212,20 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   const sidebarWRef = useRef(sidebarW); sidebarWRef.current = sidebarW;
 
   return (
-    <div className="flex flex-col h-full theme-transition" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingBottom: isMobile && s.appMode === 'design' ? 64 : 0, maxWidth: '100vw', overflowX: 'hidden' }}>
-      {isMobile && <MobileTopbar />}
+    <div className={`flex flex-col h-full theme-transition${mobileV2 ? ' mv2' : ''}`} style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingBottom: isMobile && !mobileV2 && s.appMode === 'design' ? 64 : 0, maxWidth: '100vw', overflowX: 'hidden' }}>
+      {mobileV2 ? <MobileV2TopBar /> : isMobile && <MobileTopbar />}
       <TopToolbar onBackToLanding={onBackToLanding} headless={isMobile} />
       {s.shareMode && <ShareBanner mode={s.shareMode} />}
-      {!inProd && <ContextBar />}
-      <div className="flex-1 flex min-h-0 relative">
+      {!inProd && !mobileV2 && <ContextBar />}
+      <div className={`flex-1 flex min-h-0 relative${mobileV2 ? ' mv2-stage' : ''}`}>
         <div className="flex-1 relative min-w-0">
           <Viewport />
           {!inProd && <LeftToolbar />}
           {s.showLibrary && !isMobile && !inProd && <div className="float-panel" style={{ left: 68, top: 12, bottom: 12 }}><ComponentLibrary /></div>}
           {showLayersFloating && <FloatingLayers />}
-          <ViewControls />
+          {!mobileV2 && <ViewControls />}
           <DimensionPanel />
+          {mobileV2 && !inProd && <MobileV2CanvasHud />}
         </div>
         {showSidebar && (
           <aside className="relative flex flex-col shrink-0 theme-transition" style={{ width: sidebarW, background: 'var(--bg-panel)', borderLeft: '1px solid var(--border)' }}>
@@ -237,7 +241,9 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
         {s.appMode === 'production' && <ProductionMode />}
       </div>
       {!isMobile && <StatusBar />}
-      {isMobile && <MobileChrome />}
+      {mobileV2 && !inProd && <MobileV2Bottom />}
+      {mobileV2 && <MobileDrawers legacyActions={false} />}
+      {isMobile && !mobileV2 && <MobileChrome />}
       {s.showWizard && <Wizard onClose={() => s.ui({ showWizard: false })} />}
       <AiAssistant open={s.showAiChat} onClose={() => s.ui({ showAiChat: false })} />
       <ArDialog /><PinPickBanner /><PhotoOverlay /><PriceListDialog />
