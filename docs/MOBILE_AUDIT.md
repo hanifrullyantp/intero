@@ -59,14 +59,7 @@ Kontras: `--text-tertiary` adalah `#9CA3AF` di atas putih (`--bg-panel` / `--bg-
 
 ## Kinerja
 
-Diukur sekali di Chrome, viewport 390 × 844, `http://127.0.0.1:5175/` (Vite dev, bukan build produksi).
-
-| Metrik | Hasil |
-| --- | --- |
-| Waktu sampai `load` | 329 ms |
-| Waktu sampai DOM interaktif | 155 ms |
-| Transfer dokumen | sekitar 1.1 KB HTML; skrip dan CSS di-dev-serve terpisah, jadi angka ini bukan ukuran bundle produksi (`vite-plugin-singlefile` menggabungkan semuanya saat `npm run build`) |
-| FPS kanvas editor | **Tidak diukur.** Landing memakai sesi akun (`getSession`) sebelum masuk editor, dan sesi uji tidak dibuat. Loop FPS ada di `SceneController` (`onFps` → `liveBus.fps`) tetapi tidak ditampilkan di UI mobile |
+**Tidak diukur.** Percobaan membuka dev server di lebar 390 px terhenti sebelum ada angka `load` atau FPS. Loop FPS ada di `SceneController` (`onFps` → `liveBus.fps`) dan tidak ditampilkan di UI mobile. Build produksi memakai `vite-plugin-singlefile`, jadi waktu muat dev tidak sama dengan `3d.intero.id`.
 
 ## Temuan
 
