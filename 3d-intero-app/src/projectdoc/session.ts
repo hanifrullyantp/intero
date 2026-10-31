@@ -4,7 +4,9 @@ import { fromProjectData, toProjectData } from './adapter';
 import { diffDoc } from './diff';
 import { isProjectDocV1Enabled } from './flag';
 import { pushLog, redoLog, undoLog, type CommandLog, type HistoryEntry } from './history';
-import { isDocPreview } from './preview';
+import { beginDocPreview, endDocPreview, isDocPreview } from './preview';
+import { applyCommand } from './apply';
+import type { Command } from './commands';
 import type { ProjectDoc } from './schema';
 
 let armed: { before: ProjectDoc } | null = null;
@@ -128,4 +130,60 @@ export function canUndo(s: { past: { length: number }; docPast: { length: number
 
 export function canRedo(s: { future: { length: number }; docFuture: { length: number } }): boolean {
   return isProjectDocV1Enabled() ? s.docFuture.length > 0 : s.future.length > 0;
+}
+
+export function captureDoc(): ProjectDoc {
+  const s = useStore.getState();
+  if (isProjectDocV1Enabled() && s.projectDoc && !s.docPending) return structuredClone(s.projectDoc);
+  return liveDoc();
+}
+
+function paintDoc(doc: ProjectDoc, dirty = true) {
+  const projected = toProjectData(doc);
+  const s = useStore.getState();
+  useStore.setState({
+    items: projected.cabinets,
+    walls: projected.walls,
+    settings: projected.settings,
+    dirty,
+    selectedIds: s.selectedIds.filter((id) => projected.cabinets.some((item) => item.id === id)),
+  });
+}
+
+/** Pratinjau di kanvas. Belum masuk undo. */
+export function previewDockCommand(base: ProjectDoc, cmd: Command): string[] {
+  const result = applyCommand(base, cmd);
+  if (result.violations.length) return result.violations;
+  beginDocPreview();
+  paintDoc(result.doc);
+  return [];
+}
+
+export function cancelDockPreview(base: ProjectDoc, dirty = false) {
+  endDocPreview();
+  paintDoc(base, dirty);
+}
+
+/** Satu perintah, satu langkah undo. Flag ProjectDoc tetap terpisah. */
+export function commitDockCommand(base: ProjectDoc, cmd: Command): string[] {
+  const result = applyCommand(base, cmd);
+  endDocPreview();
+  if (result.violations.length) {
+    paintDoc(base);
+    return result.violations;
+  }
+  if (isProjectDocV1Enabled()) {
+    const s = useStore.getState();
+    const past = pushLog({ past: s.docPast, future: s.docFuture }, { commands: [cmd], before: base, after: result.doc }).past;
+    writeDoc(result.doc, { past, future: [] }, false);
+    return [];
+  }
+  const before = toProjectData(base);
+  const s = useStore.getState();
+  useStore.setState({
+    past: [...s.past.slice(-49), { items: before.cabinets, walls: before.walls, settings: before.settings, dimensions: s.dimensions, projectName: before.projectName }],
+    future: [],
+  });
+  paintDoc(result.doc);
+  return [];
 }

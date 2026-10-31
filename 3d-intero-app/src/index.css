@@ -445,6 +445,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 .mv2-apply { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mv2-apply button { background: var(--bg-secondary); border: 1px solid var(--border); }
 .mv2-apply button.primary { background: var(--brand-primary); color: #fff; border-color: transparent; }
+.mv2-note { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.mv2-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.mv2-swatches button { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; border: 1px solid var(--border); padding: 0; }
+.mv2-swatches button.on { box-shadow: 0 0 0 2px var(--brand-primary); }
 .mv2:not(.mv2-sheet-full) .mv2-stage { min-height: 50%; }
 .mv2.mv2-sheet-full .mv2-stage { min-height: 0; }
 .mv2-bottom.sheet-peek, .mv2-bottom.sheet-half, .mv2-bottom.sheet-full { max-height: var(--mv2-sheet, 50%); height: var(--mv2-sheet, 50%); min-height: 0; overflow: hidden; }

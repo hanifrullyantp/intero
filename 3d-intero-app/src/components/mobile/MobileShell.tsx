@@ -7,6 +7,7 @@ import { fileActions } from '../editor/file-actions';
 import { sceneRef } from '../editor/Viewport';
 import { ComponentLibrary } from '../editor/ComponentLibrary';
 import { LayersPanel } from '../editor/LayersPanel';
+import { DockToolPanel, type DockTool } from './MobileTools';
 import { toast } from '../ui';
 
 const PRESETS: { id: ViewMode; label: string }[] = [
@@ -132,68 +133,10 @@ export function MobileV2CanvasHud() {
   );
 }
 
-function cmOf(mm: number) {
-  return Math.max(1, Math.round(mm / 10));
-}
-
-function SizePanel({ onClose }: { onClose: () => void }) {
-  const s = useStore();
-  const sel = s.items.find((i) => i.id === s.selectedIds[0]);
-  const [draft, setDraft] = useState(() => ({
-    w: cmOf(sel?.dims.w ?? 600),
-    h: cmOf(sel?.dims.h ?? 850),
-    d: cmOf(sel?.dims.d ?? 560),
-  }));
-  const selId = sel?.id;
-  useEffect(() => {
-    if (!selId) return;
-    const item = useStore.getState().items.find((i) => i.id === selId);
-    if (!item) return;
-    setDraft({ w: cmOf(item.dims.w), h: cmOf(item.dims.h), d: cmOf(item.dims.d) });
-  }, [selId]);
-  const setKey = (key: 'w' | 'h' | 'd', value: number) => setDraft((d) => ({ ...d, [key]: Math.max(1, Math.round(value)) }));
-  const apply = () => {
-    toast('Ukuran belum ditulis. Penerapan menyusul.', 'info');
-    onClose();
-  };
-  return (
-    <section className="mv2-tool" data-mv2="ukuran" aria-label="Ukuran">
-      <div className="mv2-tool-head">
-        <b>Ukuran</b>
-        <button type="button" className="mv2-hit" aria-label="Tutup ukuran" onClick={onClose}><X size={20} /></button>
-      </div>
-      <Stepper label="Lebar" value={draft.w} onChange={(n) => setKey('w', n)} />
-      <input className="mv2-slider" type="range" min={10} max={300} value={draft.w} aria-label="Geser lebar" onChange={(e) => setKey('w', Number(e.target.value))} />
-      <Stepper label="Tinggi" value={draft.h} onChange={(n) => setKey('h', n)} />
-      <Stepper label="Dalam" value={draft.d} onChange={(n) => setKey('d', n)} />
-      <div className="mv2-apply">
-        <button type="button" onClick={onClose}>Batal</button>
-        <button type="button" className="primary" onClick={apply}>Terapkan</button>
-      </div>
-    </section>
-  );
-}
-
-function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
-  return (
-    <div className="mv2-step">
-      <span>{label}</span>
-      <button type="button" aria-label={`Kurangi ${label}`} onClick={() => onChange(value - 1)}>−</button>
-      <input inputMode="numeric" aria-label={label} value={value} onChange={(e) => {
-        const n = Number(e.target.value);
-        if (e.target.value === '') return;
-        if (Number.isFinite(n)) onChange(n);
-      }} />
-      <span className="unit">cm</span>
-      <button type="button" aria-label={`Tambah ${label}`} onClick={() => onChange(value + 1)}>+</button>
-    </div>
-  );
-}
-
 export function MobileV2Bottom() {
   const s = useStore();
   const keyboard = useKeyboardOffset();
-  const [tool, setTool] = useState<null | 'ukuran'>(null);
+  const [tool, setTool] = useState<DockTool | null>(null);
   const [history, setHistory] = useState(false);
   const [prompt, setPrompt] = useState('');
   const hasSelection = s.selectedIds.length > 0;
@@ -207,7 +150,12 @@ export function MobileV2Bottom() {
   }, [hasSelection]);
 
   const onDock = (id: DockId) => {
-    if (id === 'ukuran') { setHistory(false); s.ui({ mobileSheet: null }); setTool('ukuran'); return; }
+    if (id === 'ukuran' || id === 'material' || id === 'geser' || id === 'putar' || id === 'duplikat' || id === 'hapus') {
+      setHistory(false);
+      s.ui({ mobileSheet: null });
+      setTool(id);
+      return;
+    }
     if (id === 'ai') { setTool(null); s.ui({ mobileSheet: null }); setHistory((v) => !v); return; }
     if (id === 'komponen') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'parts' ? null : 'parts' }); return; }
     if (id === 'lapisan') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'layers' ? null : 'layers' }); return; }
@@ -233,7 +181,7 @@ export function MobileV2Bottom() {
   const framed = useRef<string | null>(null);
   useEffect(() => {
     const root = document.querySelector('.mv2');
-    const open = sheet !== null && tool !== 'ukuran';
+    const open = sheet !== null && !tool;
     if (root instanceof HTMLElement) {
       root.classList.toggle('mv2-sheet-full', open && snap === 'full');
       if (open) root.style.setProperty('--mv2-sheet', snap === 'peek' ? '25%' : snap === 'full' ? '90%' : '50%');
@@ -258,8 +206,8 @@ export function MobileV2Bottom() {
   };
 
   return (
-    <div className={`mv2-bottom${sheet && tool !== 'ukuran' ? ` sheet-${snap}` : ''}`} data-mv2="bottom" style={{ transform: keyboard ? `translateY(-${keyboard}px)` : undefined }}>
-      {tool === 'ukuran' ? <SizePanel onClose={() => setTool(null)} /> : (<>
+    <div className={`mv2-bottom${sheet && !tool ? ` sheet-${snap}` : ''}`} data-mv2="bottom" style={{ transform: keyboard ? `translateY(-${keyboard}px)` : undefined }}>
+      {tool ? <DockToolPanel key={tool} tool={tool} ids={s.selectedIds} onClose={() => setTool(null)} /> : (<>
         {hasSelection && !sheet && (
           <div className="mv2-chip" data-mv2="chip">
             <span>{chip}</span>
