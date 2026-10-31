@@ -449,6 +449,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 .mv2-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .mv2-swatches button { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; border: 1px solid var(--border); padding: 0; }
 .mv2-swatches button.on { box-shadow: 0 0 0 2px var(--brand-primary); }
+.mv2-sec { margin: 8px 16px 2px; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.mv2-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--text-primary); font-size: 14px; text-align: left; }
+.mv2-row small { color: var(--text-secondary); font-size: 12px; }
+.mv2-row b { margin-left: auto; font-size: 12px; color: var(--text-secondary); }
+.mv2-row:disabled { opacity: 0.45; }
+.mv2-hint { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 30; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--bg-panel); border: 1px solid var(--border); box-shadow: var(--shadow-md); }
+.mv2-hint p { margin: 0; flex: 1; font-size: 12px; color: var(--text-secondary); }
+.mv2-hint button { min-width: 44px; min-height: 44px; border: 0; border-radius: 10px; background: var(--brand-primary); color: #fff; font-size: 13px; font-weight: 700; }
 .mv2:not(.mv2-sheet-full) .mv2-stage { min-height: 50%; }
 .mv2.mv2-sheet-full .mv2-stage { min-height: 0; }
 .mv2-bottom.sheet-peek, .mv2-bottom.sheet-half, .mv2-bottom.sheet-full { max-height: var(--mv2-sheet, 50%); height: var(--mv2-sheet, 50%); min-height: 0; overflow: hidden; }

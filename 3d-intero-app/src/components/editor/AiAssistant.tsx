@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, Check, RotateCcw, Send, Sparkles, Wand2, X } from 'lucide-react';
 import { applyGatewayCommands } from '../../ai/client';
+import { contextChips } from '../../ai/context';
 import { executeAiWithLlmFallback } from '../../engine/ai-assistant';
 import type { Command } from '../../projectdoc/commands';
 import { canUndo } from '../../projectdoc/session';
@@ -12,6 +13,7 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   text: string;
   actions?: string[];
+  chips?: string[];
   tier?: string;
   lines?: string[];
   violations?: string[];
@@ -36,7 +38,7 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Halo! Saya Asisten AI Desain 3D Intero. Perintah yang sudah dikenal (warna, tinggi, cornice, handle, LED) langsung mengubah model. Perintah lain menampilkan pratinjau; tekan Terapkan untuk memasukkannya ke desain.',
+      text: 'Halo! Saya Asisten AI Desain 3D Intero. Klik kabinet di kanvas agar menjadi konteks. Perintah yang sudah dikenal langsung mengubah model. Perintah lain menampilkan pratinjau; tekan Terapkan untuk memasukkannya.',
     },
   ]);
   const listRef = useRef<HTMLDivElement>(null);
@@ -47,10 +49,12 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
 
   if (!open) return null;
 
+  const chips = contextChips(s.items, s.selectedIds);
   const sendPrompt = async (promptText: string) => {
     const q = promptText.trim();
     if (!q || busy) return;
-    const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: 'user', text: q };
+    const sent = contextChips(useStore.getState().items, useStore.getState().selectedIds);
+    const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: 'user', text: q, chips: sent.map((chip) => chip.label) };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setBusy(true);
@@ -163,6 +167,7 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
                 {m.role === 'assistant' ? <><Bot size={12} /> 3D Intero AI</> : 'Anda'}
               </div>
               <div>{m.text.replace(/\*\*(.*?)\*\*/g, '$1')}</div>
+              {!!m.chips?.length && <div className="mt-1 text-[11px] opacity-80">Konteks: {m.chips.join(', ')}</div>}
               {m.actions && m.actions.length > 0 && (
                 <div className="mt-2 pt-2 flex flex-col gap-1" style={{ borderTop: '1px solid var(--border)' }}>
                   {m.actions.map((act, idx) => (
@@ -198,6 +203,22 @@ export function AiAssistant({ open, onClose }: { open: boolean; onClose: () => v
               )}
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="px-3 py-2 flex items-center gap-1.5 flex-wrap shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+        {chips.length === 0 ? (
+          <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Klik kabinet di kanvas untuk menjadikannya konteks.</span>
+        ) : chips.map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            className="badge"
+            aria-label={`Lepas konteks ${chip.label}`}
+            onClick={() => s.setSelection(s.selectedIds.filter((id) => id !== chip.id))}
+          >
+            {chip.label} <X size={11} />
+          </button>
         ))}
       </div>
 

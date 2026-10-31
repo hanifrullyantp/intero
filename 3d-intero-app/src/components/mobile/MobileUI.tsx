@@ -17,6 +17,7 @@ import { useXRCaps } from '../../xr/xr-manager';
 import { DragNumber, Field, Toggle, toast } from '../ui';
 import { timeAgo } from '../../lib/utils';
 import { isMobileUxV2Enabled, setMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
+import { MobileMenuBody, MobileMenuHeader } from './MobileMenu';
 
 function openToggle() {
   const st = useStore.getState();
@@ -70,11 +71,11 @@ export function MobileTopbar() {
   );
 }
 
-function Drawer({ side, open, onClose, title, children }: { side: 'left' | 'right'; open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+function Drawer({ side, open, onClose, title, header, children }: { side: 'left' | 'right'; open: boolean; onClose: () => void; title: string; header?: ReactNode; children: ReactNode }) {
   return (<>
     <div className={`m-backdrop ${open ? 'open' : ''}`} onClick={onClose} />
     <aside className={`m-drawer ${side} ${open ? 'open' : ''}`} aria-hidden={!open}>
-      <div className="flex items-center gap-2 px-4 shrink-0" style={{ height: 56, borderBottom: '1px solid var(--border)' }}><span className="font-bold text-[15px] flex-1" style={{ fontFamily: 'var(--font-heading)' }}>{title}</span><button className="icon-btn" onClick={onClose} aria-label="Tutup"><X size={18} /></button></div>
+      {header ?? <div className="flex items-center gap-2 px-4 shrink-0" style={{ height: 56, borderBottom: '1px solid var(--border)' }}><span className="font-bold text-[15px] flex-1" style={{ fontFamily: 'var(--font-heading)' }}>{title}</span><button className="icon-btn" onClick={onClose} aria-label="Tutup"><X size={18} /></button></div>}
       <div className="flex-1 overflow-y-auto py-2">{children}</div>
     </aside>
   </>);
@@ -90,6 +91,11 @@ function Drawers({ legacyActions = true }: { legacyActions?: boolean }) {
   const close = () => s.ui({ mobileDrawer: null });
   const go = (fn: () => void) => () => { close(); fn(); };
   return (<>
+    {!legacyActions ? (
+      <Drawer side="left" open={s.mobileDrawer === 'left'} onClose={close} title="" header={<MobileMenuHeader onClose={close} />}>
+        <MobileMenuBody onClose={close} />
+      </Drawer>
+    ) : (
     <Drawer side="left" open={s.mobileDrawer === 'left'} onClose={close} title={APP_NAME}>
       <Sec>File</Sec>
       <DItem icon={<FilePlus2 size={17} />} label="Baru (Magic Generator)" disabled={readOnly} onClick={go(() => fileActions.newProject())} />
@@ -125,6 +131,7 @@ function Drawers({ legacyActions = true }: { legacyActions?: boolean }) {
       <DItem icon={<HelpCircle size={17} />} label="Tentang & tutorial" onClick={go(() => s.ui({ showAbout: true }))} />
       <DItem icon={<Smartphone size={17} />} label={isMobileUxV2Enabled() ? 'Kembali ke tampilan lama' : 'Coba tampilan mobile baru'} onClick={go(() => { setMobileUxV2Enabled(!isMobileUxV2Enabled()); window.location.reload(); })} />
     </Drawer>
+    )}
     {legacyActions && <Drawer side="right" open={s.mobileDrawer === 'right'} onClose={close} title="Aksi cepat">
       <div className="px-4 py-2 text-[12px] flex items-center gap-1.5" style={{ color: s.dirty ? 'var(--text-tertiary)' : 'var(--brand-primary)' }}>{!s.dirty && <Check size={13} />}{s.dirty ? 'Menyimpan…' : s.lastSavedAt ? `Tersimpan ${timeAgo(s.lastSavedAt)}` : 'Belum tersimpan'}</div>
       <DItem icon={<Save size={17} />} label="Simpan ke akun & perangkat" disabled={readOnly} onClick={go(() => fileActions.save())} />

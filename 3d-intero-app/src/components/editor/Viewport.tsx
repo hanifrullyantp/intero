@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Settings2, Trash2 } from 'lucide-react';
-import { sceneSource } from '../../projectdoc/session';
+import { sceneSource, captureDoc, commitDockCommand } from '../../projectdoc/session';
+import { isMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
 import { SceneController } from '../../three/SceneController';
 import { useStore } from '../../store';
 import type { V3 } from '../../types';
@@ -28,6 +29,8 @@ export function Viewport() {
   const down = useRef<{ x: number; y: number; t: number; shift: boolean; boxSel: boolean; pointerType: string; gizmo: boolean } | null>(null);
   const lastMove = useRef(0);
   const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTap = useRef<{ id: string; t: number } | null>(null);
+  const dragMove = useRef<{ id: string; base: ReturnType<typeof captureDoc>; moved: boolean } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -159,7 +162,18 @@ export function Viewport() {
     if (boxSel) { ctl.setControlsEnabled(false); setBox({ x1: e.clientX, y1: e.clientY, x2: e.clientX, y2: e.clientY }); }
     if (e.pointerType === 'touch') {
       const hit = ctl.raycastItem(e.clientX, e.clientY);
-      if (hit) {
+      if (hit && isMobileUxV2Enabled() && useStore.getState().uiMode === 'advanced') {
+        longPress.current = setTimeout(() => {
+          const st = useStore.getState();
+          const item = st.items.find((i) => i.id === hit.id);
+          if (!item || item.locked || st.shareMode === 'view') return;
+          if (item.wallId) { toast('Kabinet di dinding digeser lewat alat Geser.', 'info'); return; }
+          st.setSelection([hit.id]);
+          dragMove.current = { id: hit.id, base: captureDoc(), moved: false };
+          ctl.setControlsEnabled(false);
+          navigator.vibrate?.(40);
+        }, 450);
+      } else if (hit && !isMobileUxV2Enabled()) {
         longPress.current = setTimeout(() => {
           if (!down.current) return;
           navigator.vibrate?.(50);
@@ -173,7 +187,16 @@ export function Viewport() {
   const onPointerMove = (e: React.PointerEvent) => {
     const ctl = sceneRef.current; if (!ctl) return;
     const d = down.current;
-    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8 && longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
+    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8 && longPress.current && !dragMove.current) { clearTimeout(longPress.current); longPress.current = null; }
+    if (dragMove.current) {
+      const p = ctl.raycastPoint(e.clientX, e.clientY);
+      const it = useStore.getState().items.find((i) => i.id === dragMove.current?.id);
+      if (p && it) {
+        dragMove.current.moved = true;
+        useStore.getState().liveTransform(it.id, { x: p.x, y: it.position.y, z: p.z }, it.rotationY);
+      }
+      return;
+    }
     if (d?.boxSel) setBox({ x1: d.x, y1: d.y, x2: e.clientX, y2: e.clientY });
     const s = useStore.getState();
     const now = performance.now();
@@ -187,6 +210,20 @@ export function Viewport() {
   const onPointerUp = (e: React.PointerEvent) => {
     const ctl = sceneRef.current; if (!ctl) return;
     if (longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
+    if (dragMove.current) {
+      const drag = dragMove.current;
+      dragMove.current = null;
+      ctl.setControlsEnabled(true);
+      const it = useStore.getState().items.find((i) => i.id === drag.id);
+      if (it && drag.moved && useStore.getState().shareMode !== 'view') {
+        const errors = commitDockCommand(drag.base, { type: 'move_item', targetIds: [drag.id], positionCm: { x: it.position.x / 10, y: it.position.y / 10, z: it.position.z / 10 } });
+        if (errors[0]) toast(errors[0], 'error');
+      } else {
+        const src = drag.base.items.find((i) => i.id === drag.id);
+        if (src) useStore.getState().liveTransform(drag.id, { x: src.positionCm.x * 10, y: src.positionCm.y * 10, z: src.positionCm.z * 10 }, src.rotationY);
+      }
+      return;
+    }
     const d = down.current; down.current = null;
     if (!d) return;
     const s = useStore.getState();
@@ -215,6 +252,13 @@ export function Viewport() {
     switch (s.tool) {
       case 'select': case 'orbit': case 'move': case 'rotate': case 'scale': case 'hand': {
         if (s.tool === 'hand') return;
+        if (isMobileUxV2Enabled() && item && lastTap.current?.id === item.id && performance.now() - lastTap.current.t < 320) {
+          s.setSelection([item.id]);
+          s.ui({ focusRequest: s.focusRequest + 1 });
+          lastTap.current = null;
+          return;
+        }
+        lastTap.current = item ? { id: item.id, t: performance.now() } : null;
         if (item && !item.locked) {
           if (e.shiftKey || e.ctrlKey || e.metaKey) s.toggleSelect(item.id);
           else s.setSelection([item.id]);
@@ -241,7 +285,7 @@ export function Viewport() {
         const need = s.tool === 'protractor' ? 3 : 2;
         if (measurePts.current.length >= need) {
           const [a, b, c] = measurePts.current;
-          if (s.tool === 'tape') { ctl.addMeasure(a, b); toast(`Jarak: ${Math.round(Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z))} mm`, 'info'); }
+          if (s.tool === 'tape') { ctl.addMeasure(a, b); toast(`Jarak: ${Math.round(Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z) / 10)} cm`, 'info'); }
           else if (s.tool === 'dimension') { if (readOnly) { measurePts.current = []; ctl.clearPreview(); return; } s.addDimension(a, b); toast('Dimension line ditambahkan (ikut tersimpan & export)', 'success'); }
           else ctl.addAngle(a, b, c);
           measurePts.current = []; ctl.clearPreview();

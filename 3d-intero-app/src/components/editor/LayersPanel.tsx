@@ -49,7 +49,7 @@ export function LayersPanel({ embedded, sheet }: { embedded?: boolean; sheet?: b
     }
     if (grouping === 'type') {
       const map = new Map<string, Item[]>();
-      for (const i of filt) { const k = rowOf({ ...i, wallId: i.wallId ?? 'x' }); const key = k === 'tall' ? 'Tall & Appliance' : k === 'wall' ? 'Wall' : k === 'base' ? 'Base' : 'Bebas'; map.set(key, [...(map.get(key) ?? []), i]); }
+      for (const i of filt) { const k = rowOf({ ...i, wallId: i.wallId ?? 'x' }); const key = k === 'tall' ? 'Tinggi dan perabot' : k === 'wall' ? 'Kabinet atas' : k === 'base' ? 'Kabinet bawah' : 'Bebas'; map.set(key, [...(map.get(key) ?? []), i]); }
       return [...map.entries()].map(([k, items]) => ({ id: k, name: k, items: items.sort((a, b) => a.name.localeCompare(b.name)), reorderable: false }));
     }
     const map = new Map<string, Item[]>();
@@ -160,16 +160,16 @@ export function LayersPanel({ embedded, sheet }: { embedded?: boolean; sheet?: b
       {ctx && (<>
         <div className="fixed inset-0 z-[600]" onPointerDown={() => setCtx(null)} onContextMenu={(e) => { e.preventDefault(); setCtx(null); }} />
         <div className="menu" style={{ position: 'fixed', left: Math.min(ctx.x, window.innerWidth - 230), top: Math.min(ctx.y, window.innerHeight - 330), zIndex: 610 }}>
-          <button className="menu-item" onClick={() => { setRenaming(ctx.id); setCtx(null); }}>Rename</button>
-          <button className="menu-item" onClick={() => { s.duplicateItems([ctx.id]); setCtx(null); }}>Duplicate</button>
-          <button className="menu-item" onClick={() => { solo(ctx.id); setCtx(null); }}>Hide All Others (Solo)</button>
-          <button className="menu-item" onClick={() => { s.patchItems(s.items.map((i) => i.id), { visible: true }); setCtx(null); }}>Show All</button>
+          <button className="menu-item" onClick={() => { setRenaming(ctx.id); setCtx(null); }}>Ganti nama</button>
+          <button className="menu-item" onClick={() => { s.duplicateItems([ctx.id]); setCtx(null); }}>Duplikat</button>
+          <button className="menu-item" onClick={() => { solo(ctx.id); setCtx(null); }}>Sembunyikan yang lain</button>
+          <button className="menu-item" onClick={() => { s.patchItems(s.items.map((i) => i.id), { visible: true }); setCtx(null); }}>Tampilkan semua</button>
           <button className="menu-item" onClick={() => { const it = s.items.find((i) => i.id === ctx.id); if (it) { s.ui({ showBuilder: true }); (window as unknown as { __interoConvert?: Item }).__interoConvert = it; } setCtx(null); }}>Convert to Component</button>
           <button className="menu-item" onClick={() => { const it = s.items.find((i) => i.id === ctx.id); if (it) { const blob = new Blob([JSON.stringify({ formatVersion: '1.0', appVersion: '3D Intero 1.0', projectName: it.name, createdAt: it.createdAt, modifiedAt: new Date().toISOString(), settings: s.settings, walls: [], cabinets: [{ ...it, wallId: null }], dimensions: [], customComponents: [] }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${it.name}.intero`; a.click(); toast('Objek diekspor sebagai .intero', 'success'); } setCtx(null); }}>Export Selected (.intero)</button>
           <div className="menu-sep" />
           <div className="px-3 py-1.5 flex items-center gap-1.5"><span className="text-[11px] mr-1" style={{ color: 'var(--text-tertiary)' }}>Label</span>{LABEL_COLORS.map((c) => <button key={c} type="button" className="w-4 h-4 rounded-full" style={{ background: c, outline: s.items.find((i) => i.id === ctx.id)?.colorLabel === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: 1 }} onClick={() => { s.patchItem(ctx.id, { colorLabel: c }); setCtx(null); }} />)}<button type="button" className="w-4 h-4 rounded-full border" style={{ borderColor: 'var(--border)' }} onClick={() => { s.patchItem(ctx.id, { colorLabel: null }); setCtx(null); }} title="Hapus label" /></div>
           <div className="menu-sep" />
-          <button className="menu-item danger" onClick={() => { s.removeItems([ctx.id]); setCtx(null); }}>Delete</button>
+          <button className="menu-item danger" onClick={() => { s.removeItems([ctx.id]); setCtx(null); }}>Hapus</button>
         </div>
       </>)}
     </div>

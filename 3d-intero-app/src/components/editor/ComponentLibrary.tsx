@@ -126,7 +126,7 @@ export function ComponentLibrary({ embedded }: { embedded?: boolean }) {
         {!embedded && <button type="button" className="icon-btn" onClick={() => s.ui({ showLibrary: false })} aria-label="Tutup"><X size={16} /></button>}
       </div>
       <div className="px-3"><div className="seg w-full">
-        <button type="button" className={`flex-1 ${tab === 'builtin' ? 'active' : ''}`} onClick={() => setTab('builtin')}>Built-in</button>
+        <button type="button" className={`flex-1 ${tab === 'builtin' ? 'active' : ''}`} onClick={() => setTab('builtin')}>Bawaan</button>
         <button type="button" className={`flex-1 ${tab === 'mine' ? 'active' : ''}`} onClick={() => setTab('mine')}>Kabinet Saya</button>
         <button type="button" className={`flex-1 ${tab === 'community' ? 'active' : ''}`} onClick={() => setTab('community')}>Komunitas</button>
       </div></div>

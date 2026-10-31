@@ -3,7 +3,8 @@ import { ArrowLeft, ArrowRight, Check, Sparkles, Wand2, X } from 'lucide-react';
 import { useStore } from '../../store';
 import type { CountertopType, DoorMaterial, HandleType, KitchenShape, WizardAppliance, WizardInput } from '../../types';
 import { COUNTERTOP_TYPES, HANDLE_TYPES, STYLE_PRESETS } from '../../lib/constants';
-import { generateLayout, islandCenter } from '../../engine/layout-generator';
+import { commitGeneratedLayout } from '../../engine/commit-layout';
+import { islandCenter } from '../../engine/layout-generator';
 import { makeRoomWalls, nearestWall, offsetOnWall, wallVec } from '../../engine/walls';
 import { ColorPicker, Field, Modal, Select, Toggle, toast } from '../ui';
 
@@ -41,15 +42,8 @@ export function Wizard({ onClose }: { onClose: () => void }) {
     const msgs = ['Menghitung layout...', 'Menempatkan appliance...', 'Mengisi base cabinet...', 'Mengisi wall cabinet...', 'Menerapkan material...', 'Menyelesaikan...'];
     for (let i = 0; i < msgs.length; i++) { setProgress({ pct: Math.round(((i + 1) / msgs.length) * 100), msg: msgs[i] }); await new Promise((r) => setTimeout(r, 260)); }
     const input = { ...inp, style: manual ? null : inp.style };
-    const out = generateLayout(input, s.settings);
-    const st = useStore.getState();
-    st.newProject(st.projectName);
-    st.setWalls(out.walls);
-    st.setCountertop({ type: out.countertop });
-    st.addItems(out.items);
-    useStore.setState({ past: [], future: [] });
-    st.ui({ showWizard: false, resetViewRequest: st.resetViewRequest + 1, viewMode: 'perspective' });
-    toast(`Layout dapur ${inp.shape}-shape dibuat: ${out.items.length} komponen`, 'success');
+    const count = commitGeneratedLayout(input);
+    toast(`Layout dapur ${inp.shape}-shape dibuat: ${count} komponen`, 'success');
     onClose();
   };
 

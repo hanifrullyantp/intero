@@ -8,6 +8,7 @@ import { sceneRef } from '../editor/Viewport';
 import { ComponentLibrary } from '../editor/ComponentLibrary';
 import { LayersPanel } from '../editor/LayersPanel';
 import { DockToolPanel, type DockTool } from './MobileTools';
+import { ExtraPanel } from './MobileExtras';
 import { toast } from '../ui';
 
 const PRESETS: { id: ViewMode; label: string }[] = [
@@ -113,6 +114,7 @@ export function MobileV2CanvasHud() {
     else s.ui({ resetViewRequest: s.resetViewRequest + 1 });
   };
   return (
+    <>
     <div className="mv2-hud" data-mv2="hud">
       <div className="mv2-pop-anchor">
         <button type="button" className="mv2-float" aria-expanded={open} aria-label={`Tampilan ${current}`} onClick={() => setOpen((v) => !v)}>{current}</button>
@@ -130,6 +132,25 @@ export function MobileV2CanvasHud() {
       </div>
       <button type="button" className="mv2-float" aria-label={s.selectedIds.length ? 'Fokus ke objek' : 'Reset tampilan'} onClick={focus}><Focus size={20} /></button>
     </div>
+    <GestureHint />
+    </>
+  );
+}
+
+function GestureHint() {
+  const [show, setShow] = useState(() => {
+    try { return localStorage.getItem('intero_mobile_gesture_hint') !== '1'; } catch { return false; }
+  });
+  if (!show) return null;
+  const dismiss = () => {
+    try { localStorage.setItem('intero_mobile_gesture_hint', '1'); } catch { /* ignore */ }
+    setShow(false);
+  };
+  return (
+    <div className="mv2-hint" data-mv2="hint">
+      <p>Satu jari memutar tampilan. Dua jari menggeser dan memperbesar. Ketuk dua kali untuk fokus.</p>
+      <button type="button" onClick={dismiss}>Mengerti</button>
+    </div>
   );
 }
 
@@ -137,6 +158,7 @@ export function MobileV2Bottom() {
   const s = useStore();
   const keyboard = useKeyboardOffset();
   const [tool, setTool] = useState<DockTool | null>(null);
+  const [panel, setPanel] = useState<null | 'tampilan' | 'global' | 'ukur' | 'lainnya'>(null);
   const [history, setHistory] = useState(false);
   const [prompt, setPrompt] = useState('');
   const hasSelection = s.selectedIds.length > 0;
@@ -152,13 +174,21 @@ export function MobileV2Bottom() {
   const onDock = (id: DockId) => {
     if (id === 'ukuran' || id === 'material' || id === 'geser' || id === 'putar' || id === 'duplikat' || id === 'hapus') {
       setHistory(false);
+      setPanel(null);
       s.ui({ mobileSheet: null });
       setTool(id);
       return;
     }
-    if (id === 'ai') { setTool(null); s.ui({ mobileSheet: null }); setHistory((v) => !v); return; }
-    if (id === 'komponen') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'parts' ? null : 'parts' }); return; }
-    if (id === 'lapisan') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'layers' ? null : 'layers' }); return; }
+    if (id === 'tampilan' || id === 'global' || id === 'ukur' || id === 'lainnya') {
+      setTool(null);
+      setHistory(false);
+      s.ui({ mobileSheet: null });
+      setPanel((cur) => (cur === id ? null : id));
+      return;
+    }
+    if (id === 'ai') { setTool(null); setPanel(null); s.ui({ mobileSheet: null }); setHistory((v) => !v); return; }
+    if (id === 'komponen') { setTool(null); setPanel(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'parts' ? null : 'parts' }); return; }
+    if (id === 'lapisan') { setTool(null); setPanel(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'layers' ? null : 'layers' }); return; }
     later();
   };
 
@@ -207,7 +237,7 @@ export function MobileV2Bottom() {
 
   return (
     <div className={`mv2-bottom${sheet && !tool ? ` sheet-${snap}` : ''}`} data-mv2="bottom" style={{ transform: keyboard ? `translateY(-${keyboard}px)` : undefined }}>
-      {tool ? <DockToolPanel key={tool} tool={tool} ids={s.selectedIds} onClose={() => setTool(null)} /> : (<>
+      {tool ? <DockToolPanel key={tool} tool={tool} ids={s.selectedIds} onClose={() => setTool(null)} /> : panel ? <ExtraPanel panel={panel} onClose={() => setPanel(null)} /> : (<>
         {hasSelection && !sheet && (
           <div className="mv2-chip" data-mv2="chip">
             <span>{chip}</span>

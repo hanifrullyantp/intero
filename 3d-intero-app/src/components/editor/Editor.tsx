@@ -9,6 +9,7 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { LayersPanel } from './LayersPanel';
 import { MaterialPanel } from './MaterialPanel';
 import { ViewControls, StatusBar } from './ViewControls';
+import { StartChat } from './StartChat';
 import { Wizard } from './Wizard';
 import { ComponentBuilder } from './ComponentBuilder';
 import { DragNumber, Field, Modal, Select, toast, useIsMobile } from '../ui';
@@ -39,6 +40,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   const s = useStore();
   const isMobile = useIsMobile();
   const [draft, setDraft] = useState<{ savedAt: number; name: string; count: number } | null>(null);
+  const [startChat, setStartChat] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'props' | 'layers' | 'material'>('props');
   const checked = useRef(false);
 
@@ -51,7 +53,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
     if (useStore.getState().shareMode) return;
     const offerLegacy = () => loadDraft().then((d) => {
       if (d && d.data.cabinets.length) setDraft({ savedAt: d.savedAt, name: d.data.projectName, count: d.data.cabinets.length });
-      else if (!useStore.getState().items.length) useStore.getState().ui({ showWizard: true });
+      else if (!useStore.getState().items.length) setStartChat(true);
     });
     if (isProjectDocV1Enabled()) {
       loadProjectDocDraft().then((bundle) => {
@@ -198,6 +200,11 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   };
   const inProd = s.appMode === 'production';
   const mobileV2 = isMobile && isMobileUxV2Enabled();
+  useEffect(() => {
+    if (!mobileV2) return;
+    try { if (localStorage.getItem('intero_mobile_people_set') === '1') return; } catch { return; }
+    useStore.setState({ showPeople: false });
+  }, [mobileV2]);
   const showLayersFloating = s.showLayers && !s.layersDocked && !isMobile && s.uiMode === 'advanced' && !inProd;
   const showSidebar = !isMobile && s.showProps && !inProd;
   const [sidebarW, setSidebarW] = useState(() => { try { return Math.max(260, Math.min(480, JSON.parse(localStorage.getItem('intero_sidebarW') || '320'))); } catch { return 320; } });
@@ -244,6 +251,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       {mobileV2 && !inProd && <MobileV2Bottom />}
       {mobileV2 && <MobileDrawers legacyActions={false} />}
       {isMobile && !mobileV2 && <MobileChrome />}
+      {startChat && <StartChat onClose={() => setStartChat(false)} onWizard={() => { setStartChat(false); s.ui({ showWizard: true }); }} />}
       {s.showWizard && <Wizard onClose={() => s.ui({ showWizard: false })} />}
       <AiAssistant open={s.showAiChat} onClose={() => s.ui({ showAiChat: false })} />
       <ArDialog /><PinPickBanner /><PhotoOverlay /><PriceListDialog />
@@ -254,7 +262,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       {s.dialog?.kind === 'mirror' && <MirrorDialog />}
       {s.dialog?.kind === 'array' && <ArrayDialog />}
       {draft && (
-        <Modal width={440}><div className="p-6 flex flex-col gap-4"><h3 className="text-[16px] font-bold">Lanjutkan proyek terakhir?</h3><p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>Draft "<b>{draft.name}</b>" ({draft.count} komponen) tersimpan otomatis {timeAgo(draft.savedAt)} di browser ini.</p><div className="flex justify-end gap-2"><button className="btn btn-secondary" onClick={() => { setDraft(null); if (!useStore.getState().items.length) s.ui({ showWizard: true }); }}>Mulai baru</button><button className="btn btn-primary" onClick={restoreDraft}>Lanjutkan</button></div></div></Modal>
+        <Modal width={440}><div className="p-6 flex flex-col gap-4"><h3 className="text-[16px] font-bold">Lanjutkan proyek terakhir?</h3><p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>Draft "<b>{draft.name}</b>" ({draft.count} komponen) tersimpan otomatis {timeAgo(draft.savedAt)} di browser ini.</p><div className="flex justify-end gap-2"><button className="btn btn-secondary" onClick={() => { setDraft(null); if (!useStore.getState().items.length) setStartChat(true); }}>Mulai baru</button><button className="btn btn-primary" onClick={restoreDraft}>Lanjutkan</button></div></div></Modal>
       )}
     </div>
   );
