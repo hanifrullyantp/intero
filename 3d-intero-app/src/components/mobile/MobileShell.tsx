@@ -1,9 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CopyPlus, Eye, Focus, Layers, Menu, Mic, MoreHorizontal, Move, Package, Palette, Redo2, RotateCw, Ruler, Scaling, Send, Settings2, Sparkles, Trash2, Undo2, X } from 'lucide-react';
 import { canRedo, canUndo } from '../../projectdoc/session';
 import { useStore } from '../../store';
 import type { TopSubMode, ViewMode } from '../../types';
 import { fileActions } from '../editor/file-actions';
+import { sceneRef } from '../editor/Viewport';
+import { ComponentLibrary } from '../editor/ComponentLibrary';
+import { LayersPanel } from '../editor/LayersPanel';
 import { toast } from '../ui';
 
 const PRESETS: { id: ViewMode; label: string }[] = [
@@ -204,8 +207,10 @@ export function MobileV2Bottom() {
   }, [hasSelection]);
 
   const onDock = (id: DockId) => {
-    if (id === 'ukuran') { setHistory(false); setTool('ukuran'); return; }
-    if (id === 'ai') { setTool(null); setHistory((v) => !v); return; }
+    if (id === 'ukuran') { setHistory(false); s.ui({ mobileSheet: null }); setTool('ukuran'); return; }
+    if (id === 'ai') { setTool(null); s.ui({ mobileSheet: null }); setHistory((v) => !v); return; }
+    if (id === 'komponen') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'parts' ? null : 'parts' }); return; }
+    if (id === 'lapisan') { setTool(null); setHistory(false); s.ui({ mobileSheet: s.mobileSheet === 'layers' ? null : 'layers' }); return; }
     later();
   };
 
@@ -223,6 +228,29 @@ export function MobileV2Bottom() {
     try { rec.start(); } catch { toast('Mikrofon tidak dapat dipakai.', 'info'); }
   };
 
+  const sheet = s.mobileSheet === 'parts' || s.mobileSheet === 'layers' ? s.mobileSheet : null;
+  const [snap, setSnap] = useState<'peek' | 'half' | 'full'>('half');
+  const framed = useRef<string | null>(null);
+  useEffect(() => {
+    const root = document.querySelector('.mv2');
+    const open = sheet !== null && tool !== 'ukuran';
+    if (root instanceof HTMLElement) {
+      root.classList.toggle('mv2-sheet-full', open && snap === 'full');
+      if (open) root.style.setProperty('--mv2-sheet', snap === 'peek' ? '25%' : snap === 'full' ? '90%' : '50%');
+      else root.style.removeProperty('--mv2-sheet');
+    }
+    const key = open ? snap : 'closed';
+    if (framed.current === null) { framed.current = key; return; }
+    if (framed.current === key) return;
+    framed.current = key;
+    const id = requestAnimationFrame(() => {
+      const ctl = sceneRef.current;
+      ctl?.resize();
+      ctl?.frameToCanvas();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [sheet, snap, tool]);
+
   const send = () => {
     const text = prompt.trim();
     if (!text) return;
@@ -230,29 +258,69 @@ export function MobileV2Bottom() {
   };
 
   return (
-    <div className="mv2-bottom" data-mv2="bottom" style={{ transform: keyboard ? `translateY(-${keyboard}px)` : undefined }}>
+    <div className={`mv2-bottom${sheet && tool !== 'ukuran' ? ` sheet-${snap}` : ''}`} data-mv2="bottom" style={{ transform: keyboard ? `translateY(-${keyboard}px)` : undefined }}>
       {tool === 'ukuran' ? <SizePanel onClose={() => setTool(null)} /> : (<>
-        {hasSelection && (
+        {hasSelection && !sheet && (
           <div className="mv2-chip" data-mv2="chip">
             <span>{chip}</span>
             <button type="button" aria-label="Batalkan pilihan" onClick={() => s.clearSelection()}><X size={18} /></button>
           </div>
         )}
-        {history && <div className="mv2-history" data-mv2="riwayat">Belum ada riwayat perintah.</div>}
+        {history && !sheet && <div className="mv2-history" data-mv2="riwayat">Belum ada riwayat perintah.</div>}
         <form className="mv2-ai" data-mv2="ai" onSubmit={(e) => { e.preventDefault(); send(); }}>
           <button type="button" className="mv2-hit" aria-label="Mikrofon" onClick={listen}><Mic size={20} /></button>
           <input value={prompt} placeholder="Bilang apa yang diubah" aria-label="Bilang apa yang diubah" onChange={(e) => setPrompt(e.target.value)} />
           <button type="submit" className="mv2-hit mv2-send" aria-label="Kirim"><Send size={20} /></button>
         </form>
-        <nav className="mv2-dock" data-mv2="dock" aria-label="Alat">
-          {items.map((id) => (
-            <button type="button" key={id} className="mv2-dock-btn" onClick={() => onDock(id)}>
-              {DOCK[id].icon}<span>{DOCK[id].label}</span>
-            </button>
-          ))}
-        </nav>
+        {sheet ? (
+          <MobileSheet kind={sheet} snap={snap} setSnap={setSnap} onClose={() => s.ui({ mobileSheet: null })} />
+        ) : (
+          <nav className="mv2-dock" data-mv2="dock" aria-label="Alat">
+            {items.map((id) => (
+              <button type="button" key={id} className="mv2-dock-btn" onClick={() => onDock(id)}>
+                {DOCK[id].icon}<span>{DOCK[id].label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
       </>)}
     </div>
+  );
+}
+
+const SNAPS = [{ id: 'peek', label: 'Sepetak' }, { id: 'half', label: 'Setengah' }, { id: 'full', label: 'Penuh' }] as const;
+
+function MobileSheet({ kind, snap, setSnap, onClose }: { kind: 'parts' | 'layers'; snap: 'peek' | 'half' | 'full'; setSnap: (s: 'peek' | 'half' | 'full') => void; onClose: () => void }) {
+  const drag = (e: React.PointerEvent) => {
+    const startY = e.clientY;
+    const start = snap;
+    const order = ['peek', 'half', 'full'] as const;
+    const up = (ev: PointerEvent) => {
+      const dy = startY - ev.clientY;
+      let i = order.indexOf(start);
+      if (dy > 40) i = Math.min(order.length - 1, i + 1);
+      else if (dy < -40) i = Math.max(0, i - 1);
+      setSnap(order[i]);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <section className="mv2-sheet" data-mv2="sheet" aria-label={kind === 'parts' ? 'Komponen' : 'Lapisan'}>
+      <div className="mv2-sheet-head">
+        <button type="button" className="mv2-handle" aria-label="Geser tinggi panel" onPointerDown={drag} />
+        <b>{kind === 'parts' ? 'Komponen' : 'Lapisan'}</b>
+        <div className="mv2-snaps" role="group" aria-label="Tinggi panel">
+          {SNAPS.map((item) => (
+            <button type="button" key={item.id} className={snap === item.id ? 'on' : ''} aria-label={item.label} aria-pressed={snap === item.id} onClick={() => setSnap(item.id)} />
+          ))}
+        </div>
+        <button type="button" className="mv2-hit" aria-label="Tutup" onClick={onClose}><X size={20} /></button>
+      </div>
+      <div className="mv2-sheet-body">
+        {kind === 'parts' ? <ComponentLibrary embedded /> : <LayersPanel embedded sheet />}
+      </div>
+    </section>
   );
 }
 

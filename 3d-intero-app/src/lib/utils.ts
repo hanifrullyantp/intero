@@ -131,6 +131,7 @@ export function pickFile(accept: string, binary = false): Promise<{ name: string
 
 export function fmtMm(v: number) { return `${Math.round(v)} mm`; }
 export function fmtDims(d: { w: number; h: number; d: number }) { return `${Math.round(d.w)} × ${Math.round(d.h)} × ${Math.round(d.d)} mm`; }
+export function fmtDimsCm(d: { w: number; h: number; d: number }) { return `${Math.round(d.w / 10)} × ${Math.round(d.h / 10)} × ${Math.round(d.d / 10)} cm`; }
 export function sanitizeFilename(name: string) { return name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'proyek'; }
 
 export const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth < 768;

@@ -2,7 +2,7 @@
 
 Dokumen desain. Implementasi berjalan di belakang flag `mobile_ux_v2` (default mati).
 
-Sub-tahap 3a (kerangka) sudah masuk kode: bar atas, kontrol kanvas, bar AI, dock, dan panel Ukuran yang belum menulis data. Sheet, Command, dan drawer baru belum.
+Sub-tahap 3a (kerangka) dan 3b (sheet komponen dan lapisan) sudah masuk kode. Panel Ukuran belum menulis data. Command, gestur, dan drawer baru belum.
 
 Dasar: `docs/MOBILE_AUDIT.md`. Editor yang hidup: `3d-intero-app/`. `agents.md` tidak berisi aturan tambahan; pratinjau AI di bawah mengikuti permintaan produk (Terapkan / Batal, kanvas tetap terlihat).
 

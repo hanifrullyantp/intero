@@ -8,7 +8,8 @@ import { thumbnailFor } from './ComponentLibrary';
 import { ProjectStructure } from './ProjectStructure';
 import { toast } from '../ui';
 
-function iconFor(it: Item) {
+function iconFor(it: Item, uniform = false) {
+  if (uniform) return <Box size={22} strokeWidth={1.75} />;
   switch (it.type) {
     case 'fridge': return <Refrigerator size={14} />;
     case 'hood': return <Wind size={14} />;
@@ -22,7 +23,7 @@ function iconFor(it: Item) {
 
 interface Group { id: string; name: string; items: Item[]; reorderable: boolean }
 
-export function LayersPanel({ embedded }: { embedded?: boolean }) {
+export function LayersPanel({ embedded, sheet }: { embedded?: boolean; sheet?: boolean }) {
   const s = useStore();
   const readOnly = s.shareMode === 'view';
   const [grouping, setGrouping] = useState<LayerGrouping>('wall');
@@ -129,6 +130,7 @@ export function LayersPanel({ embedded }: { embedded?: boolean }) {
 
   return (
     <div className="flex flex-col h-full" data-tour="layers-panel" style={{ minHeight: 0 }}>
+      {!sheet && (
       <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
         <Layers size={15} style={{ color: 'var(--brand-primary)' }} /><span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-heading)' }}>Layers</span>
         <select className="input" style={{ height: 26, fontSize: 11, width: 118, padding: '0 22px 0 8px' }} value={grouping} onChange={(e) => setGrouping(e.target.value as LayerGrouping)}><option value="wall">Grup: Dinding</option><option value="type">Grup: Tipe</option><option value="material">Grup: Material</option></select>
@@ -136,20 +138,24 @@ export function LayersPanel({ embedded }: { embedded?: boolean }) {
         {!embedded && <button className="icon-btn" style={{ width: 26, height: 26 }} data-tip={s.layersDocked ? 'Lepas (floating)' : 'Dock ke sidebar kanan (tab)'} data-tip-side="top" onClick={() => { const dock = !s.layersDocked; s.ui({ layersDocked: dock, ...(dock ? { showProps: true, showLayers: true } : {}) }); }}>{s.layersDocked ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}</button>}
         {!embedded && <button className="icon-btn" style={{ width: 26, height: 26 }} onClick={() => s.ui({ showLayers: false })} aria-label="Tutup"><X size={14} /></button>}
       </div>
-      <div className="px-2 py-1.5"><div className="relative"><Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} /><input className="input pl-7" style={{ height: 28, fontSize: 12 }} placeholder="Filter layer…" value={q} onChange={(e) => setQ(e.target.value)} /></div></div>
+      )}
+      <div className="px-2 py-1.5 flex items-center gap-2">
+        <div className="relative flex-1"><Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-secondary)' }} /><input className="input input-icon" style={sheet ? { height: 44, fontSize: 16 } : { height: 28, fontSize: 12 }} placeholder={sheet ? 'Cari lapisan' : 'Filter layer…'} aria-label={sheet ? 'Cari lapisan' : 'Filter layer'} value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        {sheet && <select className="input" style={{ height: 44, fontSize: 13, width: 132, padding: '0 22px 0 8px' }} value={grouping} onChange={(e) => setGrouping(e.target.value as LayerGrouping)} aria-label="Kelompok lapisan"><option value="wall">Dinding</option><option value="type">Tipe</option><option value="material">Material</option></select>}
+      </div>
       <div className="flex-1 overflow-y-auto px-1.5 pb-2" onDragOver={(e) => { if (drag) e.preventDefault(); }}>
-        {groups.length === 0 && <p className="text-[12px] p-3" style={{ color: 'var(--text-tertiary)' }}>Belum ada layer. Tambahkan komponen terlebih dahulu.</p>}
+        {groups.length === 0 && <p className="text-[12px] p-3" style={{ color: 'var(--text-secondary)' }}>{sheet ? 'Belum ada lapisan. Tambah komponen dulu.' : 'Belum ada layer. Tambahkan komponen terlebih dahulu.'}</p>}
         <ProjectStructure />
         {groups.map((g) => (
           <div key={g.id} className="mb-1">
             <button type="button" className="flex items-center gap-1.5 w-full px-1.5 h-7 rounded-md text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }} onClick={() => setCollapsed({ ...collapsed, [g.id]: !collapsed[g.id] })}>
               {collapsed[g.id] ? <ChevronRight size={13} /> : <ChevronDown size={13} />}<span className="flex-1 text-left truncate">{g.name}</span><span className="mono font-normal">{g.items.length}</span>
             </button>
-            {!collapsed[g.id] && topLevel(g).map((it) => (<div key={it.id}><LayerRow g={g} it={it} depth={0} {...rowProps} />{childrenOf(g, it.id).map((c) => <LayerRow key={c.id} g={g} it={c} depth={1} {...rowProps} />)}</div>))}
+            {!collapsed[g.id] && topLevel(g).map((it) => (<div key={it.id}><LayerRow g={g} it={it} depth={0} uniformIcon={!!sheet} {...rowProps} />{childrenOf(g, it.id).map((c) => <LayerRow key={c.id} g={g} it={c} depth={1} uniformIcon={!!sheet} {...rowProps} />)}</div>))}
           </div>
         ))}
       </div>
-      <div className="px-3 py-1.5 text-[10.5px]" style={{ color: 'var(--text-tertiary)', borderTop: '1px solid var(--border)' }}>Drag baris (long-press di HP) untuk mengubah urutan — kabinet di dinding disusun ulang otomatis.</div>
+      <div className="px-3 py-1.5" style={{ fontSize: sheet ? 12 : 10.5, color: sheet ? 'var(--text-secondary)' : 'var(--text-tertiary)', borderTop: '1px solid var(--border)' }}>Tahan baris lalu geser untuk mengubah urutan. Kabinet di dinding tersusun ulang.</div>
       {hoverThumb && hoverThumb.url && <div className="fixed z-[800] panel rounded-xl p-1 pointer-events-none" style={{ left: Math.min(hoverThumb.x + 16, window.innerWidth - 180), top: Math.min(hoverThumb.y - 60, window.innerHeight - 140) }}><img src={hoverThumb.url} alt="" style={{ width: 160, height: 120, borderRadius: 8, objectFit: 'cover' }} /></div>}
       {ctx && (<>
         <div className="fixed inset-0 z-[600]" onPointerDown={() => setCtx(null)} onContextMenu={(e) => { e.preventDefault(); setCtx(null); }} />
@@ -171,7 +177,7 @@ export function LayersPanel({ embedded }: { embedded?: boolean }) {
 }
 
 interface RowProps {
-  g: Group; it: Item; depth: number; selectedIds: string[]; dragId: string | null; drop: { id: string; pos: 'before' | 'after' } | null; renaming: string | null;
+  g: Group; it: Item; depth: number; uniformIcon?: boolean; selectedIds: string[]; dragId: string | null; drop: { id: string; pos: 'before' | 'after' } | null; renaming: string | null;
   onSelect: (e: React.MouseEvent, it: Item) => void; onRenameStart: (id: string) => void; onRenameDone: (it: Item, name: string) => void; onRenameCancel: () => void;
   onCtx: (e: React.MouseEvent, id: string) => void; onDragStart: (g: Group, it: Item) => void; onDragEnd: () => void; onDragOver: (e: React.DragEvent, it: Item) => void; onDrop: (g: Group, it: Item) => void;
   onTouchStart: (g: Group, it: Item) => (e: React.TouchEvent) => void; onHoverIn: (it: Item, e: React.MouseEvent) => void; onHoverOut: () => void; toggleVisible: (it: Item) => void; toggleLock: (it: Item) => void; readOnly: boolean;
@@ -186,7 +192,7 @@ function LayerRow(p: RowProps) {
       onClick={(e) => p.onSelect(e, it)} onDoubleClick={() => { if (!p.readOnly) p.onRenameStart(it.id); }} onContextMenu={(e) => { if (!p.readOnly) p.onCtx(e, it.id); }}
       onMouseEnter={(e) => p.onHoverIn(it, e)} onMouseLeave={p.onHoverOut}>
       {g.reorderable && depth === 0 ? <GripVertical size={13} style={{ color: 'var(--text-tertiary)', cursor: 'grab' }} /> : <span style={{ width: 13 }} />}
-      <span style={{ color: it.colorLabel ?? 'var(--text-secondary)' }}>{iconFor(it)}</span>
+      <span style={{ color: it.colorLabel ?? 'var(--text-secondary)' }}>{iconFor(it, p.uniformIcon)}</span>
       {p.renaming === it.id ? <input autoFocus className="input" style={{ height: 24, fontSize: 12 }} defaultValue={it.name} onClick={(e) => e.stopPropagation()} onBlur={(e) => p.onRenameDone(it, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') p.onRenameCancel(); }} />
         : <span className="flex-1 truncate">{it.name}</span>}
       {it.colorLabel && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: it.colorLabel }} />}

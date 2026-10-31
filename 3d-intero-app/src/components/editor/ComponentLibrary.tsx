@@ -9,7 +9,7 @@ import { MatCache } from '../../generators/common';
 import { sceneRef } from './Viewport';
 import { toast } from '../ui';
 import { deleteMyComponent } from '../../lib/persistence';
-import { fmtDims } from '../../lib/utils';
+import { fmtDims, fmtDimsCm } from '../../lib/utils';
 
 // ─── Thumbnail renderer (offscreen, antrian 1 per frame) ───
 const thumbCache = new Map<string, string>();
@@ -66,13 +66,15 @@ function useThumb(key: string, item: Item) {
 function Tile({ entry, onAdd, onDelete, disabled }: { entry: LibraryEntry; onAdd: () => void; onDelete?: () => void; disabled?: boolean }) {
   const item = useMemo(() => entryToItem(entry), [entry]);
   const url = useThumb(entry.id, item);
+  const unit = useStore((st) => st.dimUnit);
+  const dims = unit === 'mm' ? fmtDims(entry.dims) : fmtDimsCm(entry.dims);
   return (
     <button type="button" className="tile" draggable={!disabled} disabled={disabled} onClick={onAdd} style={disabled ? { opacity: 0.65, cursor: 'default' } : undefined} title={disabled ? `${entry.name} (mode lihat saja)` : `${entry.name} — klik untuk tambah, atau drag ke viewport`}
       onDragStart={(e) => { e.dataTransfer.setData('text/intero-entry', entry.id); e.dataTransfer.effectAllowed = 'copy'; (window as unknown as { __interoDragEntry?: LibraryEntry }).__interoDragEntry = entry; }}
       onDragEnd={() => { (window as unknown as { __interoDragEntry?: LibraryEntry }).__interoDragEntry = undefined; }}>
       <div className="tile-thumb">{url ? <img src={url} alt={entry.name} draggable={false} /> : <div className="w-10 h-10 rounded-lg animate-pulse" style={{ background: 'var(--border)' }} />}</div>
       <div className="p-2.5 flex items-start gap-1">
-        <div className="min-w-0 flex-1"><div className="text-[12.5px] font-semibold truncate">{entry.name}</div><div className="text-[11px] mono" style={{ color: 'var(--text-tertiary)' }}>{fmtDims(entry.dims)}</div></div>
+        <div className="min-w-0 flex-1"><div className="text-[12.5px] font-semibold truncate">{entry.name}</div><div className="text-[12px] mono" style={{ color: 'var(--text-secondary)' }}>{dims}</div></div>
         {onDelete && <span role="button" className="icon-btn" style={{ width: 24, height: 24 }} onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Hapus komponen"><Trash2 size={13} /></span>}
       </div>
     </button>
@@ -119,7 +121,7 @@ export function ComponentLibrary({ embedded }: { embedded?: boolean }) {
   return (
     <div className={`flex flex-col h-full ${embedded ? '' : 'panel rounded-2xl'}`} style={{ width: embedded ? '100%' : 340 }}>
       <div className="flex items-center gap-2 p-3 pb-2">
-        <div className="relative flex-1"><Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} /><input className="input pl-8" placeholder="Cari komponen…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="relative flex-1"><Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-secondary)' }} /><input className="input input-icon" placeholder="Cari komponen…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <button type="button" className="btn btn-primary btn-sm" data-tour="builder-btn" disabled={readOnly} onClick={() => s.ui({ showBuilder: true })} title="Component Builder (Ctrl+Shift+K)"><Hammer size={14} />Buat</button>
         {!embedded && <button type="button" className="icon-btn" onClick={() => s.ui({ showLibrary: false })} aria-label="Tutup"><X size={16} /></button>}
       </div>

@@ -715,6 +715,20 @@ export class SceneController {
     gsap.to(this.camP.position, { x: center.x + dir.x * size, y: center.y + dir.y * size, z: center.z + dir.z * size, duration: 0.5, ease: 'power2.out' });
     gsap.to(this.controls.target, { x: center.x, y: Math.max(0.6, center.y), z: center.z, duration: 0.5, ease: 'power2.out' });
   }
+  /** Kamera mengisi kanvas yang tersisa setelah panel mobile menyusut. */
+  frameToCanvas() {
+    this.resize();
+    if (this.viewMode !== 'perspective' && this.viewMode !== 'iso') {
+      this.setViewMode(this.viewMode, this.topSub);
+      return;
+    }
+    const b = this.frameOverlayBounds();
+    const vFov = THREE.MathUtils.degToRad(this.camP.fov);
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(0.2, this.aspect));
+    const radius = Math.max(0.6, b.size * 0.5);
+    const dist = Math.max(radius / Math.tan(vFov / 2), radius / Math.tan(hFov / 2)) * 1.25;
+    this.fitCameraToObject(b.center, dist);
+  }
   setTransparent(v: boolean) { this.transparentBg = v; this.setBackground(this.uiTheme); this.renderer.setClearAlpha(v ? 0 : 1); }
   getRoomCenterM() { const c = roomCenter(this.walls); return { x: c.x * S, z: c.z * S }; }
   getBuilt() { return [...this.built.entries()].map(([id, e]) => ({ id, group: e.group, item: e.item })); }
