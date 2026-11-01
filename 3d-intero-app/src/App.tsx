@@ -80,7 +80,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-full w-full" style={{ fontFamily: 'var(--font-body)' }}>
+    <div className="h-full w-full" style={{ fontFamily: 'var(--font-body)', minHeight: '100dvh' }}>
       {openingShare ? (
         <div className="h-full w-full flex items-center justify-center text-[14px]" style={{ background: 'var(--bg-main)', color: 'var(--text-secondary)' }}>Membuka tautan…</div>
       ) : view === 'landing' ? <Landing /> : view === 'viewer' ? <Viewer onBack={backToLanding} /> : <Editor onBackToLanding={backToLanding} />}

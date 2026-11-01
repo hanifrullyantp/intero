@@ -219,13 +219,13 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
   const sidebarWRef = useRef(sidebarW); sidebarWRef.current = sidebarW;
 
   return (
-    <div className={`flex flex-col h-full theme-transition${mobileV2 ? ' mv2' : ''}`} style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingBottom: isMobile && !mobileV2 && s.appMode === 'design' ? 64 : 0, maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className={`flex flex-col h-full min-h-0 theme-transition${mobileV2 ? ' mv2' : ''}`} style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingBottom: isMobile && !mobileV2 && s.appMode === 'design' ? 64 : 0, maxWidth: '100%', minHeight: isMobile ? '100dvh' : undefined, overflowX: 'hidden' }}>
       {mobileV2 ? <MobileV2TopBar /> : isMobile && <MobileTopbar />}
       <TopToolbar onBackToLanding={onBackToLanding} headless={isMobile} />
       {s.shareMode && <ShareBanner mode={s.shareMode} />}
       {!inProd && !mobileV2 && <ContextBar />}
       <div className={`flex-1 flex min-h-0 relative${mobileV2 ? ' mv2-stage' : ''}`}>
-        <div className="flex-1 relative min-w-0">
+        <div className="flex-1 relative min-w-0 min-h-0 h-full">
           <Viewport />
           {!inProd && <LeftToolbar />}
           {s.showLibrary && !isMobile && !inProd && <div className="float-panel" style={{ left: 68, top: 12, bottom: 12 }}><ComponentLibrary /></div>}

@@ -155,7 +155,8 @@ export function Viewport() {
       }
     });
     const ro = new ResizeObserver(() => ctl.resize());
-    ro.observe(hostRef.current!);
+    if (hostRef.current) ro.observe(hostRef.current);
+    requestAnimationFrame(() => ctl.resize());
     return () => { unsub(); ro.disconnect(); if (frameCleanup) frameCleanup(); ctl.dispose(); sceneRef.current = null; };
     } catch {
       setWebglError(true);

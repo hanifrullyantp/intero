@@ -36,51 +36,67 @@ export function Landing() {
   mobileRef.current = mobile;
 
   useEffect(() => {
-    const canvas = canvasRef.current!;
-    const ctl = new SceneController(canvas, {}, { landing: true });
-    ctlRef.current = ctl;
-    ctl.setBackground(useStore.getState().theme, DEFAULT_SETTINGS.appearance.canvasColor);
-    ctl.setGrid(false);
-    const settings = { ...DEFAULT_SETTINGS, countertop: { ...DEFAULT_SETTINGS.countertop, type: 'granit_hitam' as const } };
-    const out = generateLayout(DEMO, settings);
-    const items: Item[] = out.items.map((n, idx) => {
-      const isWallRow = n.type === 'wall' || n.type === 'corner_wall' || n.type === 'hood';
-      const isTall = n.type === 'tall' || n.type === 'fridge' || n.type === 'electronic';
-      return {
-        id: n.id ?? `L${idx}`, name: n.name ?? n.type, type: n.type, wallId: n.wallId ?? null, orderIndex: n.orderIndex ?? idx,
-        position: n.position ?? { x: 0, y: isWallRow ? wallBottomOf(settings) : 0, z: 0 }, rotationY: n.rotationY ?? 0,
-        dims: { ...n.dims, h: isWallRow ? wallHeightOf(settings) : isTall ? settings.globalCabinetHeight : n.dims.h },
-        materials: { ...DEFAULT_MATERIALS, ...(n.materials ?? {}) }, config: n.config ?? {}, led: { ...DEFAULT_LED, ...(n.led ?? {}) },
-        visible: true, locked: false, colorLabel: null, createdAt: new Date().toISOString(),
-      };
-    });
-    let p = 0;
+    const canvas = canvasRef.current;
+    const show = () => { setProgress(100); setLoaded(true); };
+    if (!canvas) { show(); return; }
+    let ctl: SceneController | null = null;
+    let ro: ResizeObserver | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    let reveal: ReturnType<typeof setTimeout> | null = null;
+    const safety = window.setTimeout(show, 4000);
     const cx = 1.95, cz = 1.35;
-    const timer = setInterval(() => { p = Math.min(92, p + 9); setProgress(p); }, 90);
-    requestAnimationFrame(() => {
-      ctl.sync(repackAll(items, out.walls, settings), out.walls, settings);
-      ctl.setOpenAll(false);
-      ctl.camP.position.set(cx + 3.6, 2.3, cz + 4.6); ctl.controls.target.set(cx, 0.95, cz); ctl.controls.update();
-      clearInterval(timer); setProgress(100);
-      setTimeout(() => setLoaded(true), 350);
-    });
-    const ro = new ResizeObserver(() => ctl.resize()); ro.observe(canvas.parentElement!);
-
-    landingApi.cinematic = (onSwap) => {
-      ctl.setAutoRotate(false); ctl.controls.enabled = false;
-      const targets = mobileRef.current ? [navRef.current, heroRef.current, featRef.current].filter(Boolean) : [overlayRef.current];
-      const tl = gsap.timeline();
-      tl.to(targets, { opacity: 0, duration: 0.6, ease: 'power2.out' }, 0);
-      tl.to(ctl.camP.position, { x: cx + 0.2, y: 1.0, z: 0.8, duration: 1.5, ease: 'power3.inOut' }, 0.3);
-      tl.to(ctl.controls.target, { x: cx, y: 1.0, z: 0.1, duration: 1.5, ease: 'power3.inOut' }, 0.3);
-      tl.to(ctl.camP, { fov: 120, duration: 0.8, ease: 'power2.in', onUpdate: () => { try { ctl.camP.updateProjectionMatrix(); } catch { /* kamera sudah dilepas */ } } }, 1.0);
-      tl.call(() => { tl.kill(); onSwap(); }, [], 1.8);
-    };
+    try {
+      ctl = new SceneController(canvas, {}, { landing: true });
+      ctlRef.current = ctl;
+      ctl.setBackground(useStore.getState().theme, DEFAULT_SETTINGS.appearance.canvasColor);
+      ctl.setGrid(false);
+      const settings = { ...DEFAULT_SETTINGS, countertop: { ...DEFAULT_SETTINGS.countertop, type: 'granit_hitam' as const } };
+      const out = generateLayout(DEMO, settings);
+      const items: Item[] = out.items.map((n, idx) => {
+        const isWallRow = n.type === 'wall' || n.type === 'corner_wall' || n.type === 'hood';
+        const isTall = n.type === 'tall' || n.type === 'fridge' || n.type === 'electronic';
+        return {
+          id: n.id ?? `L${idx}`, name: n.name ?? n.type, type: n.type, wallId: n.wallId ?? null, orderIndex: n.orderIndex ?? idx,
+          position: n.position ?? { x: 0, y: isWallRow ? wallBottomOf(settings) : 0, z: 0 }, rotationY: n.rotationY ?? 0,
+          dims: { ...n.dims, h: isWallRow ? wallHeightOf(settings) : isTall ? settings.globalCabinetHeight : n.dims.h },
+          materials: { ...DEFAULT_MATERIALS, ...(n.materials ?? {}) }, config: n.config ?? {}, led: { ...DEFAULT_LED, ...(n.led ?? {}) },
+          visible: true, locked: false, colorLabel: null, createdAt: new Date().toISOString(),
+        };
+      });
+      let p = 0;
+      timer = setInterval(() => { p = Math.min(92, p + 9); setProgress(p); }, 90);
+      const ready = ctl;
+      requestAnimationFrame(() => {
+        try {
+          ready.sync(repackAll(items, out.walls, settings), out.walls, settings);
+          ready.setOpenAll(false);
+          ready.camP.position.set(cx + 3.6, 2.3, cz + 4.6); ready.controls.target.set(cx, 0.95, cz); ready.controls.update();
+          if (timer) clearInterval(timer);
+          setProgress(100);
+          reveal = setTimeout(() => setLoaded(true), 350);
+        } catch { show(); }
+      });
+      ro = new ResizeObserver(() => ready.resize());
+      if (canvas.parentElement) ro.observe(canvas.parentElement);
+      landingApi.cinematic = (onSwap) => {
+        ready.setAutoRotate(false); ready.controls.enabled = false;
+        const targets = mobileRef.current ? [navRef.current, heroRef.current, featRef.current].filter(Boolean) : [overlayRef.current];
+        const tl = gsap.timeline();
+        tl.to(targets, { opacity: 0, duration: 0.6, ease: 'power2.out' }, 0);
+        tl.to(ready.camP.position, { x: cx + 0.2, y: 1.0, z: 0.8, duration: 1.5, ease: 'power3.inOut' }, 0.3);
+        tl.to(ready.controls.target, { x: cx, y: 1.0, z: 0.1, duration: 1.5, ease: 'power3.inOut' }, 0.3);
+        tl.to(ready.camP, { fov: 120, duration: 0.8, ease: 'power2.in', onUpdate: () => { try { ready.camP.updateProjectionMatrix(); } catch { /* kamera sudah dilepas */ } } }, 1.0);
+        tl.call(() => { tl.kill(); onSwap(); }, [], 1.8);
+      };
+    } catch { show(); }
     return () => {
+      window.clearTimeout(safety);
+      if (reveal) clearTimeout(reveal);
+      if (timer) clearInterval(timer);
       landingApi.cinematic = null;
-      try { gsap.killTweensOf(ctl.camP.position); gsap.killTweensOf(ctl.controls?.target); gsap.killTweensOf(ctl.camP); } catch { /* animasi sudah berhenti */ }
-      try { ro.disconnect(); } catch { /* abaikan */ }
-      try { ctl.dispose(); } catch { /* konteks sudah lepas */ }
+      try { if (ctl) { gsap.killTweensOf(ctl.camP.position); gsap.killTweensOf(ctl.controls?.target); gsap.killTweensOf(ctl.camP); } } catch { /* animasi sudah berhenti */ }
+      try { ro?.disconnect(); } catch { /* abaikan */ }
+      try { ctl?.dispose(); } catch { /* konteks sudah lepas */ }
       ctlRef.current = null;
     };
   }, []);
@@ -98,15 +114,15 @@ export function Landing() {
     { icon: <Download size={15} />, t: 'Export ke SketchUp/OBJ' }, { icon: <Link2 size={15} />, t: 'Share File .intero' },
   ];
   return (
-    <div className="relative h-full w-full" style={{ background: 'var(--bg-main)', overflowX: 'hidden', overflowY: mobile ? 'auto' : 'hidden', display: mobile ? 'flex' : undefined, flexDirection: mobile ? 'column' : undefined }}>
-      <div style={mobile ? { order: 3, position: 'relative', height: 300, margin: '4px 16px 0', borderRadius: 20, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)', background: 'var(--bg-canvas)' } : { position: 'absolute', inset: 0 }}>
+    <div className="relative h-full w-full" style={{ background: 'var(--bg-main)', overflowX: 'hidden', overflowY: mobile ? 'auto' : 'hidden', display: mobile ? 'flex' : undefined, flexDirection: mobile ? 'column' : undefined, minHeight: mobile ? '100dvh' : undefined }}>
+      <div style={mobile ? { order: 2, position: 'relative', height: 300, margin: '4px 16px 0', borderRadius: 20, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)', background: 'var(--bg-canvas)' } : { position: 'absolute', inset: 0 }}>
         <canvas ref={canvasRef} className="w-full h-full block" style={{ touchAction: mobile && !interactive ? 'pan-y' : 'none' }} />
         {mobile && !interactive && <button className="absolute inset-0 flex items-end justify-center pb-3" style={{ background: 'transparent', border: 0 }} onClick={() => setInteractive(true)} aria-label="Aktifkan interaksi 3D"><span className="pill panel" style={{ fontSize: 12 }}><MousePointerClick size={14} />Ketuk untuk memutar</span></button>}
         {mobile && interactive && <button className="btn btn-secondary btn-sm absolute" style={{ top: 10, right: 10 }} onClick={() => setInteractive(false)}>Selesai</button>}
       </div>
-      <div ref={overlayRef} style={mobile ? { display: 'contents' } : { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'none' }}>
+      <div ref={overlayRef} style={mobile ? { order: 1, display: 'flex', flexDirection: 'column', width: '100%', position: 'relative', zIndex: 1 } : { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'none' }}>
         {!mobile && <div className="absolute inset-0 landing-gradient" />}
-        <nav ref={navRef} className={mobile ? 'glass flex items-center justify-between px-3 h-14 pointer-events-auto' : 'relative m-4 sm:m-6 glass flex items-center justify-between px-4 sm:px-6 h-16 pointer-events-auto'} style={mobile ? { order: 1, margin: 12, borderRadius: 16, flexShrink: 0 } : { borderRadius: 18 }}>
+        <nav ref={navRef} className={mobile ? 'panel flex items-center justify-between px-3 h-14 pointer-events-auto' : 'relative m-4 sm:m-6 glass flex items-center justify-between px-4 sm:px-6 h-16 pointer-events-auto'} style={mobile ? { margin: 12, borderRadius: 16, flexShrink: 0 } : { borderRadius: 18 }}>
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--brand-primary)', color: '#fff', boxShadow: '0 6px 16px rgba(27,157,107,0.35)' }}><Box size={20} /></span>
             <span className="font-extrabold text-[17px] tracking-tight truncate" style={{ fontFamily: 'var(--font-heading)' }}>{APP_NAME}</span>
@@ -117,7 +133,7 @@ export function Landing() {
           </div>
         </nav>
         <div ref={heroRef} className={mobile ? 'flex flex-col items-center text-center gap-3 px-5 py-4' : 'relative flex-1 flex flex-col items-center justify-center text-center px-6 gap-5 pointer-events-none'} style={mobile ? { order: 2, background: 'var(--bg-main)' } : { paddingBottom: 60 }}>
-          <span className="pill glass glass-sm float-anim rise" style={{ animationDelay: '0.05s', fontSize: mobile ? 12 : 13, padding: mobile ? '6px 12px' : undefined }}><span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-primary)' }} />Platform Desain Kitchen Set #1 di Indonesia</span>
+          <span className={`pill float-anim rise ${mobile ? 'panel' : 'glass glass-sm'}`} style={{ animationDelay: '0.05s', fontSize: mobile ? 12 : 13, padding: mobile ? '6px 12px' : undefined }}><span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-primary)' }} />Platform Desain Kitchen Set #1 di Indonesia</span>
           <h1 className="hero-title rise" style={{ animationDelay: '0.15s', ...(mobile ? { fontSize: 'clamp(28px, 7.4vw, 42px)', lineHeight: 1.18 } : {}) }}>Desain Kitchen Set Impianmu<br /><span className="hero-accent">dalam Hitungan Menit</span></h1>
           <p className="rise" style={{ maxWidth: 560, fontSize: mobile ? 15 : 17, color: 'var(--text-secondary)', animationDelay: '0.25s', background: mobile ? 'var(--bg-main)' : undefined }}>Alternatif SketchUp gratis, berbasis web, bisa offline, hasil akurat untuk tukang & produksi.</p>
           <button className={`btn btn-primary btn-lg rise pointer-events-auto ${mobile ? 'w-full' : ''}`} style={{ animationDelay: '0.35s' }} onClick={onCta}><Zap size={18} />Mulai Berkreasi<ArrowRight size={18} /></button>

@@ -24,6 +24,23 @@ export interface SceneCallbacks {
 interface BuiltEntry { item: Item; group: THREE.Group; sig: string; cache: MatCache }
 const S = 0.001; // mm → m
 
+/** Konteks WebGL di ponsel sering menolak opsi "high-performance". Coba ulang dengan opsi yang lebih ringan. */
+function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+  const attempts: THREE.WebGLRendererParameters[] = [
+    { canvas, antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false },
+    { canvas, antialias: false, alpha: true, powerPreference: 'default', failIfMajorPerformanceCaveat: false, preserveDrawingBuffer: false },
+  ];
+  let last: unknown = new Error('WebGL tidak tersedia');
+  for (const attrs of attempts) {
+    try {
+      const renderer = new THREE.WebGLRenderer(attrs);
+      if (renderer.getContext()) return renderer;
+      renderer.dispose();
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+
 export class SceneController {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -90,7 +107,7 @@ export class SceneController {
     this.cb = cb;
     this.isLanding = !!opts.landing;
     this.isMobile = window.innerWidth < 768;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    this.renderer = createRenderer(canvas);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -888,6 +905,5 @@ export class SceneController {
     try { this.controls.dispose(); } catch { /* abaikan */ }
     try { this.sharedCache.dispose(); } catch { /* abaikan */ }
     try { this.renderer.dispose(); } catch { /* abaikan */ }
-    try { this.renderer.forceContextLoss(); } catch { /* konteks sudah lepas */ }
   }
 }
