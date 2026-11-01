@@ -10,7 +10,7 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 | 3 | AI Gateway + router tingkat kesulitan | selesai |
 | 4 | Popup chat awal + wizard + suara | selesai |
 | 5 | Klik komponen jadi konteks AI | selesai |
-| 6 | Audit UI/UX & matematika (hanya laporan) | belum |
+| 6 | Audit UI/UX & matematika (hanya laporan) | selesai |
 | 7 | Mode Simple vs Advanced [GERBANG] | belum |
 | 8 | Mode Produksi [GERBANG] | belum |
 | 9 | Super Admin | belum |
@@ -20,6 +20,8 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 Catatan langkah 11: Tahap 1–2 di dokumen. Kode 3a–3d ada di belakang flag `mobile_ux_v2` (default mati). Nyalakan dengan `localStorage.setItem('mobile_ux_v2','1')` lalu muat ulang, atau menu mobile "Coba tampilan mobile baru".
 
 Catatan langkah 1: aplikasi yang cocok dengan screenshot adalah `3d-intero-app/` (deploy default `3d.intero.id`). Ada pohon kedua `3D Intero/` yang tidak ikut `npm run build`. Detail di `docs/CODEMAP.md`.
+
+Catatan langkah 6: laporan di `docs/AUDIT.md`. Tidak ada perbaikan kode. Temuan utama: `setSettings` tidak menggeser kabinet, `repackWall` mempertahankan Y lama, mode Simple masih mengizinkan ubah ukuran. Tes gagal tidak ditambahkan.
 
 Catatan langkah 5: kabinet yang diklik muncul sebagai chip di chat AI. Chip ikut ke pesan dan `selectedIds` gateway. Menutup chip melepas pilihan. 39 tes lulus. Flag `projectdoc_v1` tetap mati.
 

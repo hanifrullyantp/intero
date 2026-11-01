@@ -16,6 +16,7 @@ export default function App() {
   const [view, setView] = useState<'landing' | 'editor' | 'viewer'>('landing');
   const [authOpen, setAuthOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [covered, setCovered] = useState(false);
   const theme = useStore((s) => s.theme);
   const [openingShare, setOpeningShare] = useState(() => Boolean(shareIdFromPath(window.location.pathname) || window.location.hash.startsWith('#s=')));
 
@@ -64,11 +65,24 @@ export default function App() {
   useEffect(() => {
     const start = () => {
       if (transitioning) return;
-      if (view === 'landing' && landingApi.cinematic) { setTransitioning(true); landingApi.cinematic(() => { setView('editor'); setTransitioning(false); }); }
-      else setView('editor');
+      let settled = false;
+      const enter = () => {
+        if (settled) return;
+        settled = true;
+        setCovered(true);
+        setView('editor');
+        setTransitioning(false);
+        window.setTimeout(() => setCovered(false), 480);
+      };
+      if (view === 'landing' && landingApi.cinematic) {
+        setTransitioning(true);
+        try { landingApi.cinematic(enter); }
+        catch { enter(); }
+        window.setTimeout(enter, 2400);
+      } else enter();
     };
     const openAuth = () => setAuthOpen(true);
-    const logout = () => { forgetShareUrl(); useStore.getState().ui({ shareMode: null }); setView('landing'); };
+    const logout = () => { forgetShareUrl(); useStore.getState().ui({ shareMode: null }); setCovered(false); setView('landing'); };
     window.addEventListener('intero:logout', logout);
     window.addEventListener('intero:startEditor', start);
     window.addEventListener('intero:openAuth', openAuth);
@@ -96,7 +110,7 @@ export default function App() {
       <ToastHost />
       <TooltipHost />
       <SpotlightHost />
-      <div id="white-flash" className="fixed inset-0 pointer-events-none" style={{ background: '#FFFFFF', opacity: 0, zIndex: 2000 }} />
+      <div id="white-flash" className="fixed inset-0 pointer-events-none" style={{ background: '#FFFFFF', opacity: covered ? 1 : 0, transition: covered ? 'none' : 'opacity 0.45s ease', zIndex: 2000 }} />
     </div>
   );
 }

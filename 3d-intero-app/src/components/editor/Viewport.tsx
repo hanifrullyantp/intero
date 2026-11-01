@@ -24,6 +24,7 @@ export function Viewport() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [webglError, setWebglError] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const measurePts = useRef<V3[]>([]);
   const down = useRef<{ x: number; y: number; t: number; shift: boolean; boxSel: boolean; pointerType: string; gizmo: boolean } | null>(null);
@@ -36,11 +37,17 @@ export function Viewport() {
     const canvas = canvasRef.current!;
     const st = useStore.getState;
     canvas.addEventListener('pointerdown', () => sceneRef.current?.markInteract());
-    const ctl = new SceneController(canvas, {
-      onTransformLive: (id, pos, rotY) => st().liveTransform(id, pos, rotY),
-      onTransformEnd: (id, pos, rotY, scale) => st().commitTransform(id, pos, rotY, scale),
-      onFps: (fps) => { liveBus.fps = fps; liveBus.notify(); },
-    });
+    let ctl: SceneController;
+    try {
+      ctl = new SceneController(canvas, {
+        onTransformLive: (id, pos, rotY) => st().liveTransform(id, pos, rotY),
+        onTransformEnd: (id, pos, rotY, scale) => st().commitTransform(id, pos, rotY, scale),
+        onFps: (fps) => { liveBus.fps = fps; liveBus.notify(); },
+      });
+    } catch {
+      setWebglError(true);
+      return;
+    }
     sceneRef.current = ctl;
     const s0 = st();
     ctl.setBackground(s0.theme, s0.settings.appearance?.canvasColor); ctl.setGrid(s0.showGrid); ctl.setShadows(s0.showShadows);
@@ -311,6 +318,7 @@ export function Viewport() {
   return (
     <div ref={hostRef} className={`absolute inset-0 overflow-hidden tool-${tool}`} style={{ background: 'var(--bg-canvas)', touchAction: 'none' }}>
       <canvas ref={canvasRef} className="block w-full h-full outline-none" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => { down.current = null; setBox(null); }} onDoubleClick={onDoubleClick} onContextMenu={onContextMenu} />
+      {webglError && <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-[14px]" style={{ background: 'var(--bg-main)', color: 'var(--text-secondary)' }}>Tampilan 3D tidak dapat dimulai di browser ini. Muat ulang halaman, atau buka di Chrome / Safari versi baru.</div>}
       {split && (<><span className="view-split-label" style={{ top: 12 }}>Wall Plan (kabinet atas)</span><span className="view-split-label" style={{ top: 'calc(50% + 8px)' }}>Base Plan (kabinet bawah)</span><div className="absolute left-0 right-0 pointer-events-none" style={{ top: '50%', height: 2, background: 'var(--brand-primary)', opacity: 0.6 }} /></>)}
       {box && <div className="fixed pointer-events-none border-2 rounded" style={{ left: Math.min(box.x1, box.x2), top: Math.min(box.y1, box.y2), width: Math.abs(box.x2 - box.x1), height: Math.abs(box.y2 - box.y1), borderColor: 'var(--brand-primary)', background: 'rgba(27,157,107,0.12)', zIndex: 50 }} />}
       {ctxMenu && (

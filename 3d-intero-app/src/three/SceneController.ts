@@ -885,6 +885,7 @@ export class SceneController {
     this.anim.dispose();
     this.transform.dispose(); this.controls.dispose();
     this.sharedCache.dispose();
-    this.renderer.dispose();
+    try { this.renderer.forceContextLoss(); } catch { /* konteks sudah lepas */ }
+    try { this.renderer.dispose(); } catch { /* abaikan */ }
   }
 }

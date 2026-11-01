@@ -67,19 +67,24 @@ export function Landing() {
     const ro = new ResizeObserver(() => ctl.resize()); ro.observe(canvas.parentElement!);
 
     landingApi.cinematic = (onSwap) => {
-      const flash = document.getElementById('white-flash');
       ctl.setAutoRotate(false); ctl.controls.enabled = false;
       const targets = mobileRef.current ? [navRef.current, heroRef.current, featRef.current].filter(Boolean) : [overlayRef.current];
       const tl = gsap.timeline();
       tl.to(targets, { opacity: 0, duration: 0.6, ease: 'power2.out' }, 0);
       tl.to(ctl.camP.position, { x: cx + 0.2, y: 1.0, z: 0.8, duration: 1.5, ease: 'power3.inOut' }, 0.3);
       tl.to(ctl.controls.target, { x: cx, y: 1.0, z: 0.1, duration: 1.5, ease: 'power3.inOut' }, 0.3);
-      tl.to(ctl.camP, { fov: 120, duration: 0.8, ease: 'power2.in', onUpdate: () => ctl.camP.updateProjectionMatrix() }, 1.0);
-      if (flash) tl.to(flash, { opacity: 1, duration: 0.4, ease: 'power2.in' }, 1.4);
-      tl.call(() => onSwap(), [], 1.8);
-      if (flash) tl.to(flash, { opacity: 0, duration: 0.6, ease: 'power2.out' }, 1.8);
+      tl.to(ctl.camP, { fov: 120, duration: 0.8, ease: 'power2.in', onUpdate: () => { try { ctl.camP.updateProjectionMatrix(); } catch { /* kamera sudah dilepas */ } } }, 1.0);
+      tl.call(() => { tl.kill(); onSwap(); }, [], 1.8);
     };
-    return () => { landingApi.cinematic = null; ro.disconnect(); ctl.dispose(); ctlRef.current = null; };
+    return () => {
+      landingApi.cinematic = null;
+      gsap.killTweensOf(ctl.camP.position);
+      gsap.killTweensOf(ctl.controls.target);
+      gsap.killTweensOf(ctl.camP);
+      ro.disconnect();
+      ctl.dispose();
+      ctlRef.current = null;
+    };
   }, []);
   useEffect(() => { ctlRef.current?.setBackground(theme, DEFAULT_SETTINGS.appearance.canvasColor); }, [theme]);
   // Mobile: preview hanya menangkap sentuhan setelah diketuk (agar scroll halaman tidak terbajak)
