@@ -78,11 +78,9 @@ export function Landing() {
     };
     return () => {
       landingApi.cinematic = null;
-      gsap.killTweensOf(ctl.camP.position);
-      gsap.killTweensOf(ctl.controls.target);
-      gsap.killTweensOf(ctl.camP);
-      ro.disconnect();
-      ctl.dispose();
+      try { gsap.killTweensOf(ctl.camP.position); gsap.killTweensOf(ctl.controls?.target); gsap.killTweensOf(ctl.camP); } catch { /* animasi sudah berhenti */ }
+      try { ro.disconnect(); } catch { /* abaikan */ }
+      try { ctl.dispose(); } catch { /* konteks sudah lepas */ }
       ctlRef.current = null;
     };
   }, []);

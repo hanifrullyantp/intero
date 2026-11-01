@@ -877,15 +877,17 @@ export class SceneController {
   }
 
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
-    cancelAnimationFrame(this.rafId);
-    window.removeEventListener('keydown', this.onKey); window.removeEventListener('keyup', this.onKey);
-    for (const [id, e] of this.built) this.disposeEntry(id, e);
-    this.renderer.setAnimationLoop(null);
-    this.anim.dispose();
-    this.transform.dispose(); this.controls.dispose();
-    this.sharedCache.dispose();
-    try { this.renderer.forceContextLoss(); } catch { /* konteks sudah lepas */ }
+    try { cancelAnimationFrame(this.rafId); } catch { /* abaikan */ }
+    try { window.removeEventListener('keydown', this.onKey); window.removeEventListener('keyup', this.onKey); } catch { /* abaikan */ }
+    try { for (const [id, e] of this.built) this.disposeEntry(id, e); } catch { /* abaikan */ }
+    try { this.renderer.setAnimationLoop(null); } catch { /* abaikan */ }
+    try { this.anim.dispose(); } catch { /* abaikan */ }
+    try { this.transform.dispose(); } catch { /* abaikan */ }
+    try { this.controls.dispose(); } catch { /* abaikan */ }
+    try { this.sharedCache.dispose(); } catch { /* abaikan */ }
     try { this.renderer.dispose(); } catch { /* abaikan */ }
+    try { this.renderer.forceContextLoss(); } catch { /* konteks sudah lepas */ }
   }
 }

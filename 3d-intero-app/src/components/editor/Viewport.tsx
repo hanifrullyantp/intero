@@ -50,6 +50,7 @@ export function Viewport() {
     }
     sceneRef.current = ctl;
     const s0 = st();
+    try {
     ctl.setBackground(s0.theme, s0.settings.appearance?.canvasColor); ctl.setGrid(s0.showGrid); ctl.setShadows(s0.showShadows);
     const g0 = sceneSource(s0);
     ctl.sync(g0.items, g0.walls, g0.settings);
@@ -156,6 +157,11 @@ export function Viewport() {
     const ro = new ResizeObserver(() => ctl.resize());
     ro.observe(hostRef.current!);
     return () => { unsub(); ro.disconnect(); if (frameCleanup) frameCleanup(); ctl.dispose(); sceneRef.current = null; };
+    } catch {
+      setWebglError(true);
+      try { ctl.dispose(); } catch { /* abaikan */ }
+      sceneRef.current = null;
+    }
   }, []);
 
   // ─── Pointer interaction ───
