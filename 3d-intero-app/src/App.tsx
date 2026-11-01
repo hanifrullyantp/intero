@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState, type ReactNode } from 'react';
 import { Landing, landingApi } from './components/Landing';
 import { AuthModal } from './components/AuthModal';
 import { Editor } from './components/editor/Editor';
@@ -10,6 +10,21 @@ import { SpotlightHost } from './components/Spotlight';
 import { useStore } from './store';
 import { fetchProjectShare, forgetShareUrl, projectFromLegacyHash, shareIdFromPath } from './lib/share-link';
 import { clearActiveProject } from './lib/account';
+
+class ViewBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center gap-3 p-6 text-center" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+        <p className="text-[16px] font-bold">Tampilan tidak dapat dimuat</p>
+        <p className="text-[13px]" style={{ color: 'var(--text-secondary)', maxWidth: 360 }}>Muat ulang halaman. Proyek yang sudah tersimpan di akun atau di perangkat ini tidak ikut terhapus.</p>
+        <button className="btn btn-primary" onClick={() => window.location.reload()}>Muat ulang</button>
+      </div>
+    );
+  }
+}
 
 // 3D Intero — entry: landing ↔ editor dengan transisi sinematik, mock auth, white flash, share link
 export default function App() {
@@ -100,9 +115,11 @@ export default function App() {
 
   return (
     <div className="h-full w-full" style={{ fontFamily: 'var(--font-body)' }}>
-      {openingShare ? (
-        <div className="h-full w-full flex items-center justify-center text-[14px]" style={{ background: 'var(--bg-main)', color: 'var(--text-secondary)' }}>Membuka tautan…</div>
-      ) : view === 'landing' ? <Landing /> : view === 'viewer' ? <Viewer onBack={backToLanding} /> : <Editor onBackToLanding={backToLanding} />}
+      <ViewBoundary>
+        {openingShare ? (
+          <div className="h-full w-full flex items-center justify-center text-[14px]" style={{ background: 'var(--bg-main)', color: 'var(--text-secondary)' }}>Membuka tautan…</div>
+        ) : view === 'landing' ? <Landing /> : view === 'viewer' ? <Viewer onBack={backToLanding} /> : <Editor onBackToLanding={backToLanding} />}
+      </ViewBoundary>
       <ArHost />
       {view === 'editor' && <ArFallbackModal reason="Perangkat atau browser ini belum mendukung konfigurasi AR yang dibutuhkan (hit-test / dom-overlay). Silakan pilih salah satu opsi di bawah." onRetry={() => { useStore.getState().ui({ showArFallback: false, showAr: true }); }} />}
       {view === 'editor' && <CameraArView />}

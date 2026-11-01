@@ -11,7 +11,7 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 | 4 | Popup chat awal + wizard + suara | selesai |
 | 5 | Klik komponen jadi konteks AI | selesai |
 | 6 | Audit UI/UX & matematika (hanya laporan) | selesai |
-| 7 | Mode Simple vs Advanced [GERBANG] | belum |
+| 7 | Mode Simple vs Advanced [GERBANG] | menunggu persetujuan |
 | 8 | Mode Produksi [GERBANG] | belum |
 | 9 | Super Admin | belum |
 | 10 | Rencana render realistis AI | belum |
@@ -20,6 +20,8 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 Catatan langkah 11: Tahap 1–2 di dokumen. Kode 3a–3d ada di belakang flag `mobile_ux_v2` (default mati). Nyalakan dengan `localStorage.setItem('mobile_ux_v2','1')` lalu muat ulang, atau menu mobile "Coba tampilan mobile baru".
 
 Catatan langkah 1: aplikasi yang cocok dengan screenshot adalah `3d-intero-app/` (deploy default `3d.intero.id`). Ada pohon kedua `3D Intero/` yang tidak ikut `npm run build`. Detail di `docs/CODEMAP.md`.
+
+Catatan langkah 7: laporan di `docs/ADVANCED_ROADMAP.md`. Wave 1 yang diusulkan hanya PR1, mode Simple yang menyembunyikan alat manual di belakang flag `simple_shell_v1`. Kode belum ditulis.
 
 Catatan langkah 6: laporan di `docs/AUDIT.md`. Tidak ada perbaikan kode. Temuan utama: `setSettings` tidak menggeser kabinet, `repackWall` mempertahankan Y lama, mode Simple masih mengizinkan ubah ukuran. Tes gagal tidak ditambahkan.
 
