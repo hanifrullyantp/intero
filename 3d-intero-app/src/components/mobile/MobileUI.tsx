@@ -15,6 +15,7 @@ import { LayersPanel } from '../editor/LayersPanel';
 import { launchVR } from '../xr/launch';
 import { useXRCaps } from '../../xr/xr-manager';
 import { DragNumber, Field, Toggle, toast } from '../ui';
+import { APP_NAME } from '../../lib/constants';
 import { timeAgo } from '../../lib/utils';
 import { isMobileUxV2Enabled, setMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
 import { isSimpleShellActive } from '../../lib/simple-shell-flag';
