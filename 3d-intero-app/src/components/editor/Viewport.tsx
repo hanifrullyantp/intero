@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Copy, Settings2, Trash2 } from 'lucide-react';
 import { sceneSource, captureDoc, commitDockCommand } from '../../projectdoc/session';
 import { isMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
+import { isSimpleShellActive } from '../../lib/simple-shell-flag';
 import { SceneController } from '../../three/SceneController';
 import { useStore } from '../../store';
 import type { V3 } from '../../types';
@@ -56,6 +57,7 @@ export function Viewport() {
     ctl.sync(g0.items, g0.walls, g0.settings);
     ctl.setViewMode(s0.viewMode, s0.topSubMode);
     ctl.setTool(s0.tool);
+    ctl.setManualGizmo(!isSimpleShellActive(s0.uiMode));
     ctl.syncDimensions(s0.dimensions);
     ctl.setSelection(s0.selectedIds);
     ctl.setPinMarkers(s0.arPins.a, s0.arPins.b);
@@ -114,7 +116,7 @@ export function Viewport() {
         if (!s.lightsOn) ctl.setLightsOn(false);
       }
       if (s.selectedIds !== p.selectedIds) ctl.setSelection(s.selectedIds);
-      if (s.tool !== p.tool) { ctl.setTool(s.tool); if (s.tool !== 'tape' && s.tool !== 'dimension' && s.tool !== 'protractor') { measurePts.current = []; ctl.clearPreview(); } }
+      if (s.tool !== p.tool || s.uiMode !== p.uiMode) { ctl.setManualGizmo(!isSimpleShellActive(s.uiMode)); ctl.setTool(s.tool); if (s.tool !== 'tape' && s.tool !== 'dimension' && s.tool !== 'protractor') { measurePts.current = []; ctl.clearPreview(); } }
       if (s.viewMode !== p.viewMode) ctl.setViewMode(s.viewMode, s.topSubMode);
       if (s.topSubMode !== p.topSubMode) ctl.setTopSubMode(s.topSubMode);
       if (s.openIds !== p.openIds) {
@@ -263,6 +265,13 @@ export function Viewport() {
       return;
     }
     const readOnly = s.shareMode === 'view';
+    if (isSimpleShellActive(s.uiMode)) {
+      if (item && !item.locked) {
+        if (e.shiftKey || e.ctrlKey || e.metaKey) s.toggleSelect(item.id);
+        else s.setSelection([item.id]);
+      } else if (!e.shiftKey) s.clearSelection();
+      return;
+    }
     switch (s.tool) {
       case 'select': case 'orbit': case 'move': case 'rotate': case 'scale': case 'hand': {
         if (s.tool === 'hand') return;
@@ -315,7 +324,7 @@ export function Viewport() {
   };
   const onContextMenu = (e: React.MouseEvent) => {
     const ctl = sceneRef.current; if (!ctl) return;
-    if (useStore.getState().shareMode === 'view') return;
+    if (useStore.getState().shareMode === 'view' || isSimpleShellActive(useStore.getState().uiMode)) return;
     const hit = ctl.raycastItem(e.clientX, e.clientY);
     if (hit) { e.preventDefault(); useStore.getState().setSelection([hit.id]); setCtxMenu({ x: e.clientX, y: e.clientY, id: hit.id }); }
   };

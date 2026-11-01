@@ -19,7 +19,7 @@ export type Profile = '40x40' | '20x20';
 export interface Segment { id: string; itemId: string; itemTag: string; profile: Profile; a: V3; b: V3; length: number; virtual?: boolean }
 
 export interface Placement { panelId: string; code: string; itemTag: string; x: number; y: number; w: number; h: number; rotated: boolean }
-export interface Sheet { index: number; placements: Placement[] }
+export interface Sheet { index: number; placements: Placement[]; offcutMm2: number }
 export interface NestResult {
   material: PanelMaterial; sheetW: number; sheetH: number; sheets: Sheet[]; usedArea: number; wastePct: number; unplaced: Panel[];
 }

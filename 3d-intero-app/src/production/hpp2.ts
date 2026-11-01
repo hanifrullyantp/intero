@@ -1,8 +1,10 @@
 // 3D Intero — HPP Calculator v2: estimasi (auto dari scene) vs realisasi (input user) vs selisih.
 import type { CatalogItem, FrameMaterialId, HppRow, Item, ProjectSettings, Scenario, Wall } from '../types';
 import type { ProductionBundle } from './types';
-import { FRAME_MATERIALS, buildFrame, type FrameResult } from './frame';
+import { FRAME_MATERIALS, buildFrame, frameSurfaceM2, type FrameResult } from './frame';
 import { planCuts } from './cutlist';
+import { countertopMeasure } from './quote';
+import { DEFAULT_PRICES } from './prices';
 import { uid } from '../lib/utils';
 
 const cat = (catalog: CatalogItem[], id: string): CatalogItem | undefined => catalog.find((c) => c.id === id);
@@ -16,8 +18,7 @@ const HW_MAP: Record<string, { id: string; div?: number }> = {
   pin: { id: 'c-skrup-m4', div: 1 }, confirmat: { id: 'c-skrup-jf', div: 200 }, dowel: { id: 'c-skrup-m4', div: 1 },
   screw_dw: { id: 'c-skrup-jf', div: 200 }, elbow: { id: 'c-siku' }, bolt_m8: { id: 'c-skrup-m4' }, screw_acp: { id: 'c-skrup-jf', div: 200 },
   glue_yellow: { id: 'c-aibon' }, glue_white: { id: 'c-prima' }, weld_rod: { id: 'c-epoxy' }, silicone: { id: 'c-prima' }, anchor: { id: 'c-fischer' },
-  acc_dish: { id: 'c-rak-piring' }, acc_spice: { id: 'c-rak-sendok' }, acc_gas: { id: 'c-rak-sendok' }, acc_cutlery: { id: 'c-rak-sendok' },
-  acc_trash: { id: 'c-rak-sendok' }, acc_lazy: { id: 'c-rak-piring' }, acc_magiccom_tray: { id: 'c-rel-fe45' },
+  acc_dish: { id: 'c-rak-piring' }, acc_spice: { id: 'c-rak-sendok' },
 };
 const FALLBACK: Record<string, { name: string; unit: string; price: number }> = {
   pushopen: { name: 'Push-to-open mechanism', unit: 'pcs', price: 35000 },
@@ -46,18 +47,20 @@ export function autoHppRows(items: Item[], walls: Wall[], settings: ProjectSetti
     push({ cat: c.cat, name: c.name, spec: c.spec, unit: c.unit, vol, price: c.price, supplier: c.supplier });
   };
 
-  // 1 ── Rangka (batang 6 m, waste 5% sudah termasuk) + bracket sudut L
+  // 1 ── Rangka hanya untuk metode rangka. Batang dan luas cat berasal dari buildFrame yang sama.
   const fm = FRAME_MATERIALS[material];
-  for (const pl of planCuts(frame)) {
-    const k = pl.profile;
-    const id = FRAME_CATALOG[material][k];
-    const c = cat(catalog, id);
-    const name = c?.name ?? `${fm.short} · profil ${k === 'alu' ? '1×1.5"' : k.replace('1530', '1.5×3').replace('1515', '1.5×1.5').replace('2040', '2×4')} cm`;
-    const price = c?.price ?? Math.round((frame.barPrice[k] || fm.bars[k]) * fm.factor);
-    push({ cat: 'Rangka', name, spec: `batang 6 m · potong optimal ${pl.bars.length} · standar +5% ${pl.standard}`, unit: 'btg', vol: pl.buy, price, supplier: c?.supplier });
+  if (scenario.method === 'rangka_acp') {
+    for (const pl of planCuts(frame)) {
+      const k = pl.profile;
+      const id = FRAME_CATALOG[material][k];
+      const c = cat(catalog, id);
+      const name = c?.name ?? `${fm.short} · profil ${k === 'alu' ? '1×1.5"' : k.replace('1530', '1.5×3').replace('1515', '1.5×1.5').replace('2040', '2×4')} cm`;
+      const price = c?.price ?? Math.round((frame.barPrice[k] || fm.bars[k]) * fm.factor);
+      push({ cat: 'Rangka', name, spec: `batang 6 m · potong optimal ${pl.bars.length} · standar +5% ${pl.standard}`, unit: 'btg', vol: pl.buy, price, supplier: c?.supplier });
+    }
+    fromCatalog('c-siku', frame.cornerBrackets);
+    if (material !== 'aluminium') fromCatalog('c-weld-rod', Math.ceil((frame.totalLengthM * 0.06) / 1) || 0, { name: 'Kawat las', unit: 'klg', price: 45000 });
   }
-  fromCatalog('c-siku', frame.cornerBrackets);
-  if (material !== 'aluminium') fromCatalog('c-weld-rod', Math.ceil((frame.totalLengthM * 0.06) / 1) || 0, { name: 'Kawat las', unit: 'klg', price: 45000 });
 
   // 2 ── Material panel (lembar + waste)
   const nest = (m: string) => bundle.nests.find((n) => n.sheets.length >= 0 && n.material === m);
@@ -82,10 +85,16 @@ export function autoHppRows(items: Item[], walls: Wall[], settings: ProjectSetti
     fromCatalog('c-edging', Math.ceil(bundle.edgeMeters / 25));
     fromCatalog('c-diton', 1);
   } else {
-    fromCatalog('c-epoxy', Math.ceil(bundle.frameSurfaceM2 * 0.6));
-    fromCatalog('c-thinner', Math.max(1, Math.ceil(bundle.frameSurfaceM2 * 0.3)));
+    const finishM2 = frameSurfaceM2(frame);
+    fromCatalog('c-epoxy', Math.ceil(finishM2 * 0.6));
+    fromCatalog('c-thinner', Math.max(1, Math.ceil(finishM2 * 0.3)));
     fromCatalog('c-prima', Math.ceil(bundle.panels.length / 24));
   }
+  const top = countertopMeasure(items, walls, settings);
+  const ctPrice = DEFAULT_PRICES.find((p) => p.id === `ct_${settings.countertop.type}`);
+  const tile = DEFAULT_PRICES.find((p) => p.id === 'tile_backsplash');
+  if (ctPrice) push({ cat: 'Material', name: ctPrice.name, spec: `${top.areaM2} m²`, unit: ctPrice.unit, vol: top.areaM2, price: ctPrice.price });
+  if (tile && top.backsplashM2 > 0) push({ cat: 'Material', name: tile.name, spec: `tinggi ${top.backsplashHeightMm / 10} cm`, unit: tile.unit, vol: top.backsplashM2, price: tile.price });
 
   // 4 ── Hardware dari kalkulator
   for (const h of bundle.hardware) {

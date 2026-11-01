@@ -120,9 +120,11 @@ Wave 1 adalah yang paling terasa dan paling murah. Hanya PR1.
 
 I3 tidak dijadwalkan.
 
-## Wave 1 bila disetujui
+## Wave 1
 
-Flag `simple_shell_v1`. Default mati: Simple hari ini tetap seperti sekarang. Saat flag hidup:
+Diimplementasikan di belakang flag `simple_shell_v1` (default mati). Nyalakan dengan `localStorage.setItem('simple_shell_v1','1')` lalu muat ulang. Mode Advanced tidak berubah. Tampilan HP baru (`mobile_ux_v2`) tidak diubah.
+
+Saat flag hidup:
 
 - Simple menampilkan chat AI, orbit, zoom, klik untuk memilih, Undo, Redo, dan tombol Produksi.
 - Toolbar kiri, kolom ukuran, pustaka, layers, gizmo, dan dialog mirror atau array tidak tampil di Simple.
@@ -130,8 +132,6 @@ Flag `simple_shell_v1`. Default mati: Simple hari ini tetap seperti sekarang. Sa
 - `setUiMode` tetap hanya menyimpan pilihan tampilan. Item, dinding, dan settings tidak berubah. Tidak ada command baru, karena tidak ada data proyek yang berubah.
 - Tes memastikan perpindahan mode tidak mengubah jumlah item dan tidak menambah langkah undo.
 
-Berkas yang akan disentuh saat implementasi: `Editor.tsx`, `LeftToolbar.tsx`, `PropertiesPanel.tsx`, `TopToolbar.tsx`, `ViewControls.tsx`, `ComponentLibrary.tsx`, satu berkas tes, dan `docs/PROGRESS.md`.
+## Yang tidak diubah
 
-## Yang tidak diubah di bagian laporan ini
-
-Tidak ada patch, tidak ada tes baru, dan flag `projectdoc_v1` serta `mobile_ux_v2` tetap mati.
+Flag `projectdoc_v1` dan `mobile_ux_v2` tetap mati. Wave 2 dan Wave 3 belum dikerjakan.

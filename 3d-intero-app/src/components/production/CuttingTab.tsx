@@ -5,6 +5,7 @@ import type { Item, ProdMethod, ProdStatus } from '../../types';
 import type { FrameResult } from '../../production/frame';
 import type { Panel, ProductionBundle } from '../../production/types';
 import { STATUSES, nextStatus, overallProgress, statusOf } from '../../production/status';
+import { panelLabelRows } from '../../production/labels';
 import { TYPE_LABELS } from '../../lib/constants';
 import { downloadBlob } from '../../lib/utils';
 import { Select, Toggle, toast, useIsMobile } from '../ui';
@@ -24,9 +25,9 @@ function PanelTable({ panels, items, onlyId }: { panels: Panel[]; items: Item[];
   const mats = [...new Set(panels.map((p) => p.material))];
   const totalArea = list.reduce((a, p) => a + (p.w * p.h * p.qty) / 1e6, 0);
   const csv = () => {
-    const rows = [['ID', 'Kabinet', 'Panel', 'Panjang (cm)', 'Lebar (cm)', 'Tebal (mm)', 'Material', 'Qty', 'Serat', 'Muka HPL', 'Catatan'], ...list.map((p) => [p.id, p.itemName, p.label, cm(p.h), cm(p.w), p.t, MAT[p.material], p.qty, p.grain === 'h' ? 'searah panjang' : 'bebas', p.hplFaces, noteOf.get(p.itemId) ?? ''])];
-    downloadBlob('daftar-panel.csv', new Blob(['\ufeff' + rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }));
-    toast('CSV daftar panel diunduh', 'success');
+    const rows = panelLabelRows(list, (id) => noteOf.get(id) ?? '');
+    downloadBlob('label-potong.csv', new Blob(['\ufeff' + rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+    toast('CSV label potong diunduh', 'success');
   };
   return (
     <div className="p-3 flex flex-col gap-2">
@@ -34,7 +35,7 @@ function PanelTable({ panels, items, onlyId }: { panels: Panel[]; items: Item[];
         <button className={`btn btn-sm ${mat === 'all' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMat('all')}>Semua · {panels.length}</button>
         {mats.map((m) => <button key={m} className={`btn btn-sm ${mat === m ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMat(m)}>{MAT[m]}</button>)}
         <div className="flex-1" /><span className="mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>{list.length} panel · {totalArea.toFixed(2)} m²</span>
-        <button className="btn btn-secondary btn-sm" onClick={csv}><Download size={13} />CSV</button>
+        <button className="btn btn-secondary btn-sm" onClick={csv}><Download size={13} />Label CSV</button>
       </div>
       <div className="overflow-auto rounded-xl" style={{ border: '1px solid var(--border)', maxHeight: 'calc(100vh - 190px)' }}>
         <table className="hpp-table">

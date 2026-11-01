@@ -46,7 +46,7 @@ export async function exportRowsPdf(a: { projectName: string; rows: HppRow[]; se
   const ensure = (h: number) => { if (y + h > PH - 14) { footer(); doc.addPage(); page += 1; y = M; } };
   if (a.logo) { try { doc.addImage(a.logo, a.logo.includes('image/png') ? 'PNG' : 'JPEG', M, y, 20, 20); } catch { /* logo rusak */ } }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(17, 24, 39);
-  doc.text('RINCIAN HPP — ESTIMASI vs REALISASI', a.logo ? M + 26 : M, y + 8);
+  doc.text('PENAWARAN HARGA', a.logo ? M + 26 : M, y + 8);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(75, 85, 99);
   doc.text(`Proyek: ${a.projectName}   ·   Skenario: ${a.scenario}`, a.logo ? M + 26 : M, y + 14);
   doc.text(`Klien: ${prod.clientName || '-'}   ·   Tanggal: ${new Date().toLocaleDateString('id-ID')}`, a.logo ? M + 26 : M, y + 19);
@@ -85,7 +85,7 @@ export async function exportRowsPdf(a: { projectName: string; rows: HppRow[]; se
   doc.setDrawColor(120); doc.setLineWidth(0.3); doc.line(M + 6, y + 16, M + 66, y + 16); doc.line(R - 66, y + 16, R - 6, y + 16);
   doc.setFontSize(9); doc.setTextColor(75, 85, 99); doc.text('Desainer', M + 36, y + 21, { align: 'center' }); doc.text(prod.clientName ? `Klien — ${prod.clientName}` : 'Klien', R - 36, y + 21, { align: 'center' });
   footer();
-  doc.save(`${sanitizeFilename(a.projectName)}_hpp.pdf`);
+  doc.save(`${sanitizeFilename(a.projectName)}_penawaran.pdf`);
 }
 
 function parseCsvText(text: string): string[][] {

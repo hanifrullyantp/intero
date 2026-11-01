@@ -65,6 +65,16 @@ export interface FrameResult {
   barCount: number; totalLengthM: number; cornerBrackets: number; material: FrameMaterialId;
 }
 
+/** Luas cat luar hollow, dari member yang sama dengan daftar potong batang. */
+export function frameSurfaceM2(frame: FrameResult): number {
+  let mm2 = 0;
+  for (const m of frame.members) {
+    const dims = [m.d.x, m.d.y, m.d.z].sort((a, b) => b - a);
+    mm2 += 2 * (dims[1] + dims[2]) * m.len;
+  }
+  return mm2 / 1e6;
+}
+
 const rowsOf = (items: Item[], wall: Wall, row: 'base' | 'wall') =>
   items.filter((i) => i.wallId === wall.id && rowOf(i) === row && (row !== 'wall' || i.type !== 'hood'))
     .map((i) => ({ i, s: offset(wall, i) - i.dims.w / 2, e: offset(wall, i) + i.dims.w / 2 }))

@@ -16,6 +16,7 @@ import { DragNumber, Field, Modal, Select, toast, useIsMobile } from '../ui';
 import { listMyComponents, loadDraft, loadPrices, loadProjectDocDraft, saveDraft, saveLocalProject, saveProjectDocDraft } from '../../lib/persistence';
 import { toProjectData } from '../../projectdoc/adapter';
 import { isProjectDocV1Enabled } from '../../projectdoc/flag';
+import { isSimpleShellActive } from '../../lib/simple-shell-flag';
 import { docForAutosave } from '../../projectdoc/session';
 import { getActiveProject, getSession } from '../../lib/account';
 import { saveCloudProject } from '../../lib/cloud-projects';
@@ -128,6 +129,15 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       const mod = e.ctrlKey || e.metaKey;
       const k = e.key.toLowerCase();
       const readOnly = st.shareMode === 'view';
+      if (isSimpleShellActive(st.uiMode)) {
+        if (mod && e.shiftKey && k === 'u') { e.preventDefault(); st.setUiMode(st.uiMode === 'simple' ? 'advanced' : 'simple'); return; }
+        if (mod && e.shiftKey && k === 'p') { e.preventDefault(); st.setAppMode(st.appMode === 'design' ? 'production' : 'design'); return; }
+        if (mod && e.shiftKey && k === 'z') { e.preventDefault(); st.redo(); return; }
+        if (mod && k === 'z') { e.preventDefault(); st.undo(); return; }
+        if (mod && k === 'y') { e.preventDefault(); st.redo(); return; }
+        if (k === 'escape') { st.clearSelection(); st.ui({ dialog: null }); return; }
+        return;
+      }
       if (k === '/' && !mod) { e.preventDefault(); st.ui({ showSearch: true }); return; }
       if (readOnly && (k === 'delete' || k === 'backspace')) return;
       if (mod && e.shiftKey && k === 't') { e.preventDefault(); st.setTheme(st.theme === 'light' ? 'dark' : 'light'); return; }
@@ -199,6 +209,7 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
     setDraft(null);
   };
   const inProd = s.appMode === 'production';
+  const shell = isSimpleShellActive(s.uiMode);
   const mobileV2 = isMobile && isMobileUxV2Enabled();
   useEffect(() => {
     if (!mobileV2) return;
@@ -223,18 +234,18 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       {mobileV2 ? <MobileV2TopBar /> : isMobile && <MobileTopbar />}
       <TopToolbar onBackToLanding={onBackToLanding} headless={isMobile} />
       {s.shareMode && <ShareBanner mode={s.shareMode} />}
-      {!inProd && !mobileV2 && <ContextBar />}
+      {!inProd && !mobileV2 && !shell && <ContextBar />}
       <div className={`flex-1 flex min-h-0 relative${mobileV2 ? ' mv2-stage' : ''}`}>
         <div className="flex-1 relative min-w-0 min-h-0 h-full">
           <Viewport />
-          {!inProd && <LeftToolbar />}
-          {s.showLibrary && !isMobile && !inProd && <div className="float-panel" style={{ left: 68, top: 12, bottom: 12 }}><ComponentLibrary /></div>}
-          {showLayersFloating && <FloatingLayers />}
+          {!inProd && !shell && <LeftToolbar />}
+          {s.showLibrary && !isMobile && !inProd && !shell && <div className="float-panel" style={{ left: 68, top: 12, bottom: 12 }}><ComponentLibrary /></div>}
+          {showLayersFloating && !shell && <FloatingLayers />}
           {!mobileV2 && <ViewControls />}
-          <DimensionPanel />
+          {!shell && <DimensionPanel />}
           {mobileV2 && !inProd && <MobileV2CanvasHud />}
         </div>
-        {showSidebar && (
+        {showSidebar && !shell && (
           <aside className="relative flex flex-col shrink-0 theme-transition" style={{ width: sidebarW, background: 'var(--bg-panel)', borderLeft: '1px solid var(--border)' }}>
             <div className="sidebar-resizer" style={{ touchAction: 'none' }} onPointerDown={onSidebarResize} title="Resize panel" />
             <div className="seg m-2">
@@ -251,16 +262,16 @@ export function Editor({ onBackToLanding }: { onBackToLanding: () => void }) {
       {mobileV2 && !inProd && <MobileV2Bottom />}
       {mobileV2 && <MobileDrawers legacyActions={false} />}
       {isMobile && !mobileV2 && <MobileChrome />}
-      {startChat && <StartChat onClose={() => setStartChat(false)} onWizard={() => { setStartChat(false); s.ui({ showWizard: true }); }} />}
-      {s.showWizard && <Wizard onClose={() => s.ui({ showWizard: false })} />}
+      {startChat && <StartChat onClose={() => setStartChat(false)} onWizard={() => { if (isSimpleShellActive(useStore.getState().uiMode)) { toast('Wizard lengkap ada di Mode Advanced.', 'info'); return; } setStartChat(false); s.ui({ showWizard: true }); }} />}
+      {s.showWizard && !shell && <Wizard onClose={() => s.ui({ showWizard: false })} />}
       <AiAssistant open={s.showAiChat} onClose={() => s.ui({ showAiChat: false })} />
       <ArDialog /><PinPickBanner /><PhotoOverlay /><PriceListDialog />
-      {s.showBuilder && <ComponentBuilder onClose={() => s.ui({ showBuilder: false })} />}
+      {s.showBuilder && !shell && <ComponentBuilder onClose={() => s.ui({ showBuilder: false })} />}
       {s.dialog?.kind === 'confirm' && (
         <Modal onClose={() => s.ui({ dialog: null })} width={420}><div className="p-6 flex flex-col gap-4"><h3 className="text-[16px] font-bold">{s.dialog.title}</h3><p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{s.dialog.message}</p><div className="flex justify-end gap-2"><button className="btn btn-secondary" onClick={() => s.ui({ dialog: null })}>Batal</button><button className="btn btn-primary" onClick={() => { const fn = s.dialog?.onConfirm; s.ui({ dialog: null }); fn?.(); }}>Ya, lanjutkan</button></div></div></Modal>
       )}
-      {s.dialog?.kind === 'mirror' && <MirrorDialog />}
-      {s.dialog?.kind === 'array' && <ArrayDialog />}
+      {s.dialog?.kind === 'mirror' && !shell && <MirrorDialog />}
+      {s.dialog?.kind === 'array' && !shell && <ArrayDialog />}
       {draft && (
         <Modal width={440}><div className="p-6 flex flex-col gap-4"><h3 className="text-[16px] font-bold">Lanjutkan proyek terakhir?</h3><p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>Draft "<b>{draft.name}</b>" ({draft.count} komponen) tersimpan otomatis {timeAgo(draft.savedAt)} di browser ini.</p><div className="flex justify-end gap-2"><button className="btn btn-secondary" onClick={() => { setDraft(null); if (!useStore.getState().items.length) setStartChat(true); }}>Mulai baru</button><button className="btn btn-primary" onClick={restoreDraft}>Lanjutkan</button></div></div></Modal>
       )}

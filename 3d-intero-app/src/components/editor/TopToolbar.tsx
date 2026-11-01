@@ -13,6 +13,7 @@ import type { CountertopType } from '../../types';
 import { TeamCollaborationDialog } from './TeamCollaborationDialog';
 import { useXRCaps } from '../../xr/xr-manager';
 import { launchVR } from '../xr/launch';
+import { isSimpleShellActive } from '../../lib/simple-shell-flag';
 
 function Menu({ label, children }: { label: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -70,6 +71,7 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
   };
   const fullscreen = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); };
   const hasSel = s.selectedIds.length > 0;
+  const shell = isSimpleShellActive(s.uiMode);
   const caps = useXRCaps();
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
         <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--brand-primary)', color: '#fff' }}><Box size={16} /></span>
         <span className="font-bold text-[14px] hidden sm:inline" style={{ fontFamily: 'var(--font-heading)' }}>{APP_NAME}</span>
       </button>
-      <div className="hidden md:flex items-center">
+      {!shell && <div className="hidden md:flex items-center">
         <Menu label="File">{(close) => (<>
           <MI icon={<FilePlus2 size={15} />} label="Baru (Magic Generator)" kbd="Ctrl+N" disabled={readOnly} onClick={() => { close(); fileActions.newProject(); }} />
           <MI icon={<FolderOpen size={15} />} label="Buka proyek…" kbd="Ctrl+O" disabled={readOnly} onClick={() => { close(); fileActions.browse(); }} />
@@ -138,7 +140,7 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
           <MI icon={<Wand2 size={15} />} label="Magic Layout Wizard" disabled={readOnly} onClick={() => { close(); s.ui({ showWizard: true }); }} />
           <MI icon={<Info size={15} />} label={`Tentang ${APP_NAME}`} onClick={() => { close(); s.ui({ showAbout: true }); }} />
         </>)}</Menu>
-      </div>
+      </div>}
       <div className="flex-1" />
       <div className="flex items-center gap-2 min-w-0">
         {editingName ? (
@@ -152,15 +154,15 @@ export function TopToolbar({ onBackToLanding, headless }: { onBackToLanding: () 
         <button type="button" className="icon-btn" data-tip="Undo (Ctrl+Z)" onClick={s.undo} disabled={!canUndo(s)}><Undo2 size={17} /></button>
         <button type="button" className="icon-btn" data-tip="Redo (Ctrl+Y)" onClick={s.redo} disabled={!canRedo(s)}><Redo2 size={17} /></button>
         <div className="divider-v" />
-        <button type="button" className={`btn btn-sm ${s.openIds.length ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} data-tour="open-btn" onClick={openToggle} data-tip={s.selectedIds.length ? `Buka/tutup ${s.selectedIds.length} kabinet terpilih` : 'Buka/tutup semua pintu, laci & aksesoris'}><DoorOpen size={15} />{s.openIds.length ? 'Tutup' : 'Open'}</button>
-        <button type="button" className={`btn btn-sm ${s.lightsOn ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} onClick={() => s.toggleLights()} data-tip={s.lightsOn ? 'Matikan lampu LED' : 'Nyalakan lampu LED'}>{s.lightsOn ? <Lightbulb size={15} /> : <LightbulbOff size={15} />}{s.lightsOn ? 'Lampu On' : 'Lampu Off'}</button>
-        <div className="seg hidden xl:inline-flex" title="Mode kerja (Ctrl+Shift+P)"><button type="button" className={s.appMode === 'design' ? 'active' : ''} onClick={() => s.setAppMode('design')}>Desain</button><button type="button" className={s.appMode === 'production' ? 'active' : ''} onClick={() => s.setAppMode('production')}>Produksi</button></div>
+        {!shell && <button type="button" className={`btn btn-sm ${s.openIds.length ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} data-tour="open-btn" onClick={openToggle} data-tip={s.selectedIds.length ? `Buka/tutup ${s.selectedIds.length} kabinet terpilih` : 'Buka/tutup semua pintu, laci & aksesoris'}><DoorOpen size={15} />{s.openIds.length ? 'Tutup' : 'Open'}</button>}
+        {!shell && <button type="button" className={`btn btn-sm ${s.lightsOn ? 'btn-primary' : 'btn-secondary'} hidden sm:inline-flex`} onClick={() => s.toggleLights()} data-tip={s.lightsOn ? 'Matikan lampu LED' : 'Nyalakan lampu LED'}>{s.lightsOn ? <Lightbulb size={15} /> : <LightbulbOff size={15} />}{s.lightsOn ? 'Lampu On' : 'Lampu Off'}</button>}
+        <div className={`seg ${shell ? 'inline-flex' : 'hidden xl:inline-flex'}`} title="Mode kerja (Ctrl+Shift+P)"><button type="button" className={s.appMode === 'design' ? 'active' : ''} onClick={() => s.setAppMode('design')}>Desain</button><button type="button" className={s.appMode === 'production' ? 'active' : ''} onClick={() => s.setAppMode('production')}>Produksi</button></div>
         <button type="button" className={`btn btn-sm ${s.showAiChat ? 'btn-primary' : 'btn-secondary'}`} data-tip="Edit Desain via AI Chat Assistant" onClick={() => s.ui({ showAiChat: !s.showAiChat })}><Sparkles size={15} /><span className="hidden md:inline">AI Edit</span></button>
-        <button type="button" className={`icon-btn ${s.showDimensions ? 'active' : ''}`} data-tip="Dimensi (Shift+D)" onClick={() => { s.setDim({ showDimensions: !s.showDimensions }); s.ui({ showDimPanel: !s.showDimensions }); }}><Ruler size={17} /></button>
-        <button type="button" className="icon-btn" data-tip="Cari fitur (/)" onClick={() => s.ui({ showSearch: true })}><Search size={17} /></button>
-        <button type="button" className="icon-btn" data-tour="share-btn" data-tip="Bagikan tautan (lihat saja / bisa edit)" onClick={() => setShareOpen(true)}><Share2 size={17} /></button>
-        <button type="button" className="icon-btn hidden sm:inline-flex" data-tip="Kolaborasi tim langsung" onClick={() => setTeamOpen(true)}><UsersRound size={17} /></button>
-        <div className="seg hidden lg:inline-flex" title="Mode UI (Ctrl+Shift+U)">
+        {!shell && <button type="button" className={`icon-btn ${s.showDimensions ? 'active' : ''}`} data-tip="Dimensi (Shift+D)" onClick={() => { s.setDim({ showDimensions: !s.showDimensions }); s.ui({ showDimPanel: !s.showDimensions }); }}><Ruler size={17} /></button>}
+        {!shell && <button type="button" className="icon-btn" data-tip="Cari fitur (/)" onClick={() => s.ui({ showSearch: true })}><Search size={17} /></button>}
+        {!shell && <button type="button" className="icon-btn" data-tour="share-btn" data-tip="Bagikan tautan (lihat saja / bisa edit)" onClick={() => setShareOpen(true)}><Share2 size={17} /></button>}
+        {!shell && <button type="button" className="icon-btn hidden sm:inline-flex" data-tip="Kolaborasi tim langsung" onClick={() => setTeamOpen(true)}><UsersRound size={17} /></button>}
+        <div className={`seg ${shell ? 'inline-flex' : 'hidden lg:inline-flex'}`} title="Mode UI (Ctrl+Shift+U)">
           <button type="button" className={s.uiMode === 'simple' ? 'active' : ''} onClick={() => s.setUiMode('simple')}>Simple</button>
           <button type="button" className={s.uiMode === 'advanced' ? 'active' : ''} onClick={() => s.setUiMode('advanced')}>Advanced</button>
         </div>

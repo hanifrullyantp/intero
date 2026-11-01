@@ -1,5 +1,6 @@
-// 3D Intero — Optimasi cutting list: MaxRects (best short side fit) + rotasi & arah serat, kerf 3 mm.
-// Arah serat HPL mengikuti sisi TERPANJANG panel → sisi terpanjang dijajarkan dengan panjang lembar.
+// 3D Intero — Optimasi cutting list: MaxRects (best short side fit) + rotasi & arah serat.
+// Lembar tetap ukuran aslinya. Kerf masuk ke jarak antar potongan, tidak memperbesar lembar.
+// Margin tepi 10 mm. Arah serat mengikuti sisi terpanjang dan panel itu tidak diputar.
 import type { NestResult, Panel, PanelMaterial, Placement, Sheet } from './types';
 
 interface Rect { x: number; y: number; w: number; h: number }
@@ -66,8 +67,10 @@ function pack(pieces: Piece[], sort: 'area' | 'long' | 'h' | 'w', W: number, H: 
       if (f) { commit(bin, pc, f, kerf); placed = true; break; }
     }
     if (!placed) {
-      const bin = new Bin(W + kerf, H + kerf); bins.push(bin);
-      const f = bin.find(pw, ph, pc.rotatable)!;
+      const bin = new Bin(W, H);
+      const f = bin.find(pw, ph, pc.rotatable);
+      if (!f) { unplaced.push(pc.p); continue; }
+      bins.push(bin);
       commit(bin, pc, f, kerf);
     }
   }
@@ -80,21 +83,30 @@ function commit(bin: Bin, pc: Piece, f: { x: number; y: number; w: number; h: nu
   bin.placements.push({ panelId: pc.p.id, code: pc.p.code, itemTag: pc.p.itemTag, x: f.x, y: f.y, w, h, rotated: w !== pc.w0 || h !== pc.h0 });
 }
 
-export function nestPanels(material: PanelMaterial, panels: Panel[], sheetW = 1220, sheetH = 2440, kerf = 3): NestResult {
+export const SHEET_MARGIN_MM = 10;
+
+export function nestPanels(material: PanelMaterial, panels: Panel[], sheetW = 1220, sheetH = 2440, kerf = 3, margin = SHEET_MARGIN_MM): NestResult {
   const pieces: Piece[] = [];
   for (const p of panels) for (let i = 0; i < p.qty; i++) {
     const grained = p.grain === 'h';
     let w = p.w, h = p.h;
-    if (grained && w > h) [w, h] = [h, w]; // serat sepanjang sisi terpanjang → sejajar panjang lembar
+    if (grained && w > h) [w, h] = [h, w];
     pieces.push({ p, w, h, rotatable: !grained, w0: p.w, h0: p.h });
   }
+  const usableW = Math.max(0, sheetW - 2 * margin);
+  const usableH = Math.max(0, sheetH - 2 * margin);
   let best: ReturnType<typeof pack> | null = null;
   for (const s of ['area', 'long', 'h', 'w'] as const) {
-    const r = pack(pieces, s, sheetW, sheetH, kerf);
-    if (!best || r.bins.length < best.bins.length || (r.bins.length === best.bins.length && r.used > best.used)) best = r;
+    const r = pack(pieces, s, usableW, usableH, kerf);
+    if (!best || r.unplaced.length < best.unplaced.length || (r.unplaced.length === best.unplaced.length && (r.bins.length < best.bins.length || (r.bins.length === best.bins.length && r.used > best.used)))) best = r;
   }
   const res = best!;
-  const sheets: Sheet[] = res.bins.map((b, i) => ({ index: i + 1, placements: b.placements }));
+  const sheets: Sheet[] = res.bins.map((b, i) => {
+    const placements = b.placements.map((p) => ({ ...p, x: p.x + margin, y: p.y + margin }));
+    const used = placements.reduce((sum, p) => sum + p.w * p.h, 0);
+    return { index: i + 1, placements, offcutMm2: sheetW * sheetH - used };
+  });
+  const usedArea = sheets.reduce((sum, sheet) => sum + sheet.placements.reduce((a, p) => a + p.w * p.h, 0), 0);
   const total = sheets.length * sheetW * sheetH;
-  return { material, sheetW, sheetH, sheets, usedArea: res.used, wastePct: total ? Math.max(0, (1 - res.used / total) * 100) : 0, unplaced: res.unplaced };
+  return { material, sheetW, sheetH, sheets, usedArea, wastePct: total ? Math.max(0, (1 - usedArea / total) * 100) : 0, unplaced: res.unplaced };
 }

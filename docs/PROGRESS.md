@@ -11,8 +11,8 @@ Status: `belum` | `sedang` | `selesai` | `menunggu persetujuan` | `dilewati`.
 | 4 | Popup chat awal + wizard + suara | selesai |
 | 5 | Klik komponen jadi konteks AI | selesai |
 | 6 | Audit UI/UX & matematika (hanya laporan) | selesai |
-| 7 | Mode Simple vs Advanced [GERBANG] | menunggu persetujuan |
-| 8 | Mode Produksi [GERBANG] | belum |
+| 7 | Mode Simple vs Advanced [GERBANG] | selesai |
+| 8 | Mode Produksi [GERBANG] | selesai |
 | 9 | Super Admin | belum |
 | 10 | Rencana render realistis AI | belum |
 | 11 | Mobile UX redesign | selesai |
@@ -21,7 +21,9 @@ Catatan langkah 11: Tahap 1–2 di dokumen. Kode 3a–3d ada di belakang flag `m
 
 Catatan langkah 1: aplikasi yang cocok dengan screenshot adalah `3d-intero-app/` (deploy default `3d.intero.id`). Ada pohon kedua `3D Intero/` yang tidak ikut `npm run build`. Detail di `docs/CODEMAP.md`.
 
-Catatan langkah 7: laporan di `docs/ADVANCED_ROADMAP.md`. Wave 1 yang diusulkan hanya PR1, mode Simple yang menyembunyikan alat manual di belakang flag `simple_shell_v1`. Kode belum ditulis.
+Catatan langkah 8: metode papan tidak lagi membeli hollow. Luas cat rangka mengikuti batang `buildFrame`. Meja, backsplash, dan SKU aksesori masuk RAB. Nesting MaxRects menjaga ukuran lembar, margin 10 mm, dan sisa per lembar. DXF, label QR, dan ProjectDoc sebagai sumber cut list belum dikerjakan.
+
+Catatan langkah 7: Wave 1 (PR1) ada di belakang flag `simple_shell_v1`, default mati. Saat hidup, Mode Simple menyembunyikan toolbar, ukuran, pustaka, layers, gizmo, dan dialog mirror/array. Undo, Redo, chat AI, orbit/zoom, klik, dan Produksi tetap. Berpindah mode tidak mengubah item atau undo.
 
 Catatan langkah 6: laporan di `docs/AUDIT.md`. Tidak ada perbaikan kode. Temuan utama: `setSettings` tidak menggeser kabinet, `repackWall` mempertahankan Y lama, mode Simple masih mengizinkan ubah ukuran. Tes gagal tidak ditambahkan.
 

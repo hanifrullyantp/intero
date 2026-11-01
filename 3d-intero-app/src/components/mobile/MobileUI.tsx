@@ -17,6 +17,7 @@ import { useXRCaps } from '../../xr/xr-manager';
 import { DragNumber, Field, Toggle, toast } from '../ui';
 import { timeAgo } from '../../lib/utils';
 import { isMobileUxV2Enabled, setMobileUxV2Enabled } from '../../lib/mobile-ux-flag';
+import { isSimpleShellActive } from '../../lib/simple-shell-flag';
 import { MobileMenuBody, MobileMenuHeader } from './MobileMenu';
 
 function openToggle() {
@@ -57,7 +58,7 @@ export function MobileTopbar() {
           </>)}
         </div>
       </header>
-      {s.selectedIds.length > 0 && s.appMode === 'design' && (
+      {s.selectedIds.length > 0 && s.appMode === 'design' && !isSimpleShellActive(s.uiMode) && (
         <div className="m-row2">
           {pill(<DoorOpen size={14} />, s.openIds.length ? 'Tutup' : 'Open', openToggle, s.openIds.length > 0)}
           {pill(s.lightsOn ? <Lightbulb size={14} /> : <LightbulbOff size={14} />, 'Lampu', () => s.toggleLights(), s.lightsOn)}
@@ -264,6 +265,18 @@ function useThreeFingerCycle() {
 export function MobileChrome() {
   const s = useStore();
   useThreeFingerCycle();
+  const shell = isSimpleShellActive(s.uiMode);
+  if (shell && s.appMode !== 'production') {
+    return (
+      <nav className="m-bnav" aria-label="Mode ringkas">
+        <button type="button" className="m-tab" onClick={() => s.undo()} disabled={!canUndo(s)} aria-label="Undo"><Undo2 size={21} /><span>Undo</span></button>
+        <button type="button" className="m-tab" onClick={() => s.redo()} disabled={!canRedo(s)} aria-label="Redo"><Redo2 size={21} /><span>Redo</span></button>
+        <button type="button" className="m-tab" onClick={() => s.ui({ showAiChat: !s.showAiChat })} aria-label="AI Edit"><Wand2 size={21} /><span>AI</span></button>
+        <button type="button" className="m-tab" onClick={() => s.setAppMode('production')} aria-label="Produksi"><Factory size={21} /><span>Produksi</span></button>
+        <button type="button" className="m-tab" onClick={() => s.setUiMode('advanced')} aria-label="Mode Advanced"><Wrench size={21} /><span>Advanced</span></button>
+      </nav>
+    );
+  }
   const sheet = s.mobileSheet;
   const tab = (id: 'parts' | 'tools' | 'layers' | 'props', icon: ReactNode, label: string) => (
     <button key={id} className={`m-tab ${sheet === id ? 'active' : ''}`} onClick={() => s.ui({ mobileSheet: sheet === id ? null : id, showLibrary: id === 'parts' && sheet !== id })}>{icon}<span>{label}</span></button>

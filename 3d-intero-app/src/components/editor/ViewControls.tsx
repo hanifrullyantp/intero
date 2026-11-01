@@ -3,6 +3,7 @@ import { Check, ChevronDown, Crosshair, Focus, Minus, Plus, RotateCcw } from 'lu
 import { useStore } from '../../store';
 import type { TopSubMode, ViewMode } from '../../types';
 import { sceneRef, liveBus } from './Viewport';
+import { isSimpleShellActive } from '../../lib/simple-shell-flag';
 import { timeAgo } from '../../lib/utils';
 
 const VIEWS: { id: ViewMode; label: string }[] = [
@@ -18,6 +19,7 @@ export function ViewControls() {
   const [zoom, setZoom] = useState(100);
   useEffect(() => { const t = setInterval(() => { const z = sceneRef.current?.zoomPercent(); if (z !== undefined) setZoom(z); }, 400); return () => clearInterval(t); }, []);
   const simple = s.uiMode === 'simple';
+  const shell = isSimpleShellActive(s.uiMode);
   const cur = VIEWS.find((v) => v.id === s.viewMode)!;
   return (
     <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 z-20" style={{ bottom: 12 }}>
@@ -31,7 +33,7 @@ export function ViewControls() {
             {open === 'view' && <div className="menu" style={{ top: 'auto', bottom: 'calc(100% + 6px)', minWidth: 200 }}>{VIEWS.map((v) => <button key={v.id} className="menu-item" onClick={() => { s.setViewMode(v.id); setOpen(null); }}><span style={{ width: 14 }}>{v.id === s.viewMode && <Check size={14} />}</span>{v.label}<span className="kbd">{v.id === 'perspective' ? '1' : v.id === 'top' ? '2' : v.id === 'front' ? '3' : v.id === 'right' ? '4' : v.id === 'iso' ? '5' : ''}</span></button>)}</div>}
           </div>
         )}
-        {s.viewMode === 'top' && (
+        {s.viewMode === 'top' && !shell && (
           <div className="relative">
             <button type="button" className="btn btn-ghost btn-sm" data-tour="sub-btn" onClick={() => setOpen(open === 'sub' ? null : 'sub')} style={{ color: 'var(--brand-primary)' }}>{SUBS.find((x) => x.id === s.topSubMode)!.label}<ChevronDown size={14} /></button>
             {open === 'sub' && <div className="menu" style={{ top: 'auto', bottom: 'calc(100% + 6px)', minWidth: 230 }}>{SUBS.map((v) => <button key={v.id} className="menu-item" onClick={() => { s.setTopSubMode(v.id); setOpen(null); }}><span style={{ width: 14 }}>{v.id === s.topSubMode && <Check size={14} />}</span><span className="flex flex-col"><span>{v.label}</span><span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>{v.hint}</span></span></button>)}</div>}

@@ -460,10 +460,15 @@ export class SceneController {
     this.updateTransformAttachment(ids);
   }
   private lastSelection: string[] = [];
+  private manualGizmo = true;
+  setManualGizmo(on: boolean) {
+    this.manualGizmo = on;
+    this.updateTransformAttachment();
+  }
   private updateTransformAttachment(ids?: string[]) {
     if (ids) this.lastSelection = ids;
     const sel = this.lastSelection;
-    const isTransform = this.tool === 'move' || this.tool === 'rotate' || this.tool === 'scale';
+    const isTransform = this.manualGizmo && (this.tool === 'move' || this.tool === 'rotate' || this.tool === 'scale');
     const first = sel.length ? this.built.get(sel[0]) : undefined;
     if (isTransform && first && !first.item.locked) {
       this.transform.attach(first.group);

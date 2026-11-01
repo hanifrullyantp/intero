@@ -65,7 +65,7 @@ export function HppTab({ items, walls, settings, scenario }: { items: Item[]; wa
     try {
       if (kind === 'csv') { exportRowsCsv(s.projectName, rows); toast('CSV HPP diunduh', 'success'); }
       else if (kind === 'xls') { await exportRowsXlsx(s.projectName, rows, settings, scenario.margin, scenario.ppnOn); toast('Excel HPP diunduh', 'success'); }
-      else { await exportRowsPdf({ projectName: s.projectName, rows, settings, margin: scenario.margin, ppnOn: scenario.ppnOn, logo, scenario: scenario.name }); toast('PDF HPP diunduh', 'success'); }
+      else { await exportRowsPdf({ projectName: s.projectName, rows, settings, margin: scenario.margin, ppnOn: scenario.ppnOn, logo, scenario: scenario.name }); toast('PDF penawaran diunduh', 'success'); }
     } catch (e) { toast(`Gagal export: ${(e as Error).message}`, 'error'); } finally { setBusy(null); }
   };
   const doImport = async (mode: 'rows' | 'catalog') => {
@@ -96,7 +96,7 @@ export function HppTab({ items, walls, settings, scenario }: { items: Item[]; wa
         <div className="flex-1" />
         <button className="btn btn-ghost btn-sm" onClick={() => doExport('csv')} disabled={busy !== null}><Download size={13} />CSV</button>
         <button className="btn btn-secondary btn-sm" onClick={() => doExport('xls')} disabled={busy !== null}><FileSpreadsheet size={13} />Excel</button>
-        <button className="btn btn-primary btn-sm" onClick={() => doExport('pdf')} disabled={busy !== null}><FileText size={13} />{busy === 'pdf' ? '…' : 'PDF'}</button>
+        <button className="btn btn-primary btn-sm" onClick={() => doExport('pdf')} disabled={busy !== null}><FileText size={13} />{busy === 'pdf' ? '…' : 'Penawaran'}</button>
       </div>
 
       <div className="px-3 py-2 shrink-0 flex flex-col gap-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
